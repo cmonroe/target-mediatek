@@ -1,0 +1,20 @@
+--- a/drivers/mtd/devices/block2mtd.c
++++ b/drivers/mtd/devices/block2mtd.c
+@@ -207,7 +207,7 @@ static void block2mtd_free_device(struct
+ 	if (dev->blkdev) {
+ 		invalidate_mapping_pages(dev->blkdev->bd_inode->i_mapping,
+ 					0, -1);
+-		blkdev_put(dev->blkdev, FMODE_READ|FMODE_WRITE|FMODE_EXCL);
++		blkdev_put(dev->blkdev, FMODE_READ|FMODE_WRITE);
+ 	}
+ 
+ 	kfree(dev);
+@@ -220,7 +220,7 @@ static struct block2mtd_dev *add_device(
+ #ifndef MODULE
+ 	int i;
+ #endif
+-	const fmode_t mode = FMODE_READ | FMODE_WRITE | FMODE_EXCL;
++	const fmode_t mode = FMODE_READ | FMODE_WRITE ;
+ 	struct block_device *bdev;
+ 	struct block2mtd_dev *dev;
+ 	struct mtd_partition *part;

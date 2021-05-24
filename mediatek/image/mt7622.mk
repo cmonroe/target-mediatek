@@ -32,6 +32,16 @@ define Device/elecom_wrc-2533gent
 endef
 TARGET_DEVICES += elecom_wrc-2533gent
 
+define Device/smartrg_sr402ac
+  DEVICE_VENDOR := SmartRG
+  DEVICE_MODEL := SR402ac
+  DEVICE_DTS := mt7622-smartrg-sr402ac
+  DEVICE_DTS_DIR := $(DTS_DIR)/mediatek
+  DEVICE_PACKAGES := kmod-usb-ohci kmod-usb2 kmod-usb3 kmod-mt7615e \
+    kmod-mt7615-firmware mt7622bt-firmware
+endef
+TARGET_DEVICES += smartrg_sr402ac
+
 define Device/mediatek_mt7622-rfb1
   DEVICE_VENDOR := MediaTek
   DEVICE_MODEL := MTK7622 rfb1 AP
@@ -67,3 +77,5 @@ define Device/ubnt_unifi-6-lr
   DEVICE_PACKAGES := kmod-mt7915e
 endef
 TARGET_DEVICES += ubnt_unifi-6-lr
+
+include smartrg.mk
