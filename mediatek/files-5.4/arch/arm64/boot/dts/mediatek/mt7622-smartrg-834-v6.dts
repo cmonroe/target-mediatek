@@ -13,8 +13,8 @@
 #include "mt6380.dtsi"
 
 / {
-	model = "SmartRG SR402ac";
-	compatible = "smartrg,sr402ac", "mediatek,mt7622";
+	model = "SmartRG 834-v6";
+	compatible = "smartrg,834-v6", "mediatek,mt7622";
 
 	aliases {
 		serial0 = &uart0;
