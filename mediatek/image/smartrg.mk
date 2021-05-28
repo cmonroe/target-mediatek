@@ -14,7 +14,11 @@ define Device/srg_mediatek
   DEVICE_VENDOR := SmartRG
   DEVICE_MODEL := SmartRG Target
   DEVICE_PACKAGES := kmod-usb-ohci kmod-usb2 kmod-usb3 kmod-ata-ahci-mtk
-  DEVICE_DTS := mt7622-smartrg-srbpi mt7622-smartrg-sr402ac
+  DEVICE_DTS := mt7622-smartrg-srbpi
+  DEVICE_DTS += mt7622-smartrg-834-5
+  DEVICE_DTS += mt7622-smartrg-841-t6
+  DEVICE_DTS += mt7622-smartrg-854-v6
+  DEVICE_DTS += mt7622-smartrg-834-v6
   DEVICE_DTS_DIR := $(DTS_DIR)/mediatek
   IMAGES := root.squashfs img img.run
   IMAGE/root.squashfs := SrgDisk
@@ -39,11 +43,23 @@ define Build/SrgFit
 		-d $(KDIR)/image-mt7622-smartrg-srbpi.dtb \
 		-D "srbpi" -n 300 -c 1 \
 		-h "crc32" -h "sha1" \
-		-d $(KDIR)/image-mt7622-smartrg-sr402ac.dtb \
+		-d $(KDIR)/image-mt7622-smartrg-834-5.dtb \
 		-D "834-5-iPA" -n 402 -c 2 \
 		-h "crc32" -h "sha1" \
-		-d $(KDIR)/image-mt7622-smartrg-sr402ac.dtb \
+		-d $(KDIR)/image-mt7622-smartrg-834-5.dtb \
 		-D "834-5-ePA" -n 403 -c 3 \
+		-h "crc32" -h "sha1" \
+		-d $(KDIR)/image-mt7622-smartrg-841-t6.dtb \
+		-D "841-t6" -n 404 -c 4 \
+		-h "crc32" -h "sha1" \
+		-d $(KDIR)/image-mt7622-smartrg-854-v6.dtb \
+		-D "854-v6-iPA" -n 405 -c 5 \
+		-h "crc32" -h "sha1" \
+		-d $(KDIR)/image-mt7622-smartrg-854-v6.dtb \
+		-D "854-v6-ePA" -n 406 -c 6 \
+		-h "crc32" -h "sha1" \
+		-d $(KDIR)/image-mt7622-smartrg-834-v6.dtb \
+		-D "834-v6" -n 407 -c 7 \
 		-h "crc32" -h "sha1"
 	PATH=$(LINUX_DIR)/scripts/dtc:$(PATH) mkimage -f $@.its $@.new
 	@mv -f $@.new $@
