@@ -40,16 +40,10 @@
 	gpio-keys {
 		compatible = "gpio-keys";
 
-/*		factory {
-			label = "factory";
-			linux,code = <BTN_0>;
-			gpios = <&pio 5 GPIO_ACTIVE_LOW>;
-		};
-*/
 		reset {
 			label = "reset";
 			linux,code = <KEY_RESTART>;
-			gpios = <&pio 5 GPIO_ACTIVE_LOW>;
+			gpios = <&pio 0 GPIO_ACTIVE_LOW>;
 		};
 
 		wps {
@@ -66,6 +60,7 @@
 		#size-cells = <0>;
 	};
 
+/*
 	leds {
 		compatible = "gpio-leds";
 
@@ -99,6 +94,7 @@
 			default-state = "on";
 		};
 	};
+*/
 
 	memory {
 		reg = <0x0 0x40000000 0x0 0x40000000>;
@@ -163,7 +159,7 @@
 };
 
 &btif {
-	status = "okay";
+	status = "disabled";
 };
 
 &cir {
@@ -187,18 +183,6 @@
 		};
 	};
 
-	gmac1: mac@1 {
-		compatible = "mediatek,eth-mac";
-		reg = <1>;
-		phy-mode = "rgmii";
-
-		fixed-link {
-			speed = <1000>;
-			full-duplex;
-			pause;
-		};
-	};
-
 	mdio: mdio-bus {
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -214,12 +198,12 @@
 
 				port@0 {
 					reg = <0>;
-					label = "wan";
+					label = "lan1";
 				};
 
 				port@1 {
 					reg = <1>;
-					label = "lan4";
+					label = "lan2";
 				};
 
 				port@2 {
@@ -229,12 +213,19 @@
 
 				port@3 {
 					reg = <3>;
-					label = "lan2";
+					label = "lan4";
 				};
 
-				port@4 {
-					reg = <4>;
-					label = "lan1";
+				port@5 {
+					reg = <5>;
+					label = "wan";
+					phy-mode = "2500base-x";
+
+					fixed-link {
+						speed = <2500>;
+						full-duplex;
+						pause;
+					};
 				};
 
 				port@6 {
@@ -337,16 +328,25 @@
 };
 
 &slot0 {
-	mt7615@0,0 {
+	mt7915@0,0 {
 		reg = <0x0000 0 0 0 0>;
-		mediatek,mtd-eeprom = <&factory 0x05000>;
+		mediatek,mtd-eeprom = <&factory 0x0>;
+		ieee80211-freq-limit = <2400000 2500000>;
 	};
 };
 
 &pcie1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pcie1_pins>;
-	status = "disabled";
+	status = "okay";
+};
+
+&slot1 {
+	mt7915@0,0 {
+		reg = <0x0000 0 0 0 0>;
+		mediatek,mtd-eeprom = <&factory 0x05000>;
+		ieee80211-freq-limit = <5000000 6000000>;
+	};
 };
 
 &pio {
@@ -606,16 +606,6 @@
 			groups = "watchdog";
 		};
 	};
-
-	wmac0_pins: epa-pins {
-		mux {
-			function = "antsel";
-			groups = "antsel0", "antsel1", "antsel2", "antsel3",
-				 "antsel4", "antsel5", "antsel6",
-				 "antsel8", "antsel9", "antsel12", "antsel13",
-				 "antsel15", "antsel16", "antsel17";
-		};
-	};
 };
 
 &pwm {
@@ -634,7 +624,7 @@
 &snfi {
 	pinctrl-names = "default";
 	pinctrl-0 = <&serial_nand_pins>;
-	status = "disabled";
+	status = "okay";
 
 	spi_nand@0 {
 		#address-cells = <1>;
@@ -738,9 +728,5 @@
 };
 
 &wmac {
-	pinctrl-names = "default";
-	pinctrl-0 = <&wmac0_pins>;
-
-	mediatek,mtd-eeprom = <&factory 0x0000>;
-	status = "okay";
+	status = "disabled";
 };
