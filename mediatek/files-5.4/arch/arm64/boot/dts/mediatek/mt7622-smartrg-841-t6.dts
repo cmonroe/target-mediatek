@@ -220,6 +220,12 @@
 	};
 };
 
+&i2c0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c0_pins>;
+	status = "okay";
+};
+
 &i2c1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c1_pins>;
@@ -352,6 +358,13 @@
 		mux {
 			function = "eth";
 			groups = "mdc_mdio", "rgmii_via_gmac2";
+		};
+	};
+
+	i2c0_pins: i2c0-pins {
+		mux {
+			function = "i2c";
+			groups =  "i2c0";
 		};
 	};
 
