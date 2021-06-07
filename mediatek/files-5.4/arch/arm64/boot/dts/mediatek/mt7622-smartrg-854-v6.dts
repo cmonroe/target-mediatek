@@ -221,11 +221,13 @@
 					label = "wan";
 					phy-mode = "2500base-x";
 
+				/*
 					fixed-link {
 						speed = <2500>;
 						full-duplex;
 						pause;
 					};
+				*/
 				};
 
 				port@6 {
@@ -278,18 +280,6 @@
 &i2c0 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c0_pins>;
-	status = "okay";
-};
-
-&i2c1 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&i2c1_pins>;
-	status = "okay";
-};
-
-&i2c2 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&i2c2_pins>;
 	status = "okay";
 };
 
@@ -423,20 +413,6 @@
 		};
 	};
 
-	i2c1_pins: i2c1-pins {
-		mux {
-			function = "i2c";
-			groups =  "i2c1_0";
-		};
-	};
-
-	i2c2_pins: i2c2-pins {
-		mux {
-			function = "i2c";
-			groups =  "i2c2_0";
-		};
-	};
-
 	i2s1_pins: i2s1-pins {
 		mux {
 			function = "i2s";
@@ -479,8 +455,8 @@
 		mux {
 			function = "pcie";
 			groups = "pcie0_pad_perst",
-				 "pcie0_1_waken",
-				 "pcie0_1_clkreq";
+				 "pcie0_2_waken",
+				 "pcie0_2_clkreq";
 		};
 	};
 
@@ -488,8 +464,8 @@
 		mux {
 			function = "pcie";
 			groups = "pcie1_pad_perst",
-				 "pcie1_0_waken",
-				 "pcie1_0_clkreq";
+				 "pcie1_1_waken",
+				 "pcie1_1_clkreq";
 		};
 	};
 
