@@ -1,0 +1,55 @@
+From: Chad Monroe <chad.monroe@smartrg.com>
+Date: Tue, 07 Jun 2021 13:18:48 -0700
+Subject: mediatek: add pcie reset pin groups for polecat phase 2 
+
+Signed-off-by: Chad Monroe <chad.monroe@smartrg.com>
+--
+ pinctrl-mt7622.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+Index: linux-5.4.114/drivers/pinctrl/mediatek/pinctrl-mt7622.c
+===================================================================
+--- linux-5.4.114.orig/drivers/pinctrl/mediatek/pinctrl-mt7622.c
++++ linux-5.4.114/drivers/pinctrl/mediatek/pinctrl-mt7622.c
+@@ -440,10 +440,18 @@ static int mt7622_pcie0_1_waken_pins[] =
+ static int mt7622_pcie0_1_waken_funcs[] = { 4, };
+ static int mt7622_pcie0_1_clkreq_pins[] = { 80, };
+ static int mt7622_pcie0_1_clkreq_funcs[] = { 4, };
++static int mt7622_pcie0_2_waken_pins[] = { 55, };
++static int mt7622_pcie0_2_waken_funcs[] = { 4, };
++static int mt7622_pcie0_2_clkreq_pins[] = { 56, };
++static int mt7622_pcie0_2_clkreq_funcs[] = { 4, };
+ static int mt7622_pcie1_0_waken_pins[] = { 14, };
+ static int mt7622_pcie1_0_waken_funcs[] = { 3, };
+ static int mt7622_pcie1_0_clkreq_pins[] = { 15, };
+ static int mt7622_pcie1_0_clkreq_funcs[] = { 3, };
++static int mt7622_pcie1_1_waken_pins[] = { 59, };
++static int mt7622_pcie1_1_waken_funcs[] = { 4, };
++static int mt7622_pcie1_1_clkreq_pins[] = { 60, };
++static int mt7622_pcie1_1_clkreq_funcs[] = { 4, };
+ 
+ static int mt7622_pcie0_pad_perst_pins[] = { 83, };
+ static int mt7622_pcie0_pad_perst_funcs[] = { 0, };
+@@ -677,8 +685,12 @@ static const struct group_desc mt7622_gr
+ 	PINCTRL_PIN_GROUP("pcie0_0_clkreq", mt7622_pcie0_0_clkreq),
+ 	PINCTRL_PIN_GROUP("pcie0_1_waken", mt7622_pcie0_1_waken),
+ 	PINCTRL_PIN_GROUP("pcie0_1_clkreq", mt7622_pcie0_1_clkreq),
++	PINCTRL_PIN_GROUP("pcie0_2_waken", mt7622_pcie0_2_waken),
++	PINCTRL_PIN_GROUP("pcie0_2_clkreq", mt7622_pcie0_2_clkreq),
+ 	PINCTRL_PIN_GROUP("pcie1_0_waken", mt7622_pcie1_0_waken),
+ 	PINCTRL_PIN_GROUP("pcie1_0_clkreq", mt7622_pcie1_0_clkreq),
++	PINCTRL_PIN_GROUP("pcie1_1_waken", mt7622_pcie1_1_waken),
++	PINCTRL_PIN_GROUP("pcie1_1_clkreq", mt7622_pcie1_1_clkreq),
+ 	PINCTRL_PIN_GROUP("pcie0_pad_perst", mt7622_pcie0_pad_perst),
+ 	PINCTRL_PIN_GROUP("pcie1_pad_perst", mt7622_pcie1_pad_perst),
+ 	PINCTRL_PIN_GROUP("par_nand", mt7622_pnand),
+@@ -789,7 +801,9 @@ static const char *mt7622_led_groups[] =
+ static const char *mt7622_flash_groups[] = { "par_nand", "snfi", "spi_nor"};
+ static const char *mt7622_pcie_groups[] = { "pcie0_0_waken", "pcie0_0_clkreq",
+ 					    "pcie0_1_waken", "pcie0_1_clkreq",
++					    "pcie0_2_waken", "pcie0_2_clkreq",
+ 					    "pcie1_0_waken", "pcie1_0_clkreq",
++					    "pcie1_1_waken", "pcie1_1_clkreq",
+ 					    "pcie0_pad_perst",
+ 					    "pcie1_pad_perst", };
+ static const char *mt7622_pmic_bus_groups[] = { "pmic_bus", };
