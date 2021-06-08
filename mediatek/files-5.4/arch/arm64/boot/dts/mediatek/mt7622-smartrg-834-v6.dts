@@ -49,13 +49,13 @@
 		reset {
 			label = "reset";
 			linux,code = <KEY_RESTART>;
-			gpios = <&pio 5 GPIO_ACTIVE_LOW>;
+			gpios = <&pio 102 GPIO_ACTIVE_LOW>;
 		};
 
 		wps {
 			label = "wps";
 			linux,code = <KEY_WPS_BUTTON>;
-			gpios = <&pio 102 GPIO_ACTIVE_LOW>;
+			gpios = <&pio 0 GPIO_ACTIVE_LOW>;
 		};
 	};
 
@@ -66,6 +66,7 @@
 		#size-cells = <0>;
 	};
 
+/*
 	leds {
 		compatible = "gpio-leds";
 
@@ -99,6 +100,7 @@
 			default-state = "on";
 		};
 	};
+*/
 
 	memory {
 		reg = <0x0 0x40000000 0x0 0x40000000>;
@@ -163,7 +165,7 @@
 };
 
 &btif {
-	status = "okay";
+	status = "disabled";
 };
 
 &cir {
@@ -219,22 +221,22 @@
 
 				port@1 {
 					reg = <1>;
-					label = "lan4";
+					label = "lan1";
 				};
 
 				port@2 {
 					reg = <2>;
-					label = "lan3";
+					label = "lan2";
 				};
 
 				port@3 {
 					reg = <3>;
-					label = "lan2";
+					label = "lan3";
 				};
 
 				port@4 {
 					reg = <4>;
-					label = "lan1";
+					label = "lan4";
 				};
 
 				port@6 {
@@ -284,15 +286,9 @@
         };
 };
 
-&i2c1 {
+&i2c0 {
 	pinctrl-names = "default";
-	pinctrl-0 = <&i2c1_pins>;
-	status = "okay";
-};
-
-&i2c2 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&i2c2_pins>;
+	pinctrl-0 = <&i2c0_pins>;
 	status = "okay";
 };
 
@@ -337,9 +333,9 @@
 };
 
 &slot0 {
-	mt7615@0,0 {
+	mt7915@0,0 {
 		reg = <0x0000 0 0 0 0>;
-		mediatek,mtd-eeprom = <&factory 0x05000>;
+		mediatek,mtd-eeprom = <&factory 0x0>;
 	};
 };
 
@@ -410,17 +406,10 @@
 		};
 	};
 
-	i2c1_pins: i2c1-pins {
+	i2c0_pins: i2c0-pins {
 		mux {
 			function = "i2c";
-			groups =  "i2c1_0";
-		};
-	};
-
-	i2c2_pins: i2c2-pins {
-		mux {
-			function = "i2c";
-			groups =  "i2c2_0";
+			groups =  "i2c0";
 		};
 	};
 
@@ -466,8 +455,8 @@
 		mux {
 			function = "pcie";
 			groups = "pcie0_pad_perst",
-				 "pcie0_1_waken",
-				 "pcie0_1_clkreq";
+				 "pcie0_2_waken",
+				 "pcie0_2_clkreq";
 		};
 	};
 
@@ -475,8 +464,8 @@
 		mux {
 			function = "pcie";
 			groups = "pcie1_pad_perst",
-				 "pcie1_0_waken",
-				 "pcie1_0_clkreq";
+				 "pcie1_1_waken",
+				 "pcie1_1_clkreq";
 		};
 	};
 
@@ -606,16 +595,6 @@
 			groups = "watchdog";
 		};
 	};
-
-	wmac0_pins: epa-pins {
-		mux {
-			function = "antsel";
-			groups = "antsel0", "antsel1", "antsel2", "antsel3",
-				 "antsel4", "antsel5", "antsel6",
-				 "antsel8", "antsel9", "antsel12", "antsel13",
-				 "antsel15", "antsel16", "antsel17";
-		};
-	};
 };
 
 &pwm {
@@ -634,7 +613,7 @@
 &snfi {
 	pinctrl-names = "default";
 	pinctrl-0 = <&serial_nand_pins>;
-	status = "disabled";
+	status = "okay";
 
 	spi_nand@0 {
 		#address-cells = <1>;
@@ -738,9 +717,5 @@
 };
 
 &wmac {
-	pinctrl-names = "default";
-	pinctrl-0 = <&wmac0_pins>;
-
-	mediatek,mtd-eeprom = <&factory 0x0000>;
-	status = "okay";
+	status = "disabled";
 };
