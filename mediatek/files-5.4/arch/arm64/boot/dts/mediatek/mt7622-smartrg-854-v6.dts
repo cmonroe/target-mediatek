@@ -221,13 +221,11 @@
 					label = "wan";
 					phy-mode = "2500base-x";
 
-				/*
 					fixed-link {
 						speed = <2500>;
 						full-duplex;
 						pause;
 					};
-				*/
 				};
 
 				port@6 {
