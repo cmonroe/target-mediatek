@@ -40,12 +40,6 @@
 	gpio-keys {
 		compatible = "gpio-keys";
 
-/*		factory {
-			label = "factory";
-			linux,code = <BTN_0>;
-			gpios = <&pio 5 GPIO_ACTIVE_LOW>;
-		};
-*/
 		reset {
 			label = "reset";
 			linux,code = <KEY_RESTART>;
@@ -57,13 +51,6 @@
 			linux,code = <KEY_WPS_BUTTON>;
 			gpios = <&pio 0 GPIO_ACTIVE_LOW>;
 		};
-	};
-
-	gsw: gsw@0 {
-		compatible = "mediatek,mt753x";
-		mediatek,ethsys = <&ethsys>;
-		#address-cells = <1>;
-		#size-cells = <0>;
 	};
 
 /*
@@ -162,17 +149,9 @@
 	status = "okay";
 };
 
-&btif {
-	status = "disabled";
-};
-
-&cir {
-	pinctrl-names = "default";
-	pinctrl-0 = <&irrx_pins>;
-	status = "okay";
-};
-
 &eth {
+	pinctrl-names = "default";
+	pinctrl-0 = <&eth_pins>;
 	status = "okay";
 
 	gmac0: mac@0 {
@@ -254,36 +233,6 @@
 	};
 };
 
-&gsw {
-        mediatek,mdio = <&mdio>;
-        mediatek,portmap = "wllll";
-        mediatek,mdio_master_pinmux = <0>;
-        reset-gpios = <&pio 54 0>;
-        interrupt-parent = <&pio>;
-        interrupts = <53 IRQ_TYPE_LEVEL_HIGH>;
-	status = "disabled";
-
-        port5: port@5 {
-                compatible = "mediatek,mt753x-port";
-                reg = <5>;
-                phy-mode = "rgmii";
-                fixed-link {
-                        speed = <1000>;
-                        full-duplex;
-                };
-        };
-
-        port6: port@6 {
-                compatible = "mediatek,mt753x-port";
-                reg = <6>;
-                phy-mode = "sgmii";
-                fixed-link {
-                        speed = <2500>;
-                        full-duplex;
-                };
-        };
-};
-
 &i2c0 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c0_pins>;
@@ -333,23 +282,11 @@
 &slot0 {
 	mt7915@0,0 {
 		reg = <0x0000 0 0 0 0>;
-		mediatek,mtd-eeprom = <&factory 0x0>;
+		mediatek,mtd-eeprom = <&emmc_factory 0x0>;
 	};
-};
-
-&pcie1 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pcie1_pins>;
-	status = "disabled";
 };
 
 &pio {
-	asm_sel {
-		gpio-hog;
-		gpios = <90 GPIO_ACTIVE_HIGH>;
-		output-high;
-	};
-
 	/* eMMC is shared pin with parallel NAND */
 	emmc_pins_default: emmc-pins-default {
 		mux {
@@ -427,20 +364,6 @@
 		};
 	};
 
-	irrx_pins: irrx-pins {
-		mux {
-			function = "ir";
-			groups =  "ir_1_rx";
-		};
-	};
-
-	irtx_pins: irtx-pins {
-		mux {
-			function = "ir";
-			groups =  "ir_1_tx";
-		};
-	};
-
 	/* Parallel nand is shared pin with eMMC */
 	parallel_nand_pins: parallel-nand-pins {
 		mux {
@@ -474,67 +397,6 @@
 		};
 	};
 
-	pwm7_pins: pwm1-2-pins {
-		mux {
-			function = "pwm";
-			groups = "pwm_ch7_2";
-		};
-	};
-
-	wled_pins: wled-pins {
-		mux {
-			function = "led";
-			groups = "wled";
-		};
-	};
-
-	sd0_pins_default: sd0-pins-default {
-		mux {
-			function = "sd";
-			groups = "sd_0";
-		};
-
-		/* "I2S2_OUT, "I2S4_IN"", "I2S3_IN", "I2S2_IN",
-		 *  "I2S4_OUT", "I2S3_OUT" are used as DAT0, DAT1,
-		 *  DAT2, DAT3, CMD, CLK for SD respectively.
-		 */
-		conf-cmd-data {
-			pins = "I2S2_OUT", "I2S4_IN", "I2S3_IN",
-			       "I2S2_IN","I2S4_OUT";
-			input-enable;
-			drive-strength = <8>;
-			bias-pull-up;
-		};
-		conf-clk {
-			pins = "I2S3_OUT";
-			drive-strength = <12>;
-			bias-pull-down;
-		};
-		conf-cd {
-			pins = "TXD3";
-			bias-pull-up;
-		};
-	};
-
-	sd0_pins_uhs: sd0-pins-uhs {
-		mux {
-			function = "sd";
-			groups = "sd_0";
-		};
-
-		conf-cmd-data {
-			pins = "I2S2_OUT", "I2S4_IN", "I2S3_IN",
-			       "I2S2_IN","I2S4_OUT";
-			input-enable;
-			bias-pull-up;
-		};
-
-		conf-clk {
-			pins = "I2S3_OUT";
-			bias-pull-down;
-		};
-	};
-
 	/* Serial NAND is shared pin with SPI-NOR */
 	serial_nand_pins: serial-nand-pins {
 		mux {
@@ -557,33 +419,10 @@
 		};
 	};
 
-	/* SPI-NOR is shared pin with serial NAND */
-	spi_nor_pins: spi-nor-pins {
-		mux {
-			function = "flash";
-			groups = "spi_nor";
-		};
-	};
-
-	/* serial NAND is shared pin with SPI-NOR */
-	serial_nand_pins: serial-nand-pins {
-		mux {
-			function = "flash";
-			groups = "snfi";
-		};
-	};
-
 	uart0_pins: uart0-pins {
 		mux {
 			function = "uart";
 			groups = "uart0_0_tx_rx" ;
-		};
-	};
-
-	uart2_pins: uart2-pins {
-		mux {
-			function = "uart";
-			groups = "uart2_1_tx_rx" ;
 		};
 	};
 
@@ -595,16 +434,9 @@
 	};
 };
 
-&pwm {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pwm7_pins>;
-	status = "okay";
-};
-
 &pwrap {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pmic_bus_pins>;
-
 	status = "okay";
 };
 
@@ -702,18 +534,8 @@
 	status = "okay";
 };
 
-&uart2 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&uart2_pins>;
-	status = "disabled";
-};
-
 &watchdog {
 	pinctrl-names = "default";
 	pinctrl-0 = <&watchdog_pins>;
 	status = "okay";
-};
-
-&wmac {
-	status = "disabled";
 };
