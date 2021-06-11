@@ -147,10 +147,8 @@
 		regulator-name = "fixed-5V";
 		regulator-min-microvolt = <5000000>;
 		regulator-max-microvolt = <5000000>;
-		gpio = <&pio 0 GPIO_ACTIVE_LOW>;
-		enable-active-high;
-		/* regulator-boot-on; */
-		/* regulator-always-on; */
+		regulator-boot-on;
+		regulator-always-on;
 	};
 
     sound: sound {
