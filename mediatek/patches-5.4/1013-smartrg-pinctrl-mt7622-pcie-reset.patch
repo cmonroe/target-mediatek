@@ -23,9 +23,9 @@ Index: linux-5.4.114/drivers/pinctrl/mediatek/pinctrl-mt7622.c
  static int mt7622_pcie1_0_waken_funcs[] = { 3, };
  static int mt7622_pcie1_0_clkreq_pins[] = { 15, };
  static int mt7622_pcie1_0_clkreq_funcs[] = { 3, };
-+static int mt7622_pcie1_1_waken_pins[] = { 59, };
++static int mt7622_pcie1_1_waken_pins[] = { 61, };
 +static int mt7622_pcie1_1_waken_funcs[] = { 4, };
-+static int mt7622_pcie1_1_clkreq_pins[] = { 60, };
++static int mt7622_pcie1_1_clkreq_pins[] = { 62, };
 +static int mt7622_pcie1_1_clkreq_funcs[] = { 4, };
  
  static int mt7622_pcie0_pad_perst_pins[] = { 83, };
