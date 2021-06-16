@@ -143,6 +143,19 @@
 		regulator-boot-on;
 		regulator-always-on;
 	};
+
+	sound: sound {
+		compatible = "mediatek,mt2701-wm8960-machine";
+		pinctrl-names = "default";
+		pinctrl-0 = <&i2s1_pins>;
+		mediatek,platform = <&afe>;
+		mediatek,audio-codec = <&wm8960>;
+		audio-routing =
+			"Headphone", "HP_L",
+			"Headphone", "HP_R",
+			"LINPUT2", "AMIC",
+			"RINPUT2", "AMIC";
+	};
 };
 
 &bch {
@@ -237,6 +250,11 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c0_pins>;
 	status = "okay";
+
+	wm8960: wm8960@1a {
+		compatible = "wlf,wm8960";
+		reg = <0x1a>;
+	};
 };
 
 &mmc0 {
@@ -415,7 +433,7 @@
 	spic1_pins: spic1-pins {
 		mux {
 			function = "spi";
-			groups = "spic1_0";
+			groups = "spic1_1";
 		};
 	};
 
@@ -516,6 +534,12 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&spic1_pins>;
 	status = "okay";
+
+	slic: slic@0 {
+		compatible = "siliconlab,slic";
+		reg = <0>;
+		spi-max-frequency = <2000000>;
+	};
 };
 
 &ssusb {
