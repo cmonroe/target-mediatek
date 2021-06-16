@@ -144,7 +144,7 @@
 		regulator-always-on;
 	};
 
-    sound: sound {
+	sound: sound {
 		compatible = "mediatek,mt2701-wm8960-machine";
 		pinctrl-names = "default";
 		pinctrl-0 = <&i2s1_pins>;
