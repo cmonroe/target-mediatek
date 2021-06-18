@@ -115,8 +115,10 @@ define Build/srgImageRun
 	$(CP) $(TARGET_DIR)/usr/srg/scripts/emmc-manage.sh $(KDIR)/img/scripts/
 	$(CP) $(TARGET_DIR)/etc/openwrt_release $(KDIR)/img/etc/
 	$(CP) $(KDIR)/root.squashfs.run.bin $(KDIR)/img/root.squashfs.bin
+	tar czf $(KDIR)/$(BINNAME).runimg.tgz -C $(KDIR) img
 	$(STAGING_DIR_HOST)/bin/makeself.sh --sha256 --ssl-encrypt --ssl-pass-src file:$(TARGET_DIR)/usr/srg/scripts/pfsos $(KDIR)/img $(KDIR)/$(BINNAME).run "SOS self" ./self-upgrade.sh
 	$(CP) $(KDIR)/$(BINNAME).run $(BIN_DIR)/$(BINNAME).run
+	$(CP) $(KDIR)/$(BINNAME).runimg.tgz $(BIN_DIR)/$(BINNAME).runimg.tgz
 endef
 
 define Image/Flash/mkflash_emmc
@@ -127,7 +129,6 @@ define Image/Flash/mkflash_emmc
 	mk_emmc_mfg_image.sh -e $(2) -r $(TARGET_DIR) -R $(BIN_DIR)/$(BINNAME).bin -b $(BIN_DIR) -c $$CDT_IPK -d $$OUT_DIR/$(IMG_PREFIX)-srg_mediatek-emmc-mfg-$(2)-$(1).bin ; \
 	cp $(STAGING_DIR_ROOT)/Boot/bin/preloader-emmc.$(2) $$OUT_DIR/$(IMG_PREFIX)-srg_mediatek-preloader-emmc-mfg-$(2)-$(1).bin
 endef
-
 
 flashme:
 	@echo "Creating FLASH image"
