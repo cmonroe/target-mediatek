@@ -53,42 +53,6 @@
 		};
 	};
 
-/*
-	leds {
-		compatible = "gpio-leds";
-
-		system_red {
-			label = "red";
-			gpios = <&pio 51 GPIO_ACTIVE_LOW>;
-			default-state = "off";
-		};
-
-		system_green {
-			label = "green";
-			gpios = <&pio 52 GPIO_ACTIVE_LOW>;
-			default-state = "off";
-		};
-
-		system_blue {
-			label = "blue";
-			gpios = <&pio 75 GPIO_ACTIVE_LOW>;
-			default-state = "off";
-		};
-
-		system_white {
-			label = "white";
-			gpios = <&pio 98 GPIO_ACTIVE_LOW>;
-			default-state = "off";
-		};
-
-		power {
-			label = "power";
-			gpios = <&pio 89 GPIO_ACTIVE_LOW>;
-			default-state = "on";
-		};
-	};
-*/
-
 	memory {
 		reg = <0x0 0x40000000 0x0 0x40000000>;
 	};
@@ -198,6 +162,31 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c0_pins>;
 	status = "okay";
+
+	leds {
+		compatible = "srg,sysled";
+		reg = <0x30>;
+
+		system_red {
+			label = "red";
+			reg = <1>;
+		};
+
+		system_green {
+			label = "green";
+			reg = <2>;
+		};
+
+		system_blue {
+			label = "blue";
+			reg = <3>;
+		};
+
+		system_white {
+			label = "white";
+			reg = <4>;
+		};
+	};
 };
 
 &mmc0 {
