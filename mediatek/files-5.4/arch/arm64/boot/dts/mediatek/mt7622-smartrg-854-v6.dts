@@ -435,6 +435,13 @@
 		};
 	};
 
+	uart3_pins: uart3-pins {
+		mux {
+			function = "uart";
+			groups = "uart3_1_tx_rx" ;
+		};
+	};
+
 	watchdog_pins: watchdog-pins {
 		mux {
 			function = "watchdog";
@@ -547,6 +554,14 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&uart0_pins>;
 	status = "okay";
+};
+
+&uart3 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart3_pins>;
+	status = "okay";
+
+	/* MT7915 Bluetooth */
 };
 
 &watchdog {
