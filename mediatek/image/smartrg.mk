@@ -19,7 +19,7 @@ define Device/srg_mediatek
   DEVICE_DTS += mt7622-smartrg-841-t6
   DEVICE_DTS += mt7622-smartrg-854-v6
   DEVICE_DTS += mt7622-smartrg-834-v6
-  DEVICE_DTS_DIR := $(DTS_DIR)/mediatek
+  DEVICE_DTS_DIR := ../dts
   IMAGES := root.squashfs img img.run
   IMAGE/root.squashfs := SrgDisk
   IMAGE/img := srgImage
