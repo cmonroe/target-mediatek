@@ -53,6 +53,40 @@
 		};
 	};
 
+	gpio-leds {
+		compatible = "gpio-leds";
+
+		sfp {
+			label = "sfp";
+			gpios = <&pio 95 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+
+		wifi2g {
+			label = "wifi2g";
+			gpios = <&pio 96 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+
+		wifi5g {
+			label = "wifi5g";
+			gpios = <&pio 97 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+
+		wps {
+			label = "wps";
+			gpios = <&pio 99 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+
+		fxs1 {
+			label = "fxs1";
+			gpios = <&pio 100 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+	};
+
 	memory {
 		reg = <0x0 0x40000000 0x0 0x40000000>;
 	};
@@ -216,7 +250,7 @@
 		reg = <0x1a>;
 	};
 
-	leds {
+	system-leds {
 		compatible = "srg,sysled";
 		reg = <0x30>;
 
