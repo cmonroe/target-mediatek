@@ -1,0 +1,38 @@
+---
+ drivers/leds/Kconfig  |   10 ++++++++++
+ drivers/leds/Makefile |    1 +
+ 2 files changed, 11 insertions(+)
+
+Index: linux-5.10.52/drivers/leds/Kconfig
+===================================================================
+--- linux-5.10.52.orig/drivers/leds/Kconfig
++++ linux-5.10.52/drivers/leds/Kconfig
+@@ -929,6 +929,16 @@ config LEDS_ACER_A500
+ 	  This option enables support for the Power Button LED of
+ 	  Acer Iconia Tab A500.
+ 
++config LEDS_SMARTRG_LED
++	tristate "LED support for Adtran SmartRG"
++	depends on LEDS_CLASS && I2C && OF
++	help
++	  This option enables support for the Adtran SmartRG platform
++	  system LED driver.
++
++	  To compile this driver as a module, choose M here: the module
++	  will be called leds-smartrg-system.
++
+ comment "LED Triggers"
+ source "drivers/leds/trigger/Kconfig"
+ 
+Index: linux-5.10.52/drivers/leds/Makefile
+===================================================================
+--- linux-5.10.52.orig/drivers/leds/Makefile
++++ linux-5.10.52/drivers/leds/Makefile
+@@ -83,6 +83,7 @@ obj-$(CONFIG_LEDS_REGULATOR)		+= leds-re
+ obj-$(CONFIG_LEDS_S3C24XX)		+= leds-s3c24xx.o
+ obj-$(CONFIG_LEDS_SC27XX_BLTC)		+= leds-sc27xx-bltc.o
+ obj-$(CONFIG_LEDS_SGM3140)		+= leds-sgm3140.o
++obj-$(CONFIG_LEDS_SMARTRG_LED)		+= leds-smartrg-system.o
+ obj-$(CONFIG_LEDS_SUNFIRE)		+= leds-sunfire.o
+ obj-$(CONFIG_LEDS_SYSCON)		+= leds-syscon.o
+ obj-$(CONFIG_LEDS_TCA6507)		+= leds-tca6507.o

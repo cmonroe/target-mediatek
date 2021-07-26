@@ -1,0 +1,50 @@
+From 3cd418cd8376b72f30e9553dba981d1ee38eeb63 Mon Sep 17 00:00:00 2001
+From: Tim Hayes <tim.hayes@smartrg.com>
+Date: Fri, 6 Nov 2020 10:28:06 -0800
+Subject: [PATCH] OWRT-5691 shens mtu fix added
+
+---
+ drivers/net/dsa/mt7530.c |  5 +++++
+ drivers/net/dsa/mt7530.h | 17 +++++++++++++++++
+ 2 files changed, 22 insertions(+)
+
+--- a/drivers/net/dsa/mt7530.c
++++ b/drivers/net/dsa/mt7530.c
+@@ -1905,6 +1905,11 @@ mt7531_setup(struct dsa_switch *ds)
+ 	mt7531_ind_c45_phy_write(priv, MT753X_CTRL_PHY_ADDR, MDIO_MMD_VEND2,
+ 				 CORE_PLL_GROUP4, val);
+ 
++	mt7530_write(priv, MT7530_GMACCR,
++			(11 << GMACCR_MTCC_LMT_S) |
++			(11 << GMACCR_MAX_RX_JUMBO_S) |
++			GMACCR_RX_PKT_LEN_MAX_JUMBO);
++
+ 	/* BPDU to CPU port */
+ 	mt7530_rmw(priv, MT7531_CFC, MT7531_CPU_PMAP_MASK,
+ 		   BIT(MT7530_CPU_PORT));
+--- a/drivers/net/dsa/mt7530.h
++++ b/drivers/net/dsa/mt7530.h
+@@ -230,6 +230,23 @@ enum mt7530_vlan_port_attr {
+ #define  G0_PORT_VID_MASK		G0_PORT_VID(0xfff)
+ #define  G0_PORT_VID_DEF		G0_PORT_VID(1)
+ 
++#define MT7530_GMACCR                   (0x3000 + 0xe0)
++#define  GMACCR_TXCRC_EN                BIT(19)
++#define  GMACCR_RXCRC_EN                BIT(18)
++#define  GMACCR_PRMBL_LMT_EN            BIT(17)
++#define  GMACCR_MTCC_LMT_S              9
++#define  GMACCR_MTCC_LMT_M              0x1e00
++#define  GMACCR_MAX_RX_JUMBO_S          2
++#define  GMACCR_MAX_RX_JUMBO_M          0x3c
++#define  GMACCR_MAX_RX_PKT_LEN_S        0
++#define  GMACCR_MAX_RX_PKT_LEN_M        0x3
++
++/* Values of MAX_RX_PKT_LEN */
++#define  GMACCR_RX_PKT_LEN_1518         0
++#define  GMACCR_RX_PKT_LEN_1536         1
++#define  GMACCR_RX_PKT_LEN_1522         2
++#define  GMACCR_RX_PKT_LEN_MAX_JUMBO    3
++
+ /* Register for port MAC control register */
+ #define MT7530_PMCR_P(x)		(0x3000 + ((x) * 0x100))
+ #define  PMCR_IFG_XMIT(x)		(((x) & 0x3) << 18)
