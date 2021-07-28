@@ -170,13 +170,13 @@
 
 		phy0: ethernet-phy@0 {
 			/* PEF7071 */
-			compatible = "ethernet-phy-ieee802.3-c22";
+			compatible = "intel,phy11g", "ethernet-phy-ieee802.3-c22";
 			reg = <0>;
 		};
 
 		phy5: ethernet-phy@5 {
 			/* GPY211 */
-			compatible = "ethernet-phy-ieee802.3-c22";
+			compatible = "maxlinear,gpy211", "ethernet-phy-ieee802.3-c22";
 			reg = <5>;
 		};
 	};
