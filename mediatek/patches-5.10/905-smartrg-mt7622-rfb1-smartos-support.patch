@@ -2,7 +2,7 @@ Index: linux-5.10.52/arch/arm64/boot/dts/mediatek/mt7622-rfb1.dts
 ===================================================================
 --- linux-5.10.52.orig/arch/arm64/boot/dts/mediatek/mt7622-rfb1.dts
 +++ linux-5.10.52/arch/arm64/boot/dts/mediatek/mt7622-rfb1.dts
-@@ -58,6 +58,31 @@
+@@ -58,6 +58,33 @@
  		reg = <0 0x40000000 0 0x40000000>;
  	};
  
@@ -10,6 +10,8 @@ Index: linux-5.10.52/arch/arm64/boot/dts/mediatek/mt7622-rfb1.dts
 +		#address-cells = <2>;
 +		#size-cells = <2>;
 +		ranges;
++
++		/delete-node/ramoops@0x42ff0000;
 +
 +		bootdata_reserved: bootdata@0x45000000 {
 +			no-map;
@@ -34,7 +36,7 @@ Index: linux-5.10.52/arch/arm64/boot/dts/mediatek/mt7622-rfb1.dts
  	reg_1p8v: regulator-1p8v {
  		compatible = "regulator-fixed";
  		regulator-name = "fixed-1.8V";
-@@ -262,6 +287,21 @@
+@@ -262,6 +289,21 @@
  	status = "okay";
  };
  
@@ -56,7 +58,7 @@ Index: linux-5.10.52/arch/arm64/boot/dts/mediatek/mt7622-rfb1.dts
  &pio {
  	/* Attention: GPIO 90 is used to switch between PCIe@1,0 and
  	 * SATA functions. i.e. output-high: PCIe, output-low: SATA
-@@ -601,6 +641,74 @@
+@@ -601,6 +643,74 @@
  	};
  };
  
@@ -131,7 +133,7 @@ Index: linux-5.10.52/arch/arm64/boot/dts/mediatek/mt7622-rfb1.dts
  &spi0 {
  	pinctrl-names = "default";
  	pinctrl-0 = <&spic0_pins>;
-@@ -648,5 +756,5 @@
+@@ -648,5 +758,5 @@
  
  &wmac {
  	mediatek,mtd-eeprom = <&factory 0x0000>;
