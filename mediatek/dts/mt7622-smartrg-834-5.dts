@@ -13,7 +13,7 @@
 #include "mt6380.dtsi"
 
 / {
-	model = "SmartRG 834-5";
+	model = "Adtran 834-5";
 	compatible = "smartrg,834-5", "mediatek,mt7622";
 
 	aliases {
