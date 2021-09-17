@@ -86,8 +86,8 @@
 			default-state = "off";
 		};
 
-		gphy {
-			label = "gphy";
+		wan {
+			label = "wan";
 			gpios = <&pio 98 GPIO_ACTIVE_LOW>;
 			default-state = "off";
 		};
