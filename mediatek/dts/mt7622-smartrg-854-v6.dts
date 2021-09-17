@@ -56,6 +56,18 @@
 	gpio-leds {
 		compatible = "gpio-leds";
 
+		mux_sel {
+			label = "mux_sel";
+			gpios = <&pio 88 GPIO_ACTIVE_LOW>;
+			default-state = "on";
+		};
+
+		mux_oe {
+			label = "mux_oe";
+			gpios = <&pio 89 GPIO_ACTIVE_LOW>;
+			default-state = "on";
+		};
+
 		sfp {
 			label = "sfp";
 			gpios = <&pio 95 GPIO_ACTIVE_LOW>;
