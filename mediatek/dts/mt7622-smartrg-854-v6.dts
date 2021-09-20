@@ -77,13 +77,13 @@
 		wifi2g {
 			label = "wifi2g";
 			gpios = <&pio 96 GPIO_ACTIVE_LOW>;
-			default-state = "off";
+			linux,default-trigger = "phy0radio";
 		};
 
 		wifi5g {
 			label = "wifi5g";
 			gpios = <&pio 97 GPIO_ACTIVE_LOW>;
-			default-state = "off";
+			linux,default-trigger = "phy1radio";
 		};
 
 		wan {
