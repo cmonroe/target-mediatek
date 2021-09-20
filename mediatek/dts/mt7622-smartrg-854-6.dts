@@ -56,6 +56,18 @@
 	gpio-leds {
 		compatible = "gpio-leds";
 
+		mux_sel {
+			label = "mux_sel";
+			gpios = <&pio 88 GPIO_ACTIVE_LOW>;
+			default-state = "on";
+		};
+
+		mux_oe {
+			label = "mux_oe";
+			gpios = <&pio 89 GPIO_ACTIVE_LOW>;
+			default-state = "on";
+		};
+
 		sfp {
 			label = "sfp";
 			gpios = <&pio 95 GPIO_ACTIVE_LOW>;
@@ -65,17 +77,17 @@
 		wifi2g {
 			label = "wifi2g";
 			gpios = <&pio 96 GPIO_ACTIVE_LOW>;
-			default-state = "off";
+			linux,default-trigger = "phy0radio";
 		};
 
 		wifi5g {
 			label = "wifi5g";
 			gpios = <&pio 97 GPIO_ACTIVE_LOW>;
-			default-state = "off";
+			linux,default-trigger = "phy1radio";
 		};
 
-		gphy {
-			label = "gphy";
+		wan {
+			label = "wan";
 			gpios = <&pio 98 GPIO_ACTIVE_LOW>;
 			default-state = "off";
 		};
@@ -83,6 +95,12 @@
 		wps {
 			label = "wps";
 			gpios = <&pio 99 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+
+		fxs1 {
+			label = "fxs1";
+			gpios = <&pio 100 GPIO_ACTIVE_LOW>;
 			default-state = "off";
 		};
 	};
@@ -177,7 +195,7 @@
 
 				port@0 {
 					reg = <0>;
-					label = "wan";
+					label = "lan4";
 				};
 
 				port@1 {
@@ -197,7 +215,7 @@
 
 				port@5 {
 					reg = <5>;
-					label = "lan4";
+					label = "wan";
 					phy-mode = "2500base-x";
 
 					compatible = "maxlinear,gpy211", "ethernet-phy-ieee802.3-c22";
