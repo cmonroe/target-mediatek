@@ -89,7 +89,7 @@
 		wan {
 			label = "wan";
 			gpios = <&pio 98 GPIO_ACTIVE_LOW>;
-			default-state = "off";
+			linux,default-trigger = "dsa-0.0:05:link";
 		};
 
 		wps {
