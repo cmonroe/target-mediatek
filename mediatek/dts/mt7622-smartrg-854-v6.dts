@@ -162,6 +162,16 @@
 		regulator-always-on;
 	};
 
+	sfp_wan: sfp-wan{
+		compatible = "sff,sfp";
+		i2c-bus = <&i2c0>;
+		los-gpio = <&pio 22 GPIO_ACTIVE_HIGH>;
+		mod-def0-gpio = <&pio 77 GPIO_ACTIVE_LOW>;
+		rate-select0-gpios = <&pio 21 GPIO_ACTIVE_HIGH>;
+		tx-disable-gpio = <&pio 20 GPIO_ACTIVE_HIGH>;
+		tx-fault-gpio  = <&pio 87 GPIO_ACTIVE_HIGH>;
+	};
+
 	sound: sound {
 		compatible = "mediatek,mt2701-wm8960-machine";
 		pinctrl-names = "default";
@@ -230,8 +240,9 @@
 					reg = <5>;
 					label = "wan";
 
-					phy-mode = "2500base-x";
+					/* sfp = <&sfp_wan>; */
 
+					phy-mode = "2500base-x";
 					compatible = "maxlinear,gpy211", "ethernet-phy-ieee802.3-c22";
 
 					fixed-link {
