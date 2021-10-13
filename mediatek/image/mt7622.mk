@@ -3,7 +3,7 @@ DTS_DIR := $(DTS_DIR)/mediatek
 ifdef CONFIG_LINUX_5_4
   KERNEL_LOADADDR := 0x44080000
 else
-  KERNEL_LOADADDR := 0x44000000
+  KERNEL_LOADADDR := 0x48000000
 endif
 
 define Image/Prepare
