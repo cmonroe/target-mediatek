@@ -21,6 +21,7 @@ define Device/polecat
   DEVICE_DTS += mt7622-smartrg-854-v6
   DEVICE_DTS += mt7622-smartrg-834-v6
   DEVICE_DTS_DIR := ../dts
+  DTC_FLAGS += -@
   IMAGES := root.squashfs img img.run
   IMAGE/root.squashfs := SrgDisk
   IMAGE/img := srgImage
