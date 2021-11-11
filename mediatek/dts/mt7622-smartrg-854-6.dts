@@ -223,21 +223,10 @@
 					label = "lan1";
 				};
 
-				port@5 {
+				/* port@5 dtb overlay will be used to add more information during boot */
+				port_wan: port@5 {
 					reg = <5>;
 					label = "wan";
-
-					/* sfp = <&sfp_wan>; */
-
-					phy-mode = "2500base-x";
-					compatible = "maxlinear,gpy211", "ethernet-phy-ieee802.3-c22";
-
-					fixed-link {
-						speed = <2500>;
-						full-duplex;
-						pause;
-						extphy;
-					};
 				};
 
 				port@6 {
