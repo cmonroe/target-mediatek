@@ -1,38 +1,15 @@
-From cae560b78858dd9ca4b25bc1eabd6a9b21abc76b Mon Sep 17 00:00:00 2001
+From d735117cc5b30d51f60e5f5ab03274a7a58c0b73 Mon Sep 17 00:00:00 2001
 From: Tim Hayes <tim.hayes@smartrg.com>
-Date: Tue, 28 Sep 2021 07:26:53 -0700
-Subject: [PATCH 1/2] OWRT-6281 added MLO_AN_FIXED_PHY
+Date: Wed, 17 Nov 2021 10:01:06 -0800
+Subject: [PATCH] OWRT-6281 added FIXED_PHY logic with 10 100 fixes
 
 ---
- include/linux/phylink.h | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/include/linux/phylink.h b/include/linux/phylink.h
-index d81a714..0939557 100644
---- a/include/linux/phylink.h
-+++ b/include/linux/phylink.h
-@@ -20,6 +20,7 @@ enum {
- 	MLO_AN_PHY = 0,	/* Conventional PHY */
- 	MLO_AN_FIXED,	/* Fixed-link mode */
- 	MLO_AN_INBAND,	/* In-band protocol */
-+	MLO_AN_FIXED_PHY,/* Fixed-link mode with external phy*/
- };
- 
- static inline bool phylink_autoneg_inband(unsigned int mode)
--- 
-2.20.1
-
-From 76ba91d4742aa3e2bc75689b5d098a3d6a9410bd Mon Sep 17 00:00:00 2001
-From: Tim Hayes <tim.hayes@smartrg.com>
-Date: Tue, 28 Sep 2021 07:26:58 -0700
-Subject: [PATCH 2/2] OWRT-6281 added MLO_AN_FIXED_PHY logic
-
----
- drivers/net/phy/phylink.c | 78 +++++++++++++++++++++++++++++++++++++++
- 1 file changed, 78 insertions(+)
+ drivers/net/phy/phylink.c | 157 +++++++++++++++++++++++++++++++++-----
+ include/linux/phylink.h   |   1 +
+ 2 files changed, 139 insertions(+), 19 deletions(-)
 
 diff --git a/drivers/net/phy/phylink.c b/drivers/net/phy/phylink.c
-index 6072e87..92141aa 100644
+index 6072e87..37131c7 100644
 --- a/drivers/net/phy/phylink.c
 +++ b/drivers/net/phy/phylink.c
 @@ -148,6 +148,7 @@ static const char *phylink_an_mode_str(unsigned int mode)
@@ -69,7 +46,57 @@ index 6072e87..92141aa 100644
  		linkmode_zero(pl->supported);
  		phylink_set(pl->supported, MII);
  		phylink_set(pl->supported, Autoneg);
-@@ -569,6 +582,10 @@ static void phylink_mac_initial_config(struct phylink *pl, bool force_restart)
+@@ -410,16 +423,39 @@ static void phylink_resolve_flow(struct phylink_link_state *state)
+ static void phylink_mac_config(struct phylink *pl,
+ 			       const struct phylink_link_state *state)
+ {
+-	phylink_dbg(pl,
+-		    "%s: mode=%s/%s/%s/%s adv=%*pb pause=%02x link=%u an=%u\n",
+-		    __func__, phylink_an_mode_str(pl->cur_link_an_mode),
+-		    phy_modes(state->interface),
+-		    phy_speed_to_str(state->speed),
+-		    phy_duplex_to_str(state->duplex),
+-		    __ETHTOOL_LINK_MODE_MASK_NBITS, state->advertising,
+-		    state->pause, state->link, state->an_enabled);
+-
+-	pl->mac_ops->mac_config(pl->config, pl->cur_link_an_mode, state);
++	if (pl->cfg_link_an_mode == MLO_AN_FIXED_PHY) {
++
++	       struct phylink_link_state fixed_state;
++		fixed_state.speed=pl->link_config.speed;
++		fixed_state.duplex=pl->link_config.duplex;
++		fixed_state.interface=pl->link_config.interface;
++		fixed_state.pause=pl->link_config.pause;
++		fixed_state.an_enabled=pl->link_config.an_enabled;
++		fixed_state.link=state->link;
++		linkmode_copy(fixed_state.advertising, pl->link_config.advertising);
++
++		phylink_info(pl,
++			    "FIXED_PHY %s: mode=%s/%s/%s/%s adv=%*pb pause=%02x link=%u an=%u\n",
++			    __func__, phylink_an_mode_str(pl->cur_link_an_mode),
++			    phy_modes(fixed_state.interface),
++			    phy_speed_to_str(fixed_state.speed),
++			    phy_duplex_to_str(fixed_state.duplex),
++			    __ETHTOOL_LINK_MODE_MASK_NBITS, fixed_state.advertising,
++			    fixed_state.pause, fixed_state.link, fixed_state.an_enabled);
++
++		pl->mac_ops->mac_config(pl->config, pl->cur_link_an_mode, &fixed_state);
++	} else {
++		phylink_dbg(pl,
++			    "%s: mode=%s/%s/%s/%s adv=%*pb pause=%02x link=%u an=%u\n",
++			    __func__, phylink_an_mode_str(pl->cur_link_an_mode),
++			    phy_modes(state->interface),
++			    phy_speed_to_str(state->speed),
++			    phy_duplex_to_str(state->duplex),
++			    __ETHTOOL_LINK_MODE_MASK_NBITS, state->advertising,
++			    state->pause, state->link, state->an_enabled);
++
++		pl->mac_ops->mac_config(pl->config, pl->cur_link_an_mode, state);
++	}
+ }
+ 
+ static void phylink_mac_pcs_an_restart(struct phylink *pl)
+@@ -569,6 +605,10 @@ static void phylink_mac_initial_config(struct phylink *pl, bool force_restart)
  		phylink_get_fixed_state(pl, &link_state);
  		break;
  
@@ -80,7 +107,51 @@ index 6072e87..92141aa 100644
  	case MLO_AN_INBAND:
  		link_state = pl->link_config;
  		if (link_state.interface == PHY_INTERFACE_MODE_SGMII)
-@@ -670,6 +687,13 @@ static void phylink_resolve(struct work_struct *w)
+@@ -606,16 +646,34 @@ static void phylink_link_up(struct phylink *pl,
+ 
+ 	pl->cur_interface = link_state.interface;
+ 
+-	if (pl->pcs_ops && pl->pcs_ops->pcs_link_up)
+-		pl->pcs_ops->pcs_link_up(pl->pcs, pl->cur_link_an_mode,
+-					 pl->cur_interface,
+-					 link_state.speed, link_state.duplex);
++	if (pl->cfg_link_an_mode == MLO_AN_FIXED_PHY) {
++
++		if (pl->pcs_ops && pl->pcs_ops->pcs_link_up)
++			pl->pcs_ops->pcs_link_up(pl->pcs, pl->cur_link_an_mode,
++						 pl->cur_interface,
++						 pl->link_config.speed, pl->link_config.duplex);
+ 
+-	pl->mac_ops->mac_link_up(pl->config, pl->phydev,
+-				 pl->cur_link_an_mode, pl->cur_interface,
+-				 link_state.speed, link_state.duplex,
+-				 !!(link_state.pause & MLO_PAUSE_TX),
+-				 !!(link_state.pause & MLO_PAUSE_RX));
++		pl->mac_ops->mac_link_up(pl->config, pl->phydev,
++					 pl->cfg_link_an_mode, pl->cur_interface,
++					 pl->link_config.speed, pl->link_config.duplex,
++					 !!(link_state.pause & MLO_PAUSE_TX),
++					 !!(link_state.pause & MLO_PAUSE_RX));
++
++
++	} else {
++
++		if (pl->pcs_ops && pl->pcs_ops->pcs_link_up)
++			pl->pcs_ops->pcs_link_up(pl->pcs, pl->cur_link_an_mode,
++						 pl->cur_interface,
++						 link_state.speed, link_state.duplex);
++
++		pl->mac_ops->mac_link_up(pl->config, pl->phydev,
++					 pl->cur_link_an_mode, pl->cur_interface,
++					 link_state.speed, link_state.duplex,
++					 !!(link_state.pause & MLO_PAUSE_TX),
++					 !!(link_state.pause & MLO_PAUSE_RX));
++
++	}
+ 
+ 	if (ndev)
+ 		netif_carrier_on(ndev);
+@@ -670,6 +728,13 @@ static void phylink_resolve(struct work_struct *w)
  			mac_config = link_state.link;
  			break;
  
@@ -94,7 +165,7 @@ index 6072e87..92141aa 100644
  		case MLO_AN_INBAND:
  			phylink_mac_pcs_get_state(pl, &link_state);
  
-@@ -1098,6 +1122,9 @@ int phylink_of_phy_connect(struct phylink *pl, struct device_node *dn,
+@@ -1098,6 +1163,9 @@ int phylink_of_phy_connect(struct phylink *pl, struct device_node *dn,
  	if (!phy_node) {
  		if (pl->cfg_link_an_mode == MLO_AN_PHY)
  			return -ENODEV;
@@ -104,7 +175,7 @@ index 6072e87..92141aa 100644
  		return 0;
  	}
  
-@@ -1224,10 +1251,29 @@ void phylink_start(struct phylink *pl)
+@@ -1224,10 +1292,29 @@ void phylink_start(struct phylink *pl)
  			poll = true;
  	}
  
@@ -134,7 +205,7 @@ index 6072e87..92141aa 100644
  	case MLO_AN_INBAND:
  		poll |= pl->config->pcs_poll;
  		if (pl->pcs)
-@@ -1371,6 +1417,10 @@ int phylink_ethtool_ksettings_get(struct phylink *pl,
+@@ -1371,6 +1458,10 @@ int phylink_ethtool_ksettings_get(struct phylink *pl,
  		phylink_get_ksettings(&link_state, kset);
  		break;
  
@@ -145,7 +216,7 @@ index 6072e87..92141aa 100644
  	case MLO_AN_INBAND:
  		/* If there is a phy attached, then use the reported
  		 * settings from the phy with no modification.
-@@ -1459,6 +1509,13 @@ int phylink_ethtool_ksettings_set(struct phylink *pl,
+@@ -1459,6 +1550,13 @@ int phylink_ethtool_ksettings_set(struct phylink *pl,
  			return 0;
  		}
  
@@ -159,7 +230,7 @@ index 6072e87..92141aa 100644
  		config.speed = s->speed;
  		config.duplex = s->duplex;
  		break;
-@@ -1475,6 +1532,13 @@ int phylink_ethtool_ksettings_set(struct phylink *pl,
+@@ -1475,6 +1573,13 @@ int phylink_ethtool_ksettings_set(struct phylink *pl,
  			return 0;
  		}
  
@@ -173,7 +244,7 @@ index 6072e87..92141aa 100644
  		config.speed = SPEED_UNKNOWN;
  		config.duplex = DUPLEX_UNKNOWN;
  		break;
-@@ -1579,6 +1643,9 @@ int phylink_ethtool_set_pauseparam(struct phylink *pl,
+@@ -1579,6 +1684,9 @@ int phylink_ethtool_set_pauseparam(struct phylink *pl,
  	if (pl->cur_link_an_mode == MLO_AN_FIXED)
  		return -EOPNOTSUPP;
  
@@ -183,7 +254,7 @@ index 6072e87..92141aa 100644
  	if (!phylink_test(pl->supported, Pause) &&
  	    !phylink_test(pl->supported, Asym_Pause))
  		return -EOPNOTSUPP;
-@@ -1846,6 +1913,14 @@ static int phylink_mii_read(struct phylink *pl, unsigned int phy_id,
+@@ -1846,6 +1954,14 @@ static int phylink_mii_read(struct phylink *pl, unsigned int phy_id,
  		}
  		break;
  
@@ -198,7 +269,7 @@ index 6072e87..92141aa 100644
  	case MLO_AN_PHY:
  		return -EOPNOTSUPP;
  
-@@ -1867,6 +1942,9 @@ static int phylink_mii_write(struct phylink *pl, unsigned int phy_id,
+@@ -1867,6 +1983,9 @@ static int phylink_mii_write(struct phylink *pl, unsigned int phy_id,
  	case MLO_AN_FIXED:
  		break;
  
@@ -208,6 +279,18 @@ index 6072e87..92141aa 100644
  	case MLO_AN_PHY:
  		return -EOPNOTSUPP;
  
+diff --git a/include/linux/phylink.h b/include/linux/phylink.h
+index d81a714..0939557 100644
+--- a/include/linux/phylink.h
++++ b/include/linux/phylink.h
+@@ -20,6 +20,7 @@ enum {
+ 	MLO_AN_PHY = 0,	/* Conventional PHY */
+ 	MLO_AN_FIXED,	/* Fixed-link mode */
+ 	MLO_AN_INBAND,	/* In-band protocol */
++	MLO_AN_FIXED_PHY,/* Fixed-link mode with external phy*/
+ };
+ 
+ static inline bool phylink_autoneg_inband(unsigned int mode)
 -- 
 2.20.1
 
