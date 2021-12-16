@@ -316,6 +316,7 @@
 	mt7915@0,0 {
 		reg = <0x0000 0 0 0 0>;
 		mediatek,mtd-eeprom = <&emmc_factory 0x0>;
+		ieee80211-freq-limit = <2400000 5835000>;
 	};
 };
 
