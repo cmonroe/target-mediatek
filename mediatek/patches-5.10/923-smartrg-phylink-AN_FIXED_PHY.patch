@@ -294,3 +294,41 @@ index d81a714..0939557 100644
 -- 
 2.20.1
 
+From 9d9aaf07a853ac4c5b0b658c4546523f57c663b0 Mon Sep 17 00:00:00 2001
+From: Tim Hayes <tim.hayes@smartrg.com>
+Date: Wed, 5 Jan 2022 06:16:27 -0800
+Subject: [PATCH] OWRT-6281 _helper return and phylink_sfp_config return
+
+---
+ drivers/net/phy/phylink.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/drivers/net/phy/phylink.c b/drivers/net/phy/phylink.c
+index 37131c7..f7b0aca 100644
+--- a/drivers/net/phy/phylink.c
++++ b/drivers/net/phy/phylink.c
+@@ -2147,6 +2147,11 @@ static int phylink_sfp_config(struct phylink *pl, u8 mode,
+ 	bool changed;
+ 	int ret;
+ 
++	if (pl->cfg_link_an_mode == MLO_AN_FIXED) {
++		/* fixed link params already established */
++		return 0;
++	}
++
+ 	linkmode_copy(support, supported);
+ 
+ 	memset(&config, 0, sizeof(config));
+@@ -2364,6 +2369,9 @@ static const struct sfp_upstream_ops sfp_phylink_ops = {
+  */
+ void phylink_helper_basex_speed(struct phylink_link_state *state)
+ {
++	/* this function causes problems for fixed links and doesn't solve any know problems */
++	if (1) return;
++
+ 	if (phy_interface_mode_is_8023z(state->interface)) {
+ 		bool want_2500 = state->an_enabled ?
+ 			phylink_test(state->advertising, 2500baseX_Full) :
+-- 
+2.20.1
+
