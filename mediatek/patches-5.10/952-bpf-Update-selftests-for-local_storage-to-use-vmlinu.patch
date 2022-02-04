@@ -1,0 +1,59 @@
+From a367efa71b3f5a53281ca9772f8bf43166dfdf5f Mon Sep 17 00:00:00 2001
+From: KP Singh <kpsingh@google.com>
+Date: Fri, 6 Nov 2020 10:37:45 +0000
+Subject: [PATCH 02/13] bpf: Update selftests for local_storage to use
+ vmlinux.h
+
+With the fixing of BTF pruning of embedded types being fixed, the test
+can be simplified to use vmlinux.h
+
+Signed-off-by: KP Singh <kpsingh@google.com>
+Signed-off-by: Alexei Starovoitov <ast@kernel.org>
+Acked-by: Song Liu <songliubraving@fb.com>
+Link: https://lore.kernel.org/bpf/20201106103747.2780972-8-kpsingh@chromium.org
+---
+ .../selftests/bpf/progs/local_storage.c       | 20 +------------------
+ 1 file changed, 1 insertion(+), 19 deletions(-)
+
+diff --git a/tools/testing/selftests/bpf/progs/local_storage.c b/tools/testing/selftests/bpf/progs/local_storage.c
+index 09529e33be98..ef3822bc7542 100644
+--- a/tools/testing/selftests/bpf/progs/local_storage.c
++++ b/tools/testing/selftests/bpf/progs/local_storage.c
+@@ -4,9 +4,8 @@
+  * Copyright 2020 Google LLC.
+  */
+ 
++#include "vmlinux.h"
+ #include <errno.h>
+-#include <linux/bpf.h>
+-#include <stdbool.h>
+ #include <bpf/bpf_helpers.h>
+ #include <bpf/bpf_tracing.h>
+ 
+@@ -36,23 +35,6 @@ struct {
+ 	__type(value, struct dummy_storage);
+ } sk_storage_map SEC(".maps");
+ 
+-/* TODO Use vmlinux.h once BTF pruning for embedded types is fixed.
+- */
+-struct sock {} __attribute__((preserve_access_index));
+-struct sockaddr {} __attribute__((preserve_access_index));
+-struct socket {
+-	struct sock *sk;
+-} __attribute__((preserve_access_index));
+-
+-struct inode {} __attribute__((preserve_access_index));
+-struct dentry {
+-	struct inode *d_inode;
+-} __attribute__((preserve_access_index));
+-struct file {
+-	struct inode *f_inode;
+-} __attribute__((preserve_access_index));
+-
+-
+ SEC("lsm/inode_unlink")
+ int BPF_PROG(unlink_hook, struct inode *dir, struct dentry *victim)
+ {
+-- 
+2.25.1
+

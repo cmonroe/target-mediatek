@@ -1,0 +1,29 @@
+From 666475ccbf1dc99c1e61e47975d5fbf86d6236aa Mon Sep 17 00:00:00 2001
+From: Wang Qing <wangqing@vivo.com>
+Date: Sat, 7 Nov 2020 16:10:50 +0800
+Subject: [PATCH 07/13] bpf, btf: Remove the duplicate btf_ids.h include
+
+Remove duplicate btf_ids.h header which is included twice.
+
+Signed-off-by: Wang Qing <wangqing@vivo.com>
+Signed-off-by: Daniel Borkmann <daniel@iogearbox.net>
+Link: https://lore.kernel.org/bpf/1604736650-11197-1-git-send-email-wangqing@vivo.com
+---
+ kernel/bpf/btf.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/kernel/bpf/btf.c b/kernel/bpf/btf.c
+index ed7d02e8bc93..6324de8c59f7 100644
+--- a/kernel/bpf/btf.c
++++ b/kernel/bpf/btf.c
+@@ -22,7 +22,6 @@
+ #include <linux/skmsg.h>
+ #include <linux/perf_event.h>
+ #include <linux/bsearch.h>
+-#include <linux/btf_ids.h>
+ #include <net/sock.h>
+ 
+ /* BTF (BPF Type Format) is the meta data format which describes
+-- 
+2.25.1
+

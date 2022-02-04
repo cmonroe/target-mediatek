@@ -1,0 +1,142 @@
+From cecaf4a0f2dcbd7e76156f6d63748b84c176b95b Mon Sep 17 00:00:00 2001
+From: Andrii Nakryiko <andrii@kernel.org>
+Date: Mon, 9 Nov 2020 17:19:32 -0800
+Subject: [PATCH 13/13] tools/bpftool: Add support for in-kernel and named BTF
+ in `btf show`
+
+Display vmlinux BTF name and kernel module names when listing available BTFs
+on the system.
+
+In human-readable output mode, module BTFs are reported with "name
+[module-name]", while vmlinux BTF will be reported as "name [vmlinux]".
+Square brackets are added by bpftool and follow kernel convention when
+displaying modules in human-readable text outputs.
+
+[vmuser@archvm bpf]$ sudo ../../../bpf/bpftool/bpftool btf s
+1: name [vmlinux]  size 4082281B
+6: size 2365B  prog_ids 8,6  map_ids 3
+7: name [button]  size 46895B
+8: name [pcspkr]  size 42328B
+9: name [serio_raw]  size 39375B
+10: name [floppy]  size 57185B
+11: name [i2c_core]  size 76186B
+12: name [crc32c_intel]  size 16036B
+13: name [i2c_piix4]  size 50497B
+14: name [irqbypass]  size 14124B
+15: name [kvm]  size 197985B
+16: name [kvm_intel]  size 123564B
+17: name [cryptd]  size 42466B
+18: name [crypto_simd]  size 17187B
+19: name [glue_helper]  size 39205B
+20: name [aesni_intel]  size 41034B
+25: size 36150B
+        pids bpftool(2519)
+
+In JSON mode, two fields (boolean "kernel" and string "name") are reported for
+each BTF object. vmlinux BTF is reported with name "vmlinux" (kernel itself
+returns and empty name for vmlinux BTF).
+
+[vmuser@archvm bpf]$ sudo ../../../bpf/bpftool/bpftool btf s -jp
+[{
+        "id": 1,
+        "size": 4082281,
+        "prog_ids": [],
+        "map_ids": [],
+        "kernel": true,
+        "name": "vmlinux"
+    },{
+        "id": 6,
+        "size": 2365,
+        "prog_ids": [8,6
+        ],
+        "map_ids": [3
+        ],
+        "kernel": false
+    },{
+        "id": 7,
+        "size": 46895,
+        "prog_ids": [],
+        "map_ids": [],
+        "kernel": true,
+        "name": "button"
+    },{
+
+...
+
+Signed-off-by: Andrii Nakryiko <andrii@kernel.org>
+Signed-off-by: Alexei Starovoitov <ast@kernel.org>
+Tested-by: Alan Maguire <alan.maguire@oracle.com>
+Link: https://lore.kernel.org/bpf/20201110011932.3201430-6-andrii@kernel.org
+---
+ tools/bpf/bpftool/btf.c | 28 +++++++++++++++++++++++++++-
+ 1 file changed, 27 insertions(+), 1 deletion(-)
+
+--- a/tools/bpf/bpftool/btf.c
++++ b/tools/bpf/bpftool/btf.c
+@@ -743,9 +743,14 @@ show_btf_plain(struct bpf_btf_info *info
+ 	       struct btf_attach_table *btf_map_table)
+ {
+ 	struct btf_attach_point *obj;
++	const char *name = u64_to_ptr(info->name);
+ 	int n;
+ 
+ 	printf("%u: ", info->id);
++	if (info->kernel_btf)
++		printf("name [%s]  ", name);
++	else if (name && name[0])
++		printf("name %s  ", name);
+ 	printf("size %uB", info->btf_size);
+ 
+ 	n = 0;
+@@ -772,6 +777,7 @@ show_btf_json(struct bpf_btf_info *info,
+ 	      struct btf_attach_table *btf_map_table)
+ {
+ 	struct btf_attach_point *obj;
++	const char *name = u64_to_ptr(info->name);
+ 
+ 	jsonw_start_object(json_wtr);	/* btf object */
+ 	jsonw_uint_field(json_wtr, "id", info->id);
+@@ -797,6 +803,11 @@ show_btf_json(struct bpf_btf_info *info,
+ 
+ 	emit_obj_refs_json(&refs_table, info->id, json_wtr); /* pids */
+ 
++	jsonw_bool_field(json_wtr, "kernel", info->kernel_btf);
++
++	if (name && name[0])
++		jsonw_string_field(json_wtr, "name", name);
++
+ 	jsonw_end_object(json_wtr);	/* btf object */
+ }
+ 
+@@ -804,15 +815,30 @@ static int
+ show_btf(int fd, struct btf_attach_table *btf_prog_table,
+ 	 struct btf_attach_table *btf_map_table)
+ {
+-	struct bpf_btf_info info = {};
++	struct bpf_btf_info info;
+ 	__u32 len = sizeof(info);
++	char name[64];
+ 	int err;
+ 
++	memset(&info, 0, sizeof(info));
+ 	err = bpf_obj_get_info_by_fd(fd, &info, &len);
+ 	if (err) {
+ 		p_err("can't get BTF object info: %s", strerror(errno));
+ 		return -1;
+ 	}
++	/* if kernel support emitting BTF object name, pass name pointer */
++	if (info.name_len) {
++		memset(&info, 0, sizeof(info));
++		info.name_len = sizeof(name);
++		info.name = ptr_to_u64(name);
++		len = sizeof(info);
++
++		err = bpf_obj_get_info_by_fd(fd, &info, &len);
++		if (err) {
++			p_err("can't get BTF object info: %s", strerror(errno));
++			return -1;
++		}
++	}
+ 
+ 	if (json_output)
+ 		show_btf_json(&info, fd, btf_prog_table, btf_map_table);
