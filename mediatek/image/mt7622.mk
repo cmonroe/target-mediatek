@@ -3,7 +3,7 @@ DTS_DIR := $(DTS_DIR)/mediatek
 ifdef CONFIG_LINUX_5_4
   KERNEL_LOADADDR := 0x44080000
 else
-  KERNEL_LOADADDR := 0x48000000
+  KERNEL_LOADADDR := 0x44000000
 endif
 
 define Image/Prepare
@@ -48,10 +48,10 @@ define Build/mt7622-gpt
 				-N recovery	-r	-p 32M@6M \
 		$(if $(findstring sdmmc,$1), \
 				-N install	-r	-p 7M@38M \
-			-t 0x2e -N production		-p 211M@45M \
+			-t 0x2e -N production		-p $(CONFIG_TARGET_ROOTFS_PARTSIZE)M@45M \
 		) \
 		$(if $(findstring emmc,$1), \
-			-t 0x2e -N production		-p 980M@40M \
+			-t 0x2e -N production		-p $(CONFIG_TARGET_ROOTFS_PARTSIZE)M@40M \
 		)
 	cat $@.tmp >> $@
 	rm $@.tmp
@@ -190,6 +190,7 @@ define Device/mediatek_mt7622-rfb1-ubi
   DEVICE_DTS := mt7622-rfb1-ubi
   DEVICE_DTS_DIR := ../dts
   DEVICE_PACKAGES := kmod-ata-ahci-mtk kmod-btmtkuart kmod-usb3
+  BOARD_NAME := mediatek,mt7622-rfb1-ubi
   UBINIZE_OPTS := -E 5
   BLOCKSIZE := 128k
   PAGESIZE := 2048
@@ -201,6 +202,16 @@ define Device/mediatek_mt7622-rfb1-ubi
   IMAGE/sysupgrade.bin := sysupgrade-tar | append-metadata
 endef
 TARGET_DEVICES += mediatek_mt7622-rfb1-ubi
+
+define Device/totolink_a8000ru
+  DEVICE_VENDOR := TOTOLINK
+  DEVICE_MODEL := A8000RU
+  DEVICE_DTS := mt7622-totolink-a8000ru
+  DEVICE_DTS_DIR := ../dts
+  DEVICE_PACKAGES := swconfig
+  IMAGE/sysupgrade.bin := sysupgrade-tar | append-metadata
+endef
+TARGET_DEVICES += totolink_a8000ru
 
 define Device/ubnt_unifi-6-lr
   DEVICE_VENDOR := Ubiquiti
