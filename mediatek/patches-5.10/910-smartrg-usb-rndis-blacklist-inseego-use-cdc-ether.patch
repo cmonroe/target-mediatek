@@ -1,0 +1,22 @@
+---
+ drivers/net/usb/rndis_host.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
+
+Index: b/drivers/net/usb/rndis_host.c
+===================================================================
+--- a/drivers/net/usb/rndis_host.c
++++ b/drivers/net/usb/rndis_host.c
+@@ -603,6 +603,13 @@ static const struct driver_info	rndis_po
+ /*-------------------------------------------------------------------------*/
+ 
+ static const struct usb_device_id	products [] = {
++/* BLACKLIST !! */
++{
++	/* AT&T USB800 aka Inseego/Novatel MC800 */
++	USB_DEVICE(0x1410, 0xb020),
++	.driver_info = 0,
++},
++/* WHITELIST!!! */
+ {
+ 	/* 2Wire HomePortal 1000SW */
+ 	USB_DEVICE_AND_INTERFACE_INFO(0x1630, 0x0042,
