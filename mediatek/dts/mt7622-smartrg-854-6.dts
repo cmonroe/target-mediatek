@@ -89,7 +89,7 @@
 		wan {
 			label = "wan";
 			gpios = <&pio 98 GPIO_ACTIVE_LOW>;
-			linux,default-trigger = "mt7530-0:05:link";
+			linux,default-trigger = "netdev";
 		};
 
 		wps {
