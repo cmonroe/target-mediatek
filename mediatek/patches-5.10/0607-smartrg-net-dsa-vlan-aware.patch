@@ -1,0 +1,465 @@
+From 6ee7d67355348a0defe25686a0903a768f9da9ef Mon Sep 17 00:00:00 2001
+From: Tim Hayes <tim.hayes@smartrg.com>
+Date: Tue, 22 Mar 2022 13:31:39 -0700
+Subject: [PATCH] OWRT-6281 vlan aware plus no mc add and no set ageing apis
+
+---
+ drivers/net/dsa/mt7530.c | 132 ++++++++++++++++++++++++++++-----------
+ net/dsa/tag_mtk.c        |  86 +++++++++++++++++++++++++
+ 2 files changed, 180 insertions(+), 38 deletions(-)
+
+diff --git a/drivers/net/dsa/mt7530.c b/drivers/net/dsa/mt7530.c
+index 27579de..a43416d 100644
+--- a/drivers/net/dsa/mt7530.c
++++ b/drivers/net/dsa/mt7530.c
+@@ -1100,6 +1100,12 @@ static void mt7530_setup_port5(struct dsa_switch *ds, phy_interface_t interface)
+ 	mutex_unlock(&priv->reg_mutex);
+ }
+ 
++static int
++mt7530_port_vlan_filtering(struct dsa_switch *ds, int port,
++			   bool vlan_filtering,
++			   struct switchdev_trans *trans);
++
++
+ static int
+ mt753x_cpu_port_enable(struct dsa_switch *ds, int port)
+ {
+@@ -1117,6 +1123,9 @@ mt753x_cpu_port_enable(struct dsa_switch *ds, int port)
+ 	mt7530_write(priv, MT7530_PVC_P(port),
+ 		     PORT_SPEC_TAG);
+ 
++	/* Unknown multicast frame forwarding to the cpu port */
++	mt7530_rmw(priv, MT7530_MFC, UNM_FFP_MASK, UNM_FFP(BIT(port)));
++
+ 	/* Set CPU port number */
+ 	if (priv->id == ID_MT7621)
+ 		mt7530_rmw(priv, MT7530_MFC, CPU_MASK, CPU_EN | CPU_PORT(port));
+@@ -1127,10 +1136,8 @@ mt753x_cpu_port_enable(struct dsa_switch *ds, int port)
+ 	mt7530_write(priv, MT7530_PCR_P(port),
+ 		     PCR_MATRIX(dsa_user_ports(priv->ds)));
+ 
+-	/* Set to fallback mode for independent VLAN learning */
+-	mt7530_rmw(priv, MT7530_PCR_P(port), PCR_PORT_VLAN_MASK,
+-		   MT7530_PORT_FALLBACK_MODE);
+-
++	mt7530_port_vlan_filtering(ds,port,1,NULL);
++	pr_debug("%s DSA port %d \n",__FUNCTION__,port);
+ 	return 0;
+ }
+ 
+@@ -1151,8 +1158,10 @@ mt7530_port_enable(struct dsa_switch *ds, int port,
+ 	mt7530_rmw(priv, MT7530_PCR_P(port), PCR_MATRIX_MASK,
+ 		   priv->ports[port].pm);
+ 	mt7530_clear(priv, MT7530_PMCR_P(port), PMCR_LINK_SETTINGS_MASK);
++	mt7530_port_vlan_filtering(ds,port,1,NULL);
+ 
+ 	mutex_unlock(&priv->reg_mutex);
++	pr_debug("%s DSA port %d \n",__FUNCTION__,port);
+ 
+ 	return 0;
+ }
+@@ -1306,10 +1315,13 @@ mt7530_port_bridge_join(struct dsa_switch *ds, int port,
+ 	mt7530_clear(priv, MT7530_PSC_P(port), SA_DIS);
+ 
+ 	/* Set to fallback mode for independent VLAN learning */
++#if 0
+ 	mt7530_rmw(priv, MT7530_PCR_P(port), PCR_PORT_VLAN_MASK,
+ 		   MT7530_PORT_FALLBACK_MODE);
++#endif
+ 
+ 	mutex_unlock(&priv->reg_mutex);
++	pr_debug("%s DSA bridge %s port %d port_bitmap 0x%x 0x%x\n",__FUNCTION__,bridge->name,port,port_bitmap,priv->ports[port].pm);
+ 
+ 	return 0;
+ }
+@@ -1353,6 +1365,7 @@ mt7530_port_set_vlan_unaware(struct dsa_switch *ds, int port)
+ 		mt7530_write(priv, MT7530_PVC_P(MT7530_CPU_PORT), PORT_SPEC_TAG
+ 			     | PVC_EG_TAG(MT7530_VLAN_EG_CONSISTENT));
+ 	}
++	pr_debug("%s DSA port %d \n",__FUNCTION__,port);
+ }
+ 
+ static void
+@@ -1361,14 +1374,15 @@ mt7530_port_set_vlan_aware(struct dsa_switch *ds, int port)
+ 	struct mt7530_priv *priv = ds->priv;
+ 
+ 	/* Trapped into security mode allows packet forwarding through VLAN
+-	 * table lookup.
++	 * table lookup. CPU port is set to fallback mode to let untagged
++	 * frames pass through.
+ 	 */
+-	if (dsa_is_user_port(ds, port)) {
++	if (dsa_is_cpu_port(ds, port))
++		mt7530_rmw(priv, MT7530_PCR_P(port), PCR_PORT_VLAN_MASK,
++			   MT7530_PORT_FALLBACK_MODE);
++	else
+ 		mt7530_rmw(priv, MT7530_PCR_P(port), PCR_PORT_VLAN_MASK,
+ 			   MT7530_PORT_SECURITY_MODE);
+-		mt7530_rmw(priv, MT7530_PPBV1_P(port), G0_PORT_VID_MASK,
+-			   G0_PORT_VID(priv->ports[port].pvid));
+-	}
+ 
+ 	/* Set the port as a user port which is to be able to recognize VID
+ 	 * from incoming packets before fetching entry within the VLAN table.
+@@ -1376,6 +1390,8 @@ mt7530_port_set_vlan_aware(struct dsa_switch *ds, int port)
+ 	mt7530_rmw(priv, MT7530_PVC_P(port), VLAN_ATTR_MASK | PVC_EG_TAG_MASK,
+ 		   VLAN_ATTR(MT7530_VLAN_USER) |
+ 		   PVC_EG_TAG(MT7530_VLAN_EG_DISABLED));
++
++	pr_debug("%s DSA port %d \n",__FUNCTION__,port);
+ }
+ 
+ static void
+@@ -1391,8 +1407,11 @@ mt7530_port_bridge_leave(struct dsa_switch *ds, int port,
+ 		/* Remove this port from the port matrix of the other ports
+ 		 * in the same bridge. If the port is disabled, port matrix
+ 		 * is kept and not being setup until the port becomes enabled.
++		 * And the other port's port matrix cannot be broken when the
++		 * other port is still a VLAN-aware port.
+ 		 */
+-		if (dsa_is_user_port(ds, i) && i != port) {
++		if (dsa_is_user_port(ds, i) && i != port &&
++		   !dsa_port_is_vlan_filtering(dsa_to_port(ds, i))) {
+ 			if (dsa_to_port(ds, i)->bridge_dev != bridge)
+ 				continue;
+ 			if (priv->ports[i].enable)
+@@ -1410,16 +1429,8 @@ mt7530_port_bridge_leave(struct dsa_switch *ds, int port,
+ 			   PCR_MATRIX(BIT(MT7530_CPU_PORT)));
+ 	priv->ports[port].pm = PCR_MATRIX(BIT(MT7530_CPU_PORT));
+ 
+-	mt7530_set(priv, MT7530_PSC_P(port), SA_DIS);
+-
+-	/* When a port is removed from the bridge, the port would be set up
+-	 * back to the default as is at initial boot which is a VLAN-unaware
+-	 * port.
+-	 */
+-	mt7530_rmw(priv, MT7530_PCR_P(port), PCR_PORT_VLAN_MASK,
+-		   MT7530_PORT_MATRIX_MODE);
+-
+ 	mutex_unlock(&priv->reg_mutex);
++	pr_debug("%s DSA bridge %s port %d port_bitmap 0x%x\n",__FUNCTION__,bridge->name,port,priv->ports[port].pm);
+ }
+ 
+ static int
+@@ -1435,6 +1446,8 @@ mt7530_port_fdb_add(struct dsa_switch *ds, int port,
+ 	ret = mt7530_fdb_cmd(priv, MT7530_FDB_WRITE, NULL);
+ 	mutex_unlock(&priv->reg_mutex);
+ 
++	pr_debug("%s DSA port %d vid %d addr 0x%x 0x%x 0x%x \n",__FUNCTION__,port,vid,addr[0],addr[1],addr[2]);
++
+ 	return ret;
+ }
+ 
+@@ -1473,6 +1486,27 @@ mt7530_port_fdb_dump(struct dsa_switch *ds, int port,
+ 	do {
+ 		if (rsp & ATC_SRCH_HIT) {
+ 			mt7530_fdb_read(priv, &_fdb);
++			if(_fdb.port_mask & BIT(MT7530_CPU_PORT)) {
++				pr_debug("%s DSA CPU port %d mask 0x%x vid %d age %d %02x:%02x:%02x:%02x:%02x:%02x\n",__FUNCTION__,
++					MT7530_CPU_PORT,_fdb.port_mask,_fdb.vid,_fdb.aging,
++					_fdb.mac[0],
++					_fdb.mac[1],
++					_fdb.mac[2],
++					_fdb.mac[3],
++					_fdb.mac[4],
++					_fdb.mac[5]);
++			} else {
++				if(_fdb.port_mask & BIT(port)) {
++					pr_debug("%s DSA NON-CPU port %d mask 0x%x vid %d age %d %02x:%02x:%02x:%02x:%02x:%02x\n",__FUNCTION__,
++					port,_fdb.port_mask,_fdb.vid,_fdb.aging,
++					_fdb.mac[0],
++					_fdb.mac[1],
++					_fdb.mac[2],
++					_fdb.mac[3],
++					_fdb.mac[4],
++					_fdb.mac[5]);
++				}
++			}
+ 			if (_fdb.port_mask & BIT(port)) {
+ 				ret = cb(_fdb.mac, _fdb.vid, _fdb.noarp,
+ 					 data);
+@@ -1582,6 +1616,7 @@ mt7530_port_vlan_filtering(struct dsa_switch *ds, int port,
+ 		return 0;
+ 
+ 	if (vlan_filtering) {
++		pr_debug("%s:%d DSA TMH vlan_filtering %d\n",__FUNCTION__,__LINE__,vlan_filtering);
+ 		/* The port is being kept as VLAN-unaware port when bridge is
+ 		 * set up with vlan_filtering not being set, Otherwise, the
+ 		 * port and the corresponding CPU port is required the setup
+@@ -1590,6 +1625,7 @@ mt7530_port_vlan_filtering(struct dsa_switch *ds, int port,
+ 		mt7530_port_set_vlan_aware(ds, port);
+ 		mt7530_port_set_vlan_aware(ds, MT7530_CPU_PORT);
+ 	} else {
++		pr_debug("%s:%d DSA TMH NOT vlan_filtering %d\n",__FUNCTION__,__LINE__,vlan_filtering);
+ 		mt7530_port_set_vlan_unaware(ds, port);
+ 	}
+ 
+@@ -1618,8 +1654,7 @@ mt7530_hw_vlan_add(struct mt7530_priv *priv,
+ 	/* Validate the entry with independent learning, create egress tag per
+ 	 * VLAN and joining the port as one of the port members.
+ 	 */
+-	val = IVL_MAC | VTAG_EN | PORT_MEM(new_members) | FID(FID_BRIDGED) |
+-	      VLAN_VALID;
++	val = IVL_MAC | VTAG_EN | PORT_MEM(new_members) | VLAN_VALID;
+ 	mt7530_write(priv, MT7530_VAWD1, val);
+ 
+ 	/* Decide whether adding tag or not for those outgoing packets from the
+@@ -1694,7 +1729,7 @@ mt7530_hw_vlan_update(struct mt7530_priv *priv, u16 vid,
+ }
+ 
+ static void
+-mt7530_port_vlan_add(struct dsa_switch *ds, int port,
++_mt7530_port_vlan_add(struct dsa_switch *ds, int port,
+ 		     const struct switchdev_obj_port_vlan *vlan)
+ {
+ 	bool untagged = vlan->flags & BRIDGE_VLAN_INFO_UNTAGGED;
+@@ -1712,16 +1747,32 @@ mt7530_port_vlan_add(struct dsa_switch *ds, int port,
+ 	}
+ 
+ 	if (pvid) {
++		mt7530_rmw(priv, MT7530_PPBV1_P(port), G0_PORT_VID_MASK,
++			   G0_PORT_VID(vlan->vid_end));
+ 		priv->ports[port].pvid = vlan->vid_end;
+-
+-		/* Only configure PVID if VLAN filtering is enabled */
+-		if (dsa_port_is_vlan_filtering(dsa_to_port(ds, port)))
+-			mt7530_rmw(priv, MT7530_PPBV1_P(port),
+-				   G0_PORT_VID_MASK,
+-				   G0_PORT_VID(vlan->vid_end));
+ 	}
+ 
+ 	mutex_unlock(&priv->reg_mutex);
++	pr_debug("%s DSA port %d vlan %d %d pvid %d untagged %d pvid %d\n",__FUNCTION__,port,vlan->vid_begin,vlan->vid_end,pvid,untagged,priv->ports[port].pvid);
++}
++
++static void
++mt7530_port_vlan_add(struct dsa_switch *ds, int port,
++		     const struct switchdev_obj_port_vlan *vlan)
++{
++
++	/* vlan for wan is never initialized to 1 */
++	if (vlan->vid_begin==0) {
++		struct switchdev_obj_port_vlan _vlan={0};
++		struct switchdev_obj_port_vlan *vlan=&_vlan;
++		vlan->flags |= BRIDGE_VLAN_INFO_UNTAGGED;
++		vlan->flags |= BRIDGE_VLAN_INFO_PVID;
++		vlan->vid_begin=1;
++		vlan->vid_end=1;
++		_mt7530_port_vlan_add(ds,port,vlan);
++	} else {
++		_mt7530_port_vlan_add(ds,port,vlan);
++	}
+ }
+ 
+ static int
+@@ -1751,6 +1802,7 @@ mt7530_port_vlan_del(struct dsa_switch *ds, int port,
+ 
+ 
+ 	mutex_unlock(&priv->reg_mutex);
++	pr_debug("%s DSA port %d vlan %d %d pvid %d \n",__FUNCTION__,port,vlan->vid_begin,vlan->vid_end,priv->ports[port].pvid);
+ 
+ 	return 0;
+ }
+@@ -2240,7 +2292,8 @@ mt7530_setup(struct dsa_switch *ds)
+ 			   PCR_MATRIX_CLR);
+ 
+ 		/* Disable learning by default on all ports */
+-		mt7530_set(priv, MT7530_PSC_P(i), SA_DIS);
++//		mt7530_set(priv, MT7530_PSC_P(i), SA_DIS);
++		mt7530_clear(priv, MT7530_PSC_P(i), SA_DIS);
+ 
+ 		if (dsa_is_cpu_port(ds, i)) {
+ 			ret = mt753x_cpu_port_enable(ds, i);
+@@ -2324,7 +2377,6 @@ mt7531_setup(struct dsa_switch *ds)
+ 	struct mt7530_dummy_poll p;
+ 	u32 val, id;
+ 	int ret, i;
+-
+ 	/* Reset whole chip through gpio pin or memory-mapped registers for
+ 	 * different type of hardware
+ 	 */
+@@ -2413,8 +2465,9 @@ mt7531_setup(struct dsa_switch *ds)
+ 			   PCR_MATRIX_CLR);
+ 
+ 		/* Disable learning by default on all ports */
+-		mt7530_set(priv, MT7530_PSC_P(i), SA_DIS);
++//		mt7530_set(priv, MT7530_PSC_P(i), SA_DIS);
+ 
++		mt7530_clear(priv, MT7530_PSC_P(i), SA_DIS);
+ 		mt7530_set(priv, MT7531_DBG_CNT(i), MT7531_DIS_CLR);
+ 
+ 		if (dsa_is_cpu_port(ds, i)) {
+@@ -2425,8 +2478,8 @@ mt7531_setup(struct dsa_switch *ds)
+ 			mt7530_port_disable(ds, i);
+ 
+ 			/* Set default PVID to 0 on all user ports */
+-			mt7530_rmw(priv, MT7530_PPBV1_P(i), G0_PORT_VID_MASK,
+-				   G0_PORT_VID_DEF);
++//			mt7530_rmw(priv, MT7530_PPBV1_P(i), G0_PORT_VID_MASK,
++//				   G0_PORT_VID_DEF);
+ 		}
+ 
+ 		/* Enable consistent egress tag */
+@@ -2435,7 +2488,8 @@ mt7531_setup(struct dsa_switch *ds)
+ 	}
+ 
+ 	ds->configure_vlan_while_not_filtering = true;
+-	ds->assisted_learning_on_cpu_port = true;
++//	ds->assisted_learning_on_cpu_port = true;
++	ds->assisted_learning_on_cpu_port = false;
+ 	ds->mtu_enforcement_ingress = true;
+ 
+ 	/* Flush the FDB table */
+@@ -3182,7 +3236,7 @@ static const struct dsa_switch_ops mt7530_switch_ops = {
+ 	.get_ethtool_stats	= mt7530_get_ethtool_stats,
+ 	.get_dev_stats	= mt7530_get_dev_stats,
+ 	.get_sset_count		= mt7530_get_sset_count,
+-	.set_ageing_time	= mt7530_set_ageing_time,
++//	.set_ageing_time	= mt7530_set_ageing_time,
+ 	.port_enable		= mt7530_port_enable,
+ 	.port_disable		= mt7530_port_disable,
+ 	.port_change_mtu	= mt7530_port_change_mtu,
+@@ -3194,9 +3248,9 @@ static const struct dsa_switch_ops mt7530_switch_ops = {
+ 	.port_fdb_add		= mt7530_port_fdb_add,
+ 	.port_fdb_del		= mt7530_port_fdb_del,
+ 	.port_fdb_dump		= mt7530_port_fdb_dump,
+-	.port_mdb_prepare	= mt7530_port_mdb_prepare,
+-	.port_mdb_add		= mt7530_port_mdb_add,
+-	.port_mdb_del		= mt7530_port_mdb_del,
++//	.port_mdb_prepare	= mt7530_port_mdb_prepare,
++//	.port_mdb_add		= mt7530_port_mdb_add,
++//	.port_mdb_del		= mt7530_port_mdb_del,
+ 	.port_vlan_filtering	= mt7530_port_vlan_filtering,
+ 	.port_vlan_prepare	= mt7530_port_vlan_prepare,
+ 	.port_vlan_add		= mt7530_port_vlan_add,
+@@ -3429,6 +3483,8 @@ mt7530_probe(struct mdio_device *mdiodev)
+ 	regdev=priv;
+ 	}
+ 
++  	priv->ds->vlan_filtering_is_global=true; // we are always vlan aware
++	pr_debug("%s DSA hw_vlan_add global vlan filtering set\n",__FUNCTION__);
+ 	return dsa_register_switch(priv->ds);
+ }
+ 
+diff --git a/net/dsa/tag_mtk.c b/net/dsa/tag_mtk.c
+index 92ab21d..a69ad0d 100644
+--- a/net/dsa/tag_mtk.c
++++ b/net/dsa/tag_mtk.c
+@@ -24,6 +24,10 @@ static struct sk_buff *mtk_tag_xmit(struct sk_buff *skb,
+ 	struct dsa_port *dp = dsa_slave_to_port(dev);
+ 	u8 xmit_tpid;
+ 	u8 *mtk_tag;
++	unsigned char *dest = eth_hdr(skb)->h_dest;
++
++	bool is_multicast_skb = is_multicast_ether_addr(dest) &&
++				!is_broadcast_ether_addr(dest);
+ 
+ 	/* Build the special tag after the MAC Source Address. If VLAN header
+ 	 * is present, it's required that VLAN header and special tag is
+@@ -52,6 +56,11 @@ static struct sk_buff *mtk_tag_xmit(struct sk_buff *skb,
+ 	mtk_tag[0] = xmit_tpid;
+ 	mtk_tag[1] = (1 << dp->index) & MTK_HDR_XMIT_DP_BIT_MASK;
+ 
++	/* Disable SA learning for multicast frames */
++	if (unlikely(is_multicast_skb)) {
++		mtk_tag[1] |= MTK_HDR_XMIT_SA_DIS;
++	}
++
+ 	/* Tag control information is kept for 802.1Q */
+ 	if (xmit_tpid == MTK_HDR_XMIT_UNTAGGED) {
+ 		mtk_tag[2] = 0;
+@@ -61,6 +70,7 @@ static struct sk_buff *mtk_tag_xmit(struct sk_buff *skb,
+ 	return skb;
+ }
+ 
++#if 0
+ static struct sk_buff *mtk_tag_rcv(struct sk_buff *skb, struct net_device *dev,
+ 				   struct packet_type *pt)
+ {
+@@ -96,6 +106,82 @@ static struct sk_buff *mtk_tag_rcv(struct sk_buff *skb, struct net_device *dev,
+ 
+ 	return skb;
+ }
++#endif
++
++static struct sk_buff *mtk_tag_rcv(struct sk_buff *skb, struct net_device *dev,
++				   struct packet_type *pt)
++{
++	u16 hdr;
++	int port;
++	__be16		h_vlan_proto;
++  	__be16		h_vlan_TCI;
++	__be16 *phdr;
++	unsigned char *dest = eth_hdr(skb)->h_dest;
++	bool is_multicast_skb = is_multicast_ether_addr(dest) &&
++				!is_broadcast_ether_addr(dest);
++
++	if (unlikely(!pskb_may_pull(skb, MTK_HDR_LEN)))
++		return NULL;
++
++	/* The MTK header is added by the switch between src addr
++	 * and ethertype at this point, skb->data points to 2 bytes
++	 * after src addr so header should be 2 bytes right before.
++	 */
++	phdr = (__be16 *)(skb->data - 2);
++	hdr = ntohs(*phdr);
++	/* Get source port information */
++	port = (hdr & MTK_HDR_RECV_SOURCE_PORT_MASK);
++
++	phdr = (__be16 *)(skb->data + 2);
++	h_vlan_proto = ntohs(*phdr);
++	phdr = (__be16 *)(skb->data + 4);
++	h_vlan_TCI = ntohs(*phdr);
++	h_vlan_TCI &= VLAN_VID_MASK;
++
++	skb->dev = dsa_master_find_slave(dev, 0, port);
++	if (!skb->dev)
++		return NULL;
++
++
++	if ((h_vlan_proto==ETH_P_8021Q) && (h_vlan_TCI==1)) {
++		/* default pvid case remove vlan tag and remove MTK tag and recalculate checksum. */
++		skb_pull_rcsum(skb, MTK_HDR_LEN+VLAN_HLEN);
++
++		memmove(skb->data - ETH_HLEN,
++			skb->data - ETH_HLEN - MTK_HDR_LEN - VLAN_HLEN,
++			2 * ETH_ALEN);
++	} else {
++		u16 pvid=0;
++		int res=br_vlan_get_pvid_rcu(skb->dev,&pvid);
++
++		if ( (res==0) && ((h_vlan_proto==ETH_P_8021Q) && (h_vlan_TCI==pvid)) ) {
++
++			/* per bridge pvid case remove vlan tag and remove MTK tag and recalculate checksum. */
++
++			/* Remove MTK tag and recalculate checksum. */
++			skb_pull_rcsum(skb, MTK_HDR_LEN+VLAN_HLEN);
++
++			memmove(skb->data - ETH_HLEN,
++				skb->data - ETH_HLEN - MTK_HDR_LEN - VLAN_HLEN,
++				2 * ETH_ALEN);
++
++		} else {
++
++			/* no vlan tag or not a pvid case remove MTK tag and recalculate checksum. */
++
++			/* Remove MTK tag and recalculate checksum. */
++			skb_pull_rcsum(skb, MTK_HDR_LEN);
++
++			memmove(skb->data - ETH_HLEN,
++				skb->data - ETH_HLEN - MTK_HDR_LEN,
++				2 * ETH_ALEN);
++		}
++	}
++
++	dsa_default_offload_fwd_mark(skb);
++
++	return skb;
++}
+ 
+ static const struct dsa_device_ops mtk_netdev_ops = {
+ 	.name		= "mtk",
+-- 
+2.30.2
+
