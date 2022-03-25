@@ -1,7 +1,7 @@
-Index: linux-5.10.52/arch/arm64/boot/dts/mediatek/mt7622-rfb1.dts
+Index: linux-5.10.100/arch/arm64/boot/dts/mediatek/mt7622-rfb1.dts
 ===================================================================
---- linux-5.10.52.orig/arch/arm64/boot/dts/mediatek/mt7622-rfb1.dts
-+++ linux-5.10.52/arch/arm64/boot/dts/mediatek/mt7622-rfb1.dts
+--- linux-5.10.100.orig/arch/arm64/boot/dts/mediatek/mt7622-rfb1.dts
++++ linux-5.10.100/arch/arm64/boot/dts/mediatek/mt7622-rfb1.dts
 @@ -58,6 +58,33 @@
  		reg = <0 0x40000000 0 0x40000000>;
  	};
@@ -64,14 +64,14 @@ Index: linux-5.10.52/arch/arm64/boot/dts/mediatek/mt7622-rfb1.dts
 +&slot0 {
 +	mt76@0,0 {
 +		reg = <0x0000 0 0 0 0>;
-+		mediatek,mtd-eeprom = <&factory 0x0000>;
++		/* mediatek,mtd-eeprom = <&factory 0x0000>; */
 +	};
 +};
 +
 +&slot1 {
 +	mt76@0,0 {
 +		reg = <0x0000 0 0 0 0>;
-+		mediatek,mtd-eeprom = <&factory 0x8000>;
++		/* mediatek,mtd-eeprom = <&factory 0x8000>; */
 +		ieee80211-freq-limit = <5000000 6000000>;
 +	};
 +};
@@ -79,7 +79,28 @@ Index: linux-5.10.52/arch/arm64/boot/dts/mediatek/mt7622-rfb1.dts
  &pio {
  	/* Attention: GPIO 90 is used to switch between PCIe@1,0 and
  	 * SATA functions. i.e. output-high: PCIe, output-low: SATA
-@@ -648,5 +772,5 @@
+@@ -586,12 +642,17 @@
+ 
+ 		partition@200000 {
+ 			label = "firmware";
+-			reg = <0x2c0000 0x2000000>;
++			reg = <0x2c0000 0x4000000>;
+ 		};
+ 
+ 		partition@2200000 {
+-			label = "User_data";
+-			reg = <0x22c0000 0x4000000>;
++			label = "nand";
++			reg = <0x42c0000 0x3140000>;
++		};
++
++		partition@7400000 {
++			label = "mfginfo";
++			reg = <0x7400000 0x100000>;
+ 		};
+ 	};
+ };
+@@ -643,5 +704,5 @@
  
  &wmac {
  	mediatek,mtd-eeprom = <&factory 0x0000>;
