@@ -332,3 +332,30 @@ index 37131c7..f7b0aca 100644
 -- 
 2.20.1
 
+From 418f0d457b38bceb2dfd3ba87249c48934fc7c79 Mon Sep 17 00:00:00 2001
+From: Tim Hayes <tim.hayes@smartrg.com>
+Date: Tue, 19 Apr 2022 10:30:08 -0700
+Subject: [PATCH] OWRT-6281 set tx and rx pause
+
+---
+ drivers/net/phy/phylink.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/phy/phylink.c b/drivers/net/phy/phylink.c
+index c6f106b..e6388ed 100644
+--- a/drivers/net/phy/phylink.c
++++ b/drivers/net/phy/phylink.c
+@@ -652,7 +652,9 @@ static void phylink_link_up(struct phylink *pl,
+ 			pl->pcs_ops->pcs_link_up(pl->pcs, pl->cur_link_an_mode,
+ 						 pl->cur_interface,
+ 						 pl->link_config.speed, pl->link_config.duplex);
+-
++		/* OWRT-7120 we must tell the mac to support pause on the internal SGMII bus no matter what AN supports */
++		link_state.pause |= MLO_PAUSE_RX;
++ 		link_state.pause |= MLO_PAUSE_TX;
+ 		pl->mac_ops->mac_link_up(pl->config, pl->phydev,
+ 					 pl->cfg_link_an_mode, pl->cur_interface,
+ 					 pl->link_config.speed, pl->link_config.duplex,
+-- 
+2.30.2
+
