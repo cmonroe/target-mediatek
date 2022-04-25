@@ -17,6 +17,7 @@ define Device/polecat
   DEVICE_DTS := mt7622-smartrg-srbpi
   DEVICE_DTS += mt7622-smartrg-834-5
   DEVICE_DTS += mt7622-smartrg-841-t6
+  DEVICE_DTS += mt7622-smartrg-841-t6-mt7531
   DEVICE_DTS += mt7622-smartrg-854-6
   DEVICE_DTS += mt7622-smartrg-854-v6
   DEVICE_DTS += mt7622-smartrg-834-v6
@@ -62,6 +63,9 @@ define Build/SrgFit
 		-h "crc32" -h "sha1" \
 		-d $(KDIR)/image-mt7622-smartrg-834-v6.dtb \
 		-D "834-v6" -n 407 -c 7 \
+		-h "crc32" -h "sha1" \
+		-d $(KDIR)/image-mt7622-smartrg-841-t6-mt7531.dtb \
+		-D "841-t6-mt7531" -n 414 -c 4 \
 		-h "crc32" -h "sha1" \
 		-d $(KDIR)/image-mt7622-smartrg-854-6.dtb \
 		-D "854-6-iPA" -n 415 -c 8 \
