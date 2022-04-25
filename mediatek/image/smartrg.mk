@@ -65,13 +65,13 @@ define Build/SrgFit
 		-D "834-v6" -n 407 -c 7 \
 		-h "crc32" -h "sha1" \
 		-d $(KDIR)/image-mt7622-smartrg-841-t6-mt7531.dtb \
-		-D "841-t6-mt7531" -n 414 -c 4 \
+		-D "841-t6-mt7531" -n 414 -c 8 \
 		-h "crc32" -h "sha1" \
 		-d $(KDIR)/image-mt7622-smartrg-854-6.dtb \
-		-D "854-6-iPA" -n 415 -c 8 \
+		-D "854-6-iPA" -n 415 -c 9 \
 		-h "crc32" -h "sha1" \
 		-d $(KDIR)/image-mt7622-smartrg-854-6.dtb \
-		-D "854-6-ePA" -n 416 -c 9 \
+		-D "854-6-ePA" -n 416 -c 10 \
 		-h "crc32" -h "sha1"
 	PATH=$(LINUX_DIR)/scripts/dtc:$(PATH) mkimage -f $@.its $@.new
 	@mv -f $@.new $@
