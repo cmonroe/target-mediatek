@@ -18,6 +18,10 @@
 
 	aliases {
 		serial0 = &uart0;
+		led-boot = &sys_status;
+		led-failsafe = &sys_status;
+		led-running = &sys_status;
+		led-upgrade = &sys_status;
 	};
 
 	chosen {
@@ -62,10 +66,10 @@
 			default-state = "off";
 		};
 
-		system_green {
+		sys_status: system_green {
 			label = "green";
 			gpios = <&pio 52 GPIO_ACTIVE_LOW>;
-			default-state = "off";
+			linux,default-trigger = "timer";
 		};
 
 		system_blue {

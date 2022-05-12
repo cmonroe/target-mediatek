@@ -18,6 +18,10 @@
 
 	aliases {
 		serial0 = &uart0;
+		led-boot = &sys_status;
+		led-failsafe = &sys_status;
+		led-running = &sys_status;
+		led-upgrade = &sys_status;
 	};
 
 	chosen {
@@ -199,9 +203,10 @@
 			reg = <1>;
 		};
 
-		system_green {
+		sys_status: system_green {
 			label = "green";
 			reg = <2>;
+			linux,default-trigger = "timer";
 		};
 
 		system_blue {
