@@ -1,0 +1,4085 @@
+diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+index 01ce3f41cc21..d937f957f8df 100644
+--- a/drivers/watchdog/Kconfig
++++ b/drivers/watchdog/Kconfig
+@@ -22,9 +22,9 @@ menuconfig WATCHDOG
+ 
+ 	  The watchdog is usually used together with the watchdog daemon
+ 	  which is available from
+-	  <ftp://ibiblio.org/pub/Linux/system/daemons/watchdog/>. This daemon can
+-	  also monitor NFS connections and can reboot the machine when the process
+-	  table is full.
++	  <https://ibiblio.org/pub/Linux/system/daemons/watchdog/>. This daemon
++	  can also monitor NFS connections and can reboot the machine when the
++	  process table is full.
+ 
+ 	  If unsure, say N.
+ 
+@@ -73,6 +73,14 @@ config WATCHDOG_SYSFS
+ 	  Say Y here if you want to enable watchdog device status read through
+ 	  sysfs attributes.
+ 
++config WATCHDOG_HRTIMER_PRETIMEOUT
++	bool "Enable watchdog hrtimer-based pretimeouts"
++	help
++	  Enable this if you want to use a hrtimer timer based pretimeout for
++	  watchdogs that do not natively support pretimeout support. Be aware
++	  that because this pretimeout functionality uses hrtimers, it may not
++	  be able to fire before the actual watchdog fires in some situations.
++
+ comment "Watchdog Pretimeout Governors"
+ 
+ config WATCHDOG_PRETIMEOUT_GOV
+@@ -160,17 +168,18 @@ config SOFT_WATCHDOG_PRETIMEOUT
+ 	  watchdog. Be aware that governors might affect the watchdog because it
+ 	  is purely software, e.g. the panic governor will stall it!
+ 
+-config BD70528_WATCHDOG
+-	tristate "ROHM BD70528 PMIC Watchdog"
+-	depends on MFD_ROHM_BD70528
++config BD957XMUF_WATCHDOG
++	tristate "ROHM BD9576MUF and BD9573MUF PMIC Watchdog"
++	depends on MFD_ROHM_BD957XMUF
+ 	select WATCHDOG_CORE
+ 	help
+-	  Support for the watchdog in the ROHM BD70528 PMIC. Watchdog trigger
+-	  cause system reset.
++	  Support for the watchdog in the ROHM BD9576 and BD9573 PMICs.
++	  These PMIC ICs contain watchdog block which can be configured
++	  to toggle reset line if SoC fails to ping watchdog via GPIO.
+ 
+-	  Say Y here to include support for the ROHM BD70528 watchdog.
+-	  Alternatively say M to compile the driver as a module,
+-	  which will be called bd70528_wdt.
++	  Say Y here to include support for the ROHM BD9576 or BD9573
++	  watchdog. Alternatively say M to compile the driver as a module,
++	  which will be called bd9576_wdt.
+ 
+ config DA9052_WATCHDOG
+ 	tristate "Dialog DA9052 Watchdog"
+@@ -254,17 +263,6 @@ config MENZ069_WATCHDOG
+ 	  This driver can also be built as a module. If so the module
+ 	  will be called menz069_wdt.
+ 
+-config TANGOX_WATCHDOG
+-	tristate "Sigma Designs SMP86xx/SMP87xx watchdog"
+-	select WATCHDOG_CORE
+-	depends on ARCH_TANGO || COMPILE_TEST
+-	depends on HAS_IOMEM
+-	help
+-	  Support for the watchdog in Sigma Designs SMP86xx (tango3)
+-	  and SMP87xx (tango4) family chips.
+-
+-	  This driver can be built as a module. The module name is tangox_wdt.
+-
+ config WDAT_WDT
+ 	tristate "ACPI Watchdog Action Table (WDAT)"
+ 	depends on ACPI
+@@ -300,7 +298,7 @@ config XILINX_WATCHDOG
+ 	depends on HAS_IOMEM
+ 	select WATCHDOG_CORE
+ 	help
+-	  Watchdog driver for the xps_timebase_wdt ip core.
++	  Watchdog driver for the xps_timebase_wdt IP core.
+ 
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called of_xilinx_wdt.
+@@ -402,8 +400,8 @@ config ASM9260_WATCHDOG
+ 	select WATCHDOG_CORE
+ 	select RESET_CONTROLLER
+ 	help
+-	  Watchdog timer embedded into Alphascale asm9260 chips. This will reboot your
+-	  system when the timeout is reached.
++	  Watchdog timer embedded into Alphascale asm9260 chips. This will
++	  reboot your system when the timeout is reached.
+ 
+ config AT91RM9200_WATCHDOG
+ 	tristate "AT91RM9200 watchdog"
+@@ -477,6 +475,7 @@ config FTWDT010_WATCHDOG
+ config IXP4XX_WATCHDOG
+ 	tristate "IXP4xx Watchdog"
+ 	depends on ARCH_IXP4XX
++	select WATCHDOG_CORE
+ 	help
+ 	  Say Y here if to include support for the watchdog timer
+ 	  in the Intel IXP4xx network processors. This driver can
+@@ -546,8 +545,9 @@ config OMAP_WATCHDOG
+ 	depends on ARCH_OMAP16XX || ARCH_OMAP2PLUS || COMPILE_TEST
+ 	select WATCHDOG_CORE
+ 	help
+-	  Support for TI OMAP1610/OMAP1710/OMAP2420/OMAP3430/OMAP4430 watchdog.  Say 'Y'
+-	  here to enable the OMAP1610/OMAP1710/OMAP2420/OMAP3430/OMAP4430 watchdog timer.
++	  Support for TI OMAP1610/OMAP1710/OMAP2420/OMAP3430/OMAP4430 watchdog.
++	  Say 'Y' here to enable the
++	  OMAP1610/OMAP1710/OMAP2420/OMAP3430/OMAP4430 watchdog timer.
+ 
+ config PNX4008_WATCHDOG
+ 	tristate "LPC32XX Watchdog"
+@@ -600,7 +600,7 @@ config K3_RTI_WATCHDOG
+ 
+ config ORION_WATCHDOG
+ 	tristate "Orion watchdog"
+-	depends on ARCH_ORION5X || ARCH_DOVE || MACH_DOVE || ARCH_MVEBU || (COMPILE_TEST && !ARCH_EBSA110)
++	depends on ARCH_ORION5X || ARCH_DOVE || MACH_DOVE || ARCH_MVEBU || COMPILE_TEST
+ 	depends on ARM
+ 	select WATCHDOG_CORE
+ 	help
+@@ -630,17 +630,6 @@ config SUNXI_WATCHDOG
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called sunxi_wdt.
+ 
+-config COH901327_WATCHDOG
+-	bool "ST-Ericsson COH 901 327 watchdog"
+-	depends on ARCH_U300 || (ARM && COMMON_CLK && COMPILE_TEST)
+-	default y if MACH_U300
+-	select WATCHDOG_CORE
+-	help
+-	  Say Y here to include Watchdog timer support for the
+-	  watchdog embedded into the ST-Ericsson U300 series platforms.
+-	  This watchdog is used to reset the system and thus cannot be
+-	  compiled as a module.
+-
+ config NPCM7XX_WATCHDOG
+ 	tristate "Nuvoton NPCM750 watchdog"
+ 	depends on ARCH_NPCM || COMPILE_TEST
+@@ -788,16 +777,6 @@ config MOXART_WDT
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called moxart_wdt.
+ 
+-config SIRFSOC_WATCHDOG
+-	tristate "SiRFSOC watchdog"
+-	depends on HAS_IOMEM
+-	depends on ARCH_SIRF || COMPILE_TEST
+-	select WATCHDOG_CORE
+-	default y
+-	help
+-	  Support for CSR SiRFprimaII and SiRFatlasVI watchdog. When
+-	  the watchdog triggers the system will be reset.
+-
+ config ST_LPC_WATCHDOG
+ 	tristate "STMicroelectronics LPC Watchdog"
+ 	depends on ARCH_STI || COMPILE_TEST
+@@ -900,16 +879,6 @@ config LPC18XX_WATCHDOG
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called lpc18xx_wdt.
+ 
+-config ATLAS7_WATCHDOG
+-	tristate "CSRatlas7 watchdog"
+-	depends on ARCH_ATLAS7 || COMPILE_TEST
+-	help
+-	  Say Y here to include Watchdog timer support for the watchdog
+-	  existing on the CSRatlas7 series platforms.
+-
+-	  To compile this driver as a module, choose M here: the
+-	  module will be called atlas7_wdt.
+-
+ config RENESAS_WDT
+ 	tristate "Renesas WDT Watchdog"
+ 	depends on ARCH_RENESAS || COMPILE_TEST
+@@ -939,16 +908,6 @@ config ASPEED_WATCHDOG
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called aspeed_wdt.
+ 
+-config ZX2967_WATCHDOG
+-	tristate "ZTE zx2967 SoCs watchdog support"
+-	depends on ARCH_ZX
+-	select WATCHDOG_CORE
+-	help
+-	  Say Y here to include support for the watchdog timer
+-	  in ZTE zx2967 SoCs.
+-	  To compile this driver as a module, choose M here: the
+-	  module will be called zx2967_wdt.
+-
+ config STM32_WATCHDOG
+ 	tristate "STM32 Independent WatchDoG (IWDG) support"
+ 	depends on ARCH_STM32
+@@ -1019,6 +978,18 @@ config VISCONTI_WATCHDOG
+ 	  Say Y here to include support for the watchdog timer in Toshiba
+ 	  Visconti SoCs.
+ 
++config MSC313E_WATCHDOG
++	tristate "MStar MSC313e watchdog"
++	depends on ARCH_MSTARV7 || COMPILE_TEST
++	select WATCHDOG_CORE
++	help
++	  Say Y here to include support for the Watchdog timer embedded
++	  into MStar MSC313e chips. This will reboot your system when the
++	  timeout is reached.
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called msc313e_wdt.
++
+ # X86 (i386 + ia64 + x86_64) Architecture
+ 
+ config ACQUIRE_WDT
+@@ -1135,13 +1106,16 @@ config SBC_FITPC2_WATCHDOG
+ 	  This is the driver for the built-in watchdog timer on the fit-PC2,
+ 	  fit-PC2i, CM-iAM single-board computers made by Compulab.
+ 
+-	  It`s possible to enable watchdog timer either from BIOS (F2) or from booted Linux.
+-	  When "Watchdog Timer Value" enabled one can set 31-255 s operational range.
++	  It's possible to enable the watchdog timer either from BIOS (F2) or
++	  from booted Linux.
++	  When the "Watchdog Timer Value" is enabled one can set 31-255 seconds
++	  operational range.
+ 
+-	  Entering BIOS setup temporary disables watchdog operation regardless to current state,
+-	  so system will not be restarted while user in BIOS setup.
++	  Entering BIOS setup temporarily disables watchdog operation regardless
++	  of current state, so system will not be restarted while user is in
++	  BIOS setup.
+ 
+-	  Once watchdog was enabled the system will be restarted every
++	  Once the watchdog is enabled the system will be restarted every
+ 	  "Watchdog Timer Value" period, so to prevent it user can restart or
+ 	  disable the watchdog.
+ 
+@@ -1163,11 +1137,12 @@ config IB700_WDT
+ 	depends on X86
+ 	help
+ 	  This is the driver for the hardware watchdog on the IB700 Single
+-	  Board Computer produced by TMC Technology (www.tmc-uk.com). This watchdog
+-	  simply watches your kernel to make sure it doesn't freeze, and if
+-	  it does, it reboots your computer after a certain amount of time.
++	  Board Computer produced by TMC Technology (www.tmc-uk.com). This
++	  watchdog simply watches your kernel to make sure it doesn't freeze,
++	  and if it does, it reboots your computer after a certain amount of time.
+ 
+-	  This driver is like the WDT501 driver but for slightly different hardware.
++	  This driver is like the WDT501 driver but for slightly different
++	  hardware.
+ 
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called ib700wdt.
+@@ -1219,15 +1194,6 @@ config IE6XX_WDT
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called ie6xx_wdt.
+ 
+-config INTEL_SCU_WATCHDOG
+-	bool "Intel SCU Watchdog for Mobile Platforms"
+-	depends on X86_INTEL_MID
+-	help
+-	  Hardware driver for the watchdog time built into the Intel SCU
+-	  for Intel Mobile Platforms.
+-
+-	  To compile this driver as a module, choose M here.
+-
+ config INTEL_MID_WATCHDOG
+ 	tristate "Intel MID Watchdog Timer"
+ 	depends on X86_INTEL_MID
+@@ -1698,19 +1664,9 @@ config WDT_MTX1
+ 	  Hardware driver for the MTX-1 boards. This is a watchdog timer that
+ 	  will reboot the machine after a 100 seconds timer expired.
+ 
+-config PNX833X_WDT
+-	tristate "PNX833x Hardware Watchdog"
+-	depends on SOC_PNX8335
+-	depends on BROKEN
+-	help
+-	  Hardware driver for the PNX833x's watchdog. This is a
+-	  watchdog timer that will reboot the machine after a programmable
+-	  timer has expired and no process has written to /dev/watchdog during
+-	  that time.
+-
+ config SIBYTE_WDOG
+ 	tristate "Sibyte SoC hardware watchdog"
+-	depends on CPU_SB1 || (MIPS && COMPILE_TEST)
++	depends on CPU_SB1
+ 	help
+ 	  Watchdog driver for the built in watchdog hardware in Sibyte
+ 	  SoC processors.  There are apparently two watchdog timers
+@@ -1865,10 +1821,10 @@ config PIC32_DMT
+ 	select WATCHDOG_CORE
+ 	depends on MACH_PIC32 || (MIPS && COMPILE_TEST)
+ 	help
+-	  Watchdog driver for PIC32 instruction fetch counting timer. This specific
+-	  timer is typically be used in misson critical and safety critical
+-	  applications, where any single failure of the software functionality
+-	  and sequencing must be detected.
++	  Watchdog driver for PIC32 instruction fetch counting timer. This
++	  specific timer is typically be used in mission critical and safety
++	  critical applications, where any single failure of the software
++	  functionality and sequencing must be detected.
+ 
+ 	  To compile this driver as a loadable module, choose M here.
+ 	  The module will be called pic32-dmt.
+@@ -1902,10 +1858,6 @@ config 8xxx_WDT
+ 
+ 	  For BookE processors (MPC85xx) use the BOOKE_WDT driver instead.
+ 
+-config MV64X60_WDT
+-	tristate "MV64X60 (Marvell Discovery) Watchdog Timer"
+-	depends on MV64X60 || COMPILE_TEST
+-
+ config PIKA_WDT
+ 	tristate "PIKA FPGA Watchdog"
+ 	depends on WARP || (PPC64 && COMPILE_TEST)
+@@ -2071,8 +2023,8 @@ config PCWATCHDOG
+ 	  This card simply watches your kernel to make sure it doesn't freeze,
+ 	  and if it does, it reboots your computer after a certain amount of
+ 	  time. This driver is like the WDT501 driver but for different
+-	  hardware. Please read <file:Documentation/watchdog/pcwd-watchdog.rst>. The PC
+-	  watchdog cards can be ordered from <http://www.berkprod.com/>.
++	  hardware. Please read <file:Documentation/watchdog/pcwd-watchdog.rst>.
++	  The PC watchdog cards can be ordered from <http://www.berkprod.com/>.
+ 
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called pcwd.
+@@ -2165,4 +2117,17 @@ config USBPCWATCHDOG
+ 
+ 	  Most people will say N.
+ 
++config KEEMBAY_WATCHDOG
++	tristate "Intel Keem Bay SoC non-secure watchdog"
++	depends on ARCH_KEEMBAY || (ARM64 && COMPILE_TEST)
++	select WATCHDOG_CORE
++	help
++	 This option enable support for an In-secure watchdog timer driver for
++	 Intel Keem Bay SoC. This WDT has a 32 bit timer and decrements in every
++	 count unit. An interrupt will be triggered, when the count crosses
++	 the threshold configured in the register.
++
++	 To compile this driver as a module, choose M here: the
++	 module will be called keembay_wdt.
++
+ endif # WATCHDOG
+diff --git a/drivers/watchdog/Makefile b/drivers/watchdog/Makefile
+index 071a2e50be98..1bd2d6f37c53 100644
+--- a/drivers/watchdog/Makefile
++++ b/drivers/watchdog/Makefile
+@@ -9,6 +9,7 @@ obj-$(CONFIG_WATCHDOG_CORE)	+= watchdog.o
+ watchdog-objs	+= watchdog_core.o watchdog_dev.o
+ 
+ watchdog-$(CONFIG_WATCHDOG_PRETIMEOUT_GOV)	+= watchdog_pretimeout.o
++watchdog-$(CONFIG_WATCHDOG_HRTIMER_PRETIMEOUT)	+= watchdog_hrtimer_pretimeout.o
+ 
+ obj-$(CONFIG_WATCHDOG_PRETIMEOUT_GOV_NOOP)	+= pretimeout_noop.o
+ obj-$(CONFIG_WATCHDOG_PRETIMEOUT_GOV_PANIC)	+= pretimeout_panic.o
+@@ -61,7 +62,6 @@ obj-$(CONFIG_K3_RTI_WATCHDOG) += rti_wdt.o
+ obj-$(CONFIG_ORION_WATCHDOG) += orion_wdt.o
+ obj-$(CONFIG_SUNXI_WATCHDOG) += sunxi_wdt.o
+ obj-$(CONFIG_RN5T618_WATCHDOG) += rn5t618_wdt.o
+-obj-$(CONFIG_COH901327_WATCHDOG) += coh901327_wdt.o
+ obj-$(CONFIG_NPCM7XX_WATCHDOG) += npcm_wdt.o
+ obj-$(CONFIG_STMP3XXX_RTC_WATCHDOG) += stmp3xxx_rtc_wdt.o
+ obj-$(CONFIG_TS4800_WATCHDOG) += ts4800_wdt.o
+@@ -73,7 +73,6 @@ obj-$(CONFIG_UX500_WATCHDOG) += ux500_wdt.o
+ obj-$(CONFIG_RETU_WATCHDOG) += retu_wdt.o
+ obj-$(CONFIG_BCM2835_WDT) += bcm2835_wdt.o
+ obj-$(CONFIG_MOXART_WDT) += moxart_wdt.o
+-obj-$(CONFIG_SIRFSOC_WATCHDOG) += sirfsoc_wdt.o
+ obj-$(CONFIG_ST_LPC_WATCHDOG) += st_lpc_wdt.o
+ obj-$(CONFIG_QCOM_WDT) += qcom-wdt.o
+ obj-$(CONFIG_BCM_KONA_WDT) += bcm_kona_wdt.o
+@@ -84,11 +83,9 @@ obj-$(CONFIG_MEDIATEK_WATCHDOG) += mtk_wdt.o
+ obj-$(CONFIG_DIGICOLOR_WATCHDOG) += digicolor_wdt.o
+ obj-$(CONFIG_LPC18XX_WATCHDOG) += lpc18xx_wdt.o
+ obj-$(CONFIG_BCM7038_WDT) += bcm7038_wdt.o
+-obj-$(CONFIG_ATLAS7_WATCHDOG) += atlas7_wdt.o
+ obj-$(CONFIG_RENESAS_WDT) += renesas_wdt.o
+ obj-$(CONFIG_RENESAS_RZAWDT) += rza_wdt.o
+ obj-$(CONFIG_ASPEED_WATCHDOG) += aspeed_wdt.o
+-obj-$(CONFIG_ZX2967_WATCHDOG) += zx2967_wdt.o
+ obj-$(CONFIG_STM32_WATCHDOG) += stm32_iwdg.o
+ obj-$(CONFIG_UNIPHIER_WATCHDOG) += uniphier_wdt.o
+ obj-$(CONFIG_RTD119X_WATCHDOG) += rtd119x_wdt.o
+@@ -96,6 +93,7 @@ obj-$(CONFIG_SPRD_WATCHDOG) += sprd_wdt.o
+ obj-$(CONFIG_PM8916_WATCHDOG) += pm8916_wdt.o
+ obj-$(CONFIG_ARM_SMC_WATCHDOG) += arm_smc_wdt.o
+ obj-$(CONFIG_VISCONTI_WATCHDOG) += visconti_wdt.o
++obj-$(CONFIG_MSC313E_WATCHDOG) += msc313e_wdt.o
+ 
+ # X86 (i386 + ia64 + x86_64) Architecture
+ obj-$(CONFIG_ACQUIRE_WDT) += acquirewdt.o
+@@ -140,12 +138,12 @@ obj-$(CONFIG_W83877F_WDT) += w83877f_wdt.o
+ obj-$(CONFIG_W83977F_WDT) += w83977f_wdt.o
+ obj-$(CONFIG_MACHZ_WDT) += machzwd.o
+ obj-$(CONFIG_SBC_EPX_C3_WATCHDOG) += sbc_epx_c3.o
+-obj-$(CONFIG_INTEL_SCU_WATCHDOG) += intel_scu_watchdog.o
+ obj-$(CONFIG_INTEL_MID_WATCHDOG) += intel-mid_wdt.o
+ obj-$(CONFIG_INTEL_MEI_WDT) += mei_wdt.o
+ obj-$(CONFIG_NI903X_WDT) += ni903x_wdt.o
+ obj-$(CONFIG_NIC7018_WDT) += nic7018_wdt.o
+ obj-$(CONFIG_MLX_WDT) += mlx_wdt.o
++obj-$(CONFIG_KEEMBAY_WATCHDOG) += keembay_wdt.o
+ 
+ # M68K Architecture
+ obj-$(CONFIG_M54xx_WATCHDOG) += m54xx_wdt.o
+@@ -161,7 +159,6 @@ obj-$(CONFIG_RC32434_WDT) += rc32434_wdt.o
+ obj-$(CONFIG_INDYDOG) += indydog.o
+ obj-$(CONFIG_JZ4740_WDT) += jz4740_wdt.o
+ obj-$(CONFIG_WDT_MTX1) += mtx-1_wdt.o
+-obj-$(CONFIG_PNX833X_WDT) += pnx833x_wdt.o
+ obj-$(CONFIG_SIBYTE_WDOG) += sb_wdog.o
+ obj-$(CONFIG_AR7_WDT) += ar7_wdt.o
+ obj-$(CONFIG_TXX9_WDT) += txx9wdt.o
+@@ -180,7 +177,6 @@ obj-$(CONFIG_PIC32_DMT) += pic32-dmt.o
+ # POWERPC Architecture
+ obj-$(CONFIG_GEF_WDT) += gef_wdt.o
+ obj-$(CONFIG_8xxx_WDT) += mpc8xxx_wdt.o
+-obj-$(CONFIG_MV64X60_WDT) += mv64x60_wdt.o
+ obj-$(CONFIG_PIKA_WDT) += pika_wdt.o
+ obj-$(CONFIG_BOOKE_WDT) += booke_wdt.o
+ obj-$(CONFIG_MEN_A21_WDT) += mena21_wdt.o
+@@ -208,13 +204,12 @@ obj-$(CONFIG_WATCHDOG_SUN4V)		+= sun4v_wdt.o
+ obj-$(CONFIG_XEN_WDT) += xen_wdt.o
+ 
+ # Architecture Independent
+-obj-$(CONFIG_BD70528_WATCHDOG) += bd70528_wdt.o
++obj-$(CONFIG_BD957XMUF_WATCHDOG) += bd9576_wdt.o
+ obj-$(CONFIG_DA9052_WATCHDOG) += da9052_wdt.o
+ obj-$(CONFIG_DA9055_WATCHDOG) += da9055_wdt.o
+ obj-$(CONFIG_DA9062_WATCHDOG) += da9062_wdt.o
+ obj-$(CONFIG_DA9063_WATCHDOG) += da9063_wdt.o
+ obj-$(CONFIG_GPIO_WATCHDOG)	+= gpio_wdt.o
+-obj-$(CONFIG_TANGOX_WATCHDOG) += tangox_wdt.o
+ obj-$(CONFIG_WDAT_WDT) += wdat_wdt.o
+ obj-$(CONFIG_WM831X_WATCHDOG) += wm831x_wdt.o
+ obj-$(CONFIG_WM8350_WATCHDOG) += wm8350_wdt.o
+diff --git a/drivers/watchdog/armada_37xx_wdt.c b/drivers/watchdog/armada_37xx_wdt.c
+index e5dcb26d85f0..1635f421ef2c 100644
+--- a/drivers/watchdog/armada_37xx_wdt.c
++++ b/drivers/watchdog/armada_37xx_wdt.c
+@@ -2,7 +2,7 @@
+ /*
+  * Watchdog driver for Marvell Armada 37xx SoCs
+  *
+- * Author: Marek Behun <marek.behun@nic.cz>
++ * Author: Marek Behún <kabel@kernel.org>
+  */
+ 
+ #include <linux/clk.h>
+@@ -366,7 +366,7 @@ static struct platform_driver armada_37xx_wdt_driver = {
+ 
+ module_platform_driver(armada_37xx_wdt_driver);
+ 
+-MODULE_AUTHOR("Marek Behun <marek.behun@nic.cz>");
++MODULE_AUTHOR("Marek Behun <kabel@kernel.org>");
+ MODULE_DESCRIPTION("Armada 37xx CPU Watchdog");
+ 
+ MODULE_LICENSE("GPL v2");
+diff --git a/drivers/watchdog/aspeed_wdt.c b/drivers/watchdog/aspeed_wdt.c
+index 507fd815d767..436571b6fc79 100644
+--- a/drivers/watchdog/aspeed_wdt.c
++++ b/drivers/watchdog/aspeed_wdt.c
+@@ -175,8 +175,8 @@ static ssize_t access_cs0_show(struct device *dev,
+ 	struct aspeed_wdt *wdt = dev_get_drvdata(dev);
+ 	u32 status = readl(wdt->base + WDT_TIMEOUT_STATUS);
+ 
+-	return sprintf(buf, "%u\n",
+-		      !(status & WDT_TIMEOUT_STATUS_BOOT_SECONDARY));
++	return sysfs_emit(buf, "%u\n",
++			  !(status & WDT_TIMEOUT_STATUS_BOOT_SECONDARY));
+ }
+ 
+ static ssize_t access_cs0_store(struct device *dev,
+diff --git a/drivers/watchdog/bcm2835_wdt.c b/drivers/watchdog/bcm2835_wdt.c
+index dec6ca019bea..94907176a0e4 100644
+--- a/drivers/watchdog/bcm2835_wdt.c
++++ b/drivers/watchdog/bcm2835_wdt.c
+@@ -205,9 +205,13 @@ static int bcm2835_wdt_probe(struct platform_device *pdev)
+ 	if (err)
+ 		return err;
+ 
+-	if (pm_power_off == NULL) {
+-		pm_power_off = bcm2835_power_off;
+-		bcm2835_power_off_wdt = wdt;
++	if (of_device_is_system_power_controller(pdev->dev.parent->of_node)) {
++		if (!pm_power_off) {
++			pm_power_off = bcm2835_power_off;
++			bcm2835_power_off_wdt = wdt;
++		} else {
++			dev_info(dev, "Poweroff handler already present!\n");
++		}
+ 	}
+ 
+ 	dev_info(dev, "Broadcom BCM2835 watchdog timer");
+diff --git a/drivers/watchdog/bcm7038_wdt.c b/drivers/watchdog/bcm7038_wdt.c
+index 979caa18d3c8..acaaa0005d5b 100644
+--- a/drivers/watchdog/bcm7038_wdt.c
++++ b/drivers/watchdog/bcm7038_wdt.c
+@@ -34,6 +34,25 @@ struct bcm7038_watchdog {
+ 
+ static bool nowayout = WATCHDOG_NOWAYOUT;
+ 
++static inline void bcm7038_wdt_write(u32 value, void __iomem *addr)
++{
++	/* MIPS chips strapped for BE will automagically configure the
++	 * peripheral registers for CPU-native byte order.
++	 */
++	if (IS_ENABLED(CONFIG_MIPS) && IS_ENABLED(CONFIG_CPU_BIG_ENDIAN))
++		__raw_writel(value, addr);
++	else
++		writel_relaxed(value, addr);
++}
++
++static inline u32 bcm7038_wdt_read(void __iomem *addr)
++{
++	if (IS_ENABLED(CONFIG_MIPS) && IS_ENABLED(CONFIG_CPU_BIG_ENDIAN))
++		return __raw_readl(addr);
++	else
++		return readl_relaxed(addr);
++}
++
+ static void bcm7038_wdt_set_timeout_reg(struct watchdog_device *wdog)
+ {
+ 	struct bcm7038_watchdog *wdt = watchdog_get_drvdata(wdog);
+@@ -41,15 +60,15 @@ static void bcm7038_wdt_set_timeout_reg(struct watchdog_device *wdog)
+ 
+ 	timeout = wdt->rate * wdog->timeout;
+ 
+-	writel(timeout, wdt->base + WDT_TIMEOUT_REG);
++	bcm7038_wdt_write(timeout, wdt->base + WDT_TIMEOUT_REG);
+ }
+ 
+ static int bcm7038_wdt_ping(struct watchdog_device *wdog)
+ {
+ 	struct bcm7038_watchdog *wdt = watchdog_get_drvdata(wdog);
+ 
+-	writel(WDT_START_1, wdt->base + WDT_CMD_REG);
+-	writel(WDT_START_2, wdt->base + WDT_CMD_REG);
++	bcm7038_wdt_write(WDT_START_1, wdt->base + WDT_CMD_REG);
++	bcm7038_wdt_write(WDT_START_2, wdt->base + WDT_CMD_REG);
+ 
+ 	return 0;
+ }
+@@ -66,8 +85,8 @@ static int bcm7038_wdt_stop(struct watchdog_device *wdog)
+ {
+ 	struct bcm7038_watchdog *wdt = watchdog_get_drvdata(wdog);
+ 
+-	writel(WDT_STOP_1, wdt->base + WDT_CMD_REG);
+-	writel(WDT_STOP_2, wdt->base + WDT_CMD_REG);
++	bcm7038_wdt_write(WDT_STOP_1, wdt->base + WDT_CMD_REG);
++	bcm7038_wdt_write(WDT_STOP_2, wdt->base + WDT_CMD_REG);
+ 
+ 	return 0;
+ }
+@@ -88,7 +107,7 @@ static unsigned int bcm7038_wdt_get_timeleft(struct watchdog_device *wdog)
+ 	struct bcm7038_watchdog *wdt = watchdog_get_drvdata(wdog);
+ 	u32 time_left;
+ 
+-	time_left = readl(wdt->base + WDT_CMD_REG);
++	time_left = bcm7038_wdt_read(wdt->base + WDT_CMD_REG);
+ 
+ 	return time_left / wdt->rate;
+ }
+diff --git a/drivers/watchdog/bd9576_wdt.c b/drivers/watchdog/bd9576_wdt.c
+new file mode 100644
+index 000000000000..0b6999f3b6e8
+--- /dev/null
++++ b/drivers/watchdog/bd9576_wdt.c
+@@ -0,0 +1,291 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++/*
++ * Copyright (C) 2020 ROHM Semiconductors
++ *
++ * ROHM BD9576MUF and BD9573MUF Watchdog driver
++ */
++
++#include <linux/err.h>
++#include <linux/gpio/consumer.h>
++#include <linux/mfd/rohm-bd957x.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/platform_device.h>
++#include <linux/regmap.h>
++#include <linux/watchdog.h>
++
++static bool nowayout;
++module_param(nowayout, bool, 0);
++MODULE_PARM_DESC(nowayout,
++		"Watchdog cannot be stopped once started (default=\"false\")");
++
++#define HW_MARGIN_MIN 2
++#define HW_MARGIN_MAX 4416
++#define BD957X_WDT_DEFAULT_MARGIN 4416
++#define WATCHDOG_TIMEOUT 30
++
++struct bd9576_wdt_priv {
++	struct gpio_desc	*gpiod_ping;
++	struct gpio_desc	*gpiod_en;
++	struct device		*dev;
++	struct regmap		*regmap;
++	bool			always_running;
++	struct watchdog_device	wdd;
++};
++
++static void bd9576_wdt_disable(struct bd9576_wdt_priv *priv)
++{
++	gpiod_set_value_cansleep(priv->gpiod_en, 0);
++}
++
++static int bd9576_wdt_ping(struct watchdog_device *wdd)
++{
++	struct bd9576_wdt_priv *priv = watchdog_get_drvdata(wdd);
++
++	/* Pulse */
++	gpiod_set_value_cansleep(priv->gpiod_ping, 1);
++	gpiod_set_value_cansleep(priv->gpiod_ping, 0);
++
++	return 0;
++}
++
++static int bd9576_wdt_start(struct watchdog_device *wdd)
++{
++	struct bd9576_wdt_priv *priv = watchdog_get_drvdata(wdd);
++
++	gpiod_set_value_cansleep(priv->gpiod_en, 1);
++
++	return bd9576_wdt_ping(wdd);
++}
++
++static int bd9576_wdt_stop(struct watchdog_device *wdd)
++{
++	struct bd9576_wdt_priv *priv = watchdog_get_drvdata(wdd);
++
++	if (!priv->always_running)
++		bd9576_wdt_disable(priv);
++	else
++		set_bit(WDOG_HW_RUNNING, &wdd->status);
++
++	return 0;
++}
++
++static const struct watchdog_info bd957x_wdt_ident = {
++	.options	= WDIOF_MAGICCLOSE | WDIOF_KEEPALIVEPING |
++			  WDIOF_SETTIMEOUT,
++	.identity	= "BD957x Watchdog",
++};
++
++static const struct watchdog_ops bd957x_wdt_ops = {
++	.owner		= THIS_MODULE,
++	.start		= bd9576_wdt_start,
++	.stop		= bd9576_wdt_stop,
++	.ping		= bd9576_wdt_ping,
++};
++
++/* Unit is hundreds of uS */
++#define FASTNG_MIN 23
++
++static int find_closest_fast(int target, int *sel, int *val)
++{
++	int i;
++	int window = FASTNG_MIN;
++
++	for (i = 0; i < 8 && window < target; i++)
++		window <<= 1;
++
++	*val = window;
++	*sel = i;
++
++	if (i == 8)
++		return -EINVAL;
++
++	return 0;
++
++}
++
++static int find_closest_slow_by_fast(int fast_val, int target, int *slowsel)
++{
++	int sel;
++	static const int multipliers[] = {2, 3, 7, 15};
++
++	for (sel = 0; sel < ARRAY_SIZE(multipliers) &&
++	     multipliers[sel] * fast_val < target; sel++)
++		;
++
++	if (sel == ARRAY_SIZE(multipliers))
++		return -EINVAL;
++
++	*slowsel = sel;
++
++	return 0;
++}
++
++static int find_closest_slow(int target, int *slow_sel, int *fast_sel)
++{
++	static const int multipliers[] = {2, 3, 7, 15};
++	int i, j;
++	int val = 0;
++	int window = FASTNG_MIN;
++
++	for (i = 0; i < 8; i++) {
++		for (j = 0; j < ARRAY_SIZE(multipliers); j++) {
++			int slow;
++
++			slow = window * multipliers[j];
++			if (slow >= target && (!val || slow < val)) {
++				val = slow;
++				*fast_sel = i;
++				*slow_sel = j;
++			}
++		}
++		window <<= 1;
++	}
++	if (!val)
++		return -EINVAL;
++
++	return 0;
++}
++
++#define BD957X_WDG_TYPE_WINDOW BIT(5)
++#define BD957X_WDG_TYPE_SLOW 0
++#define BD957X_WDG_TYPE_MASK BIT(5)
++#define BD957X_WDG_NG_RATIO_MASK 0x18
++#define BD957X_WDG_FASTNG_MASK 0x7
++
++static int bd957x_set_wdt_mode(struct bd9576_wdt_priv *priv, int hw_margin,
++			       int hw_margin_min)
++{
++	int ret, fastng, slowng, type, reg, mask;
++	struct device *dev = priv->dev;
++
++	/* convert to 100uS */
++	hw_margin *= 10;
++	hw_margin_min *= 10;
++	if (hw_margin_min) {
++		int min;
++
++		type = BD957X_WDG_TYPE_WINDOW;
++		dev_dbg(dev, "Setting type WINDOW 0x%x\n", type);
++		ret = find_closest_fast(hw_margin_min, &fastng, &min);
++		if (ret) {
++			dev_err(dev, "bad WDT window for fast timeout\n");
++			return ret;
++		}
++
++		ret = find_closest_slow_by_fast(min, hw_margin, &slowng);
++		if (ret) {
++			dev_err(dev, "bad WDT window\n");
++			return ret;
++		}
++
++	} else {
++		type = BD957X_WDG_TYPE_SLOW;
++		dev_dbg(dev, "Setting type SLOW 0x%x\n", type);
++		ret = find_closest_slow(hw_margin, &slowng, &fastng);
++		if (ret) {
++			dev_err(dev, "bad WDT window\n");
++			return ret;
++		}
++	}
++
++	slowng <<= ffs(BD957X_WDG_NG_RATIO_MASK) - 1;
++	reg = type | slowng | fastng;
++	mask = BD957X_WDG_TYPE_MASK | BD957X_WDG_NG_RATIO_MASK |
++	       BD957X_WDG_FASTNG_MASK;
++	ret = regmap_update_bits(priv->regmap, BD957X_REG_WDT_CONF,
++				 mask, reg);
++
++	return ret;
++}
++
++static int bd9576_wdt_probe(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct device_node *np = dev->parent->of_node;
++	struct bd9576_wdt_priv *priv;
++	u32 hw_margin[2];
++	u32 hw_margin_max = BD957X_WDT_DEFAULT_MARGIN, hw_margin_min = 0;
++	int ret;
++
++	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
++	if (!priv)
++		return -ENOMEM;
++
++	platform_set_drvdata(pdev, priv);
++
++	priv->dev = dev;
++	priv->regmap = dev_get_regmap(dev->parent, NULL);
++	if (!priv->regmap) {
++		dev_err(dev, "No regmap found\n");
++		return -ENODEV;
++	}
++
++	priv->gpiod_en = devm_gpiod_get_from_of_node(dev, dev->parent->of_node,
++						     "rohm,watchdog-enable-gpios",
++						     0, GPIOD_OUT_LOW,
++						     "watchdog-enable");
++	if (IS_ERR(priv->gpiod_en))
++		return dev_err_probe(dev, PTR_ERR(priv->gpiod_en),
++			      "getting watchdog-enable GPIO failed\n");
++
++	priv->gpiod_ping = devm_gpiod_get_from_of_node(dev, dev->parent->of_node,
++						     "rohm,watchdog-ping-gpios",
++						     0, GPIOD_OUT_LOW,
++						     "watchdog-ping");
++	if (IS_ERR(priv->gpiod_ping))
++		return dev_err_probe(dev, PTR_ERR(priv->gpiod_ping),
++				     "getting watchdog-ping GPIO failed\n");
++
++	ret = of_property_read_variable_u32_array(np, "rohm,hw-timeout-ms",
++						  &hw_margin[0], 1, 2);
++	if (ret < 0 && ret != -EINVAL)
++		return ret;
++
++	if (ret == 1)
++		hw_margin_max = hw_margin[0];
++
++	if (ret == 2) {
++		hw_margin_max = hw_margin[1];
++		hw_margin_min = hw_margin[0];
++	}
++
++	ret = bd957x_set_wdt_mode(priv, hw_margin_max, hw_margin_min);
++	if (ret)
++		return ret;
++
++	priv->always_running = of_property_read_bool(np, "always-running");
++
++	watchdog_set_drvdata(&priv->wdd, priv);
++
++	priv->wdd.info			= &bd957x_wdt_ident;
++	priv->wdd.ops			= &bd957x_wdt_ops;
++	priv->wdd.min_hw_heartbeat_ms	= hw_margin_min;
++	priv->wdd.max_hw_heartbeat_ms	= hw_margin_max;
++	priv->wdd.parent		= dev;
++	priv->wdd.timeout		= WATCHDOG_TIMEOUT;
++
++	watchdog_init_timeout(&priv->wdd, 0, dev);
++	watchdog_set_nowayout(&priv->wdd, nowayout);
++
++	watchdog_stop_on_reboot(&priv->wdd);
++
++	if (priv->always_running)
++		bd9576_wdt_start(&priv->wdd);
++
++	return devm_watchdog_register_device(dev, &priv->wdd);
++}
++
++static struct platform_driver bd9576_wdt_driver = {
++	.driver	= {
++		.name = "bd9576-wdt",
++	},
++	.probe	= bd9576_wdt_probe,
++};
++
++module_platform_driver(bd9576_wdt_driver);
++
++MODULE_AUTHOR("Matti Vaittinen <matti.vaittinen@fi.rohmeurope.com>");
++MODULE_DESCRIPTION("ROHM BD9576/BD9573 Watchdog driver");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:bd9576-wdt");
+diff --git a/drivers/watchdog/booke_wdt.c b/drivers/watchdog/booke_wdt.c
+index 7817fb976f9c..5e4dc1a0f2c6 100644
+--- a/drivers/watchdog/booke_wdt.c
++++ b/drivers/watchdog/booke_wdt.c
+@@ -148,7 +148,7 @@ static void __booke_wdt_enable(void *data)
+ }
+ 
+ /**
+- * booke_wdt_disable - disable the watchdog on the given CPU
++ * __booke_wdt_disable - disable the watchdog on the given CPU
+  *
+  * This function is called on each CPU.  It disables the watchdog on that CPU.
+  *
+diff --git a/drivers/watchdog/cpu5wdt.c b/drivers/watchdog/cpu5wdt.c
+index 9867a3a936df..688b112e712b 100644
+--- a/drivers/watchdog/cpu5wdt.c
++++ b/drivers/watchdog/cpu5wdt.c
+@@ -273,7 +273,6 @@ module_exit(cpu5wdt_exit_module);
+ 
+ MODULE_AUTHOR("Heiko Ronsdorf <hero@ihg.uni-duisburg.de>");
+ MODULE_DESCRIPTION("sma cpu5 watchdog driver");
+-MODULE_SUPPORTED_DEVICE("sma cpu5 watchdog");
+ MODULE_LICENSE("GPL");
+ 
+ module_param_hw(port, int, ioport, 0);
+diff --git a/drivers/watchdog/cpwd.c b/drivers/watchdog/cpwd.c
+index 808eeb4779e4..1eafe0b4d71c 100644
+--- a/drivers/watchdog/cpwd.c
++++ b/drivers/watchdog/cpwd.c
+@@ -172,7 +172,6 @@ MODULE_PARM_DESC(wd2_timeout, "Default watchdog2 timeout in 1/10secs");
+ MODULE_AUTHOR("Eric Brower <ebrower@usa.net>");
+ MODULE_DESCRIPTION("Hardware watchdog driver for Sun Microsystems CP1400/1500");
+ MODULE_LICENSE("GPL");
+-MODULE_SUPPORTED_DEVICE("watchdog");
+ 
+ static void cpwd_writew(u16 val, void __iomem *addr)
+ {
+diff --git a/drivers/watchdog/diag288_wdt.c b/drivers/watchdog/diag288_wdt.c
+index aafc8d98bf9f..4cb10877017c 100644
+--- a/drivers/watchdog/diag288_wdt.c
++++ b/drivers/watchdog/diag288_wdt.c
+@@ -118,8 +118,6 @@ static int wdt_start(struct watchdog_device *dev)
+ 	if (test_and_set_bit(DIAG_WDOG_BUSY, &wdt_status))
+ 		return -EBUSY;
+ 
+-	ret = -ENODEV;
+-
+ 	if (MACHINE_IS_VM) {
+ 		ebc_cmd = kmalloc(MAX_CMDLEN, GFP_KERNEL);
+ 		if (!ebc_cmd) {
+@@ -167,8 +165,6 @@ static int wdt_ping(struct watchdog_device *dev)
+ 	int ret;
+ 	unsigned int func;
+ 
+-	ret = -ENODEV;
+-
+ 	if (MACHINE_IS_VM) {
+ 		ebc_cmd = kmalloc(MAX_CMDLEN, GFP_KERNEL);
+ 		if (!ebc_cmd)
+diff --git a/drivers/watchdog/dw_wdt.c b/drivers/watchdog/dw_wdt.c
+index 32d0e1781e63..cd578843277e 100644
+--- a/drivers/watchdog/dw_wdt.c
++++ b/drivers/watchdog/dw_wdt.c
+@@ -13,22 +13,21 @@
+  */
+ 
+ #include <linux/bitops.h>
+-#include <linux/limits.h>
+-#include <linux/kernel.h>
+ #include <linux/clk.h>
++#include <linux/debugfs.h>
+ #include <linux/delay.h>
+ #include <linux/err.h>
++#include <linux/interrupt.h>
+ #include <linux/io.h>
+ #include <linux/kernel.h>
++#include <linux/limits.h>
+ #include <linux/module.h>
+ #include <linux/moduleparam.h>
+-#include <linux/interrupt.h>
+ #include <linux/of.h>
+-#include <linux/pm.h>
+ #include <linux/platform_device.h>
++#include <linux/pm.h>
+ #include <linux/reset.h>
+ #include <linux/watchdog.h>
+-#include <linux/debugfs.h>
+ 
+ #define WDOG_CONTROL_REG_OFFSET		    0x00
+ #define WDOG_CONTROL_REG_WDT_EN_MASK	    0x01
+diff --git a/drivers/watchdog/eurotechwdt.c b/drivers/watchdog/eurotechwdt.c
+index 2418ebb707bd..ce682942662c 100644
+--- a/drivers/watchdog/eurotechwdt.c
++++ b/drivers/watchdog/eurotechwdt.c
+@@ -392,7 +392,7 @@ static struct notifier_block eurwdt_notifier = {
+ };
+ 
+ /**
+- * cleanup_module:
++ * eurwdt_exit:
+  *
+  * Unload the watchdog. You cannot do this with any file handles open.
+  * If your watchdog is set to continue ticking on close and you unload
+diff --git a/drivers/watchdog/geodewdt.c b/drivers/watchdog/geodewdt.c
+index 83418924e30a..0b699c783d57 100644
+--- a/drivers/watchdog/geodewdt.c
++++ b/drivers/watchdog/geodewdt.c
+@@ -150,8 +150,6 @@ static long geodewdt_ioctl(struct file *file, unsigned int cmd,
+ 	case WDIOC_GETSUPPORT:
+ 		return copy_to_user(argp, &ident,
+ 				    sizeof(ident)) ? -EFAULT : 0;
+-		break;
+-
+ 	case WDIOC_GETSTATUS:
+ 	case WDIOC_GETBOOTSTATUS:
+ 		return put_user(0, p);
+diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
+index 7d34bcf1c45b..a5006a58e0db 100644
+--- a/drivers/watchdog/hpwdt.c
++++ b/drivers/watchdog/hpwdt.c
+@@ -21,8 +21,9 @@
+ #include <linux/types.h>
+ #include <linux/watchdog.h>
+ #include <asm/nmi.h>
++#include <linux/crash_dump.h>
+ 
+-#define HPWDT_VERSION			"2.0.3"
++#define HPWDT_VERSION			"2.0.4"
+ #define SECS_TO_TICKS(secs)		((secs) * 1000 / 128)
+ #define TICKS_TO_SECS(ticks)		((ticks) * 128 / 1000)
+ #define HPWDT_MAX_TICKS			65535
+@@ -44,6 +45,7 @@ static unsigned long __iomem *hpwdt_timer_con;
+ static const struct pci_device_id hpwdt_devices[] = {
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_COMPAQ, 0xB203) },	/* iLO2 */
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_HP, 0x3306) },	/* iLO3 */
++	{ PCI_DEVICE(PCI_VENDOR_ID_HP_3PAR, 0x0389) },	/* PCtrl */
+ 	{0},			/* terminate list */
+ };
+ MODULE_DEVICE_TABLE(pci, hpwdt_devices);
+@@ -122,7 +124,7 @@ static int hpwdt_settimeout(struct watchdog_device *wdd, unsigned int val)
+ 	if (val <= wdd->pretimeout) {
+ 		dev_dbg(wdd->parent, "pretimeout < timeout. Setting to zero\n");
+ 		wdd->pretimeout = 0;
+-		pretimeout = 0;
++		pretimeout = false;
+ 		if (watchdog_active(wdd))
+ 			hpwdt_start(wdd);
+ 	}
+@@ -334,9 +336,14 @@ static int hpwdt_init_one(struct pci_dev *dev,
+ 	watchdog_set_nowayout(&hpwdt_dev, nowayout);
+ 	watchdog_init_timeout(&hpwdt_dev, soft_margin, NULL);
+ 
++	if (is_kdump_kernel()) {
++		pretimeout = false;
++		kdumptimeout = 0;
++	}
++
+ 	if (pretimeout && hpwdt_dev.timeout <= PRETIMEOUT_SEC) {
+ 		dev_warn(&dev->dev, "timeout <= pretimeout. Setting pretimeout to zero\n");
+-		pretimeout = 0;
++		pretimeout = false;
+ 	}
+ 	hpwdt_dev.pretimeout = pretimeout ? PRETIMEOUT_SEC : 0;
+ 	kdumptimeout = min(kdumptimeout, HPWDT_MAX_TIMER);
+diff --git a/drivers/watchdog/iTCO_wdt.c b/drivers/watchdog/iTCO_wdt.c
+index a370a185a41c..ced2fc0deb8c 100644
+--- a/drivers/watchdog/iTCO_wdt.c
++++ b/drivers/watchdog/iTCO_wdt.c
+@@ -40,8 +40,6 @@
+  *	Includes, defines, variables, module parameters, ...
+  */
+ 
+-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+-
+ /* Module and version information */
+ #define DRV_NAME	"iTCO_wdt"
+ #define DRV_VERSION	"1.11"
+@@ -279,7 +277,7 @@ static int iTCO_wdt_start(struct watchdog_device *wd_dev)
+ 	/* disable chipset's NO_REBOOT bit */
+ 	if (p->update_no_reboot_bit(p->no_reboot_priv, false)) {
+ 		spin_unlock(&p->io_lock);
+-		pr_err("failed to reset NO_REBOOT flag, reboot disabled by hardware/BIOS\n");
++		dev_err(wd_dev->parent, "failed to reset NO_REBOOT flag, reboot disabled by hardware/BIOS\n");
+ 		return -EIO;
+ 	}
+ 
+@@ -481,13 +479,13 @@ static int iTCO_wdt_probe(struct platform_device *pdev)
+ 		if (!devm_request_region(dev, p->smi_res->start,
+ 					 resource_size(p->smi_res),
+ 					 pdev->name)) {
+-			pr_err("I/O address 0x%04llx already in use, device disabled\n",
++			dev_err(dev, "I/O address 0x%04llx already in use, device disabled\n",
+ 			       (u64)SMI_EN(p));
+ 			return -EBUSY;
+ 		}
+ 	} else if (iTCO_vendorsupport ||
+ 		   turn_SMI_watchdog_clear_off >= p->iTCO_version) {
+-		pr_err("SMI I/O resource is missing\n");
++		dev_err(dev, "SMI I/O resource is missing\n");
+ 		return -ENODEV;
+ 	}
+ 
+@@ -510,7 +508,7 @@ static int iTCO_wdt_probe(struct platform_device *pdev)
+ 	/* Check chipset's NO_REBOOT bit */
+ 	if (p->update_no_reboot_bit(p->no_reboot_priv, false) &&
+ 	    iTCO_vendor_check_noreboot_on()) {
+-		pr_info("unable to reset NO_REBOOT flag, device disabled by hardware/BIOS\n");
++		dev_info(dev, "unable to reset NO_REBOOT flag, device disabled by hardware/BIOS\n");
+ 		return -ENODEV;	/* Cannot reset NO_REBOOT bit */
+ 	}
+ 
+@@ -530,12 +528,12 @@ static int iTCO_wdt_probe(struct platform_device *pdev)
+ 	if (!devm_request_region(dev, p->tco_res->start,
+ 				 resource_size(p->tco_res),
+ 				 pdev->name)) {
+-		pr_err("I/O address 0x%04llx already in use, device disabled\n",
++		dev_err(dev, "I/O address 0x%04llx already in use, device disabled\n",
+ 		       (u64)TCOBASE(p));
+ 		return -EBUSY;
+ 	}
+ 
+-	pr_info("Found a %s TCO device (Version=%d, TCOBASE=0x%04llx)\n",
++	dev_info(dev, "Found a %s TCO device (Version=%d, TCOBASE=0x%04llx)\n",
+ 		pdata->name, pdata->version, (u64)TCOBASE(p));
+ 
+ 	/* Clear out the (probably old) status */
+@@ -558,7 +556,7 @@ static int iTCO_wdt_probe(struct platform_device *pdev)
+ 		break;
+ 	}
+ 
+-	p->wddev.info =	&ident,
++	p->wddev.info = &ident,
+ 	p->wddev.ops = &iTCO_wdt_ops,
+ 	p->wddev.bootstatus = 0;
+ 	p->wddev.timeout = WATCHDOG_TIMEOUT;
+@@ -575,7 +573,7 @@ static int iTCO_wdt_probe(struct platform_device *pdev)
+ 	   if not reset to the default */
+ 	if (iTCO_wdt_set_timeout(&p->wddev, heartbeat)) {
+ 		iTCO_wdt_set_timeout(&p->wddev, WATCHDOG_TIMEOUT);
+-		pr_info("timeout value out of range, using %d\n",
++		dev_info(dev, "timeout value out of range, using %d\n",
+ 			WATCHDOG_TIMEOUT);
+ 	}
+ 
+@@ -583,11 +581,11 @@ static int iTCO_wdt_probe(struct platform_device *pdev)
+ 	watchdog_stop_on_unregister(&p->wddev);
+ 	ret = devm_watchdog_register_device(dev, &p->wddev);
+ 	if (ret != 0) {
+-		pr_err("cannot register watchdog device (err=%d)\n", ret);
++		dev_err(dev, "cannot register watchdog device (err=%d)\n", ret);
+ 		return ret;
+ 	}
+ 
+-	pr_info("initialized. heartbeat=%d sec (nowayout=%d)\n",
++	dev_info(dev, "initialized. heartbeat=%d sec (nowayout=%d)\n",
+ 		heartbeat, nowayout);
+ 
+ 	return 0;
+@@ -651,21 +649,7 @@ static struct platform_driver iTCO_wdt_driver = {
+ 	},
+ };
+ 
+-static int __init iTCO_wdt_init_module(void)
+-{
+-	pr_info("Intel TCO WatchDog Timer Driver v%s\n", DRV_VERSION);
+-
+-	return platform_driver_register(&iTCO_wdt_driver);
+-}
+-
+-static void __exit iTCO_wdt_cleanup_module(void)
+-{
+-	platform_driver_unregister(&iTCO_wdt_driver);
+-	pr_info("Watchdog Module Unloaded\n");
+-}
+-
+-module_init(iTCO_wdt_init_module);
+-module_exit(iTCO_wdt_cleanup_module);
++module_platform_driver(iTCO_wdt_driver);
+ 
+ MODULE_AUTHOR("Wim Van Sebroeck <wim@iguana.be>");
+ MODULE_DESCRIPTION("Intel TCO WatchDog Timer Driver");
+diff --git a/drivers/watchdog/imx2_wdt.c b/drivers/watchdog/imx2_wdt.c
+index b84f80f7d342..51bfb796898b 100644
+--- a/drivers/watchdog/imx2_wdt.c
++++ b/drivers/watchdog/imx2_wdt.c
+@@ -65,6 +65,7 @@ struct imx2_wdt_device {
+ 	struct regmap *regmap;
+ 	struct watchdog_device wdog;
+ 	bool ext_reset;
++	bool clk_is_on;
+ };
+ 
+ static bool nowayout = WATCHDOG_NOWAYOUT;
+@@ -160,6 +161,9 @@ static int imx2_wdt_ping(struct watchdog_device *wdog)
+ {
+ 	struct imx2_wdt_device *wdev = watchdog_get_drvdata(wdog);
+ 
++	if (!wdev->clk_is_on)
++		return 0;
++
+ 	regmap_write(wdev->regmap, IMX2_WDT_WSR, IMX2_WDT_SEQ1);
+ 	regmap_write(wdev->regmap, IMX2_WDT_WSR, IMX2_WDT_SEQ2);
+ 	return 0;
+@@ -301,6 +305,8 @@ static int __init imx2_wdt_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		return ret;
+ 
++	wdev->clk_is_on = true;
++
+ 	regmap_read(wdev->regmap, IMX2_WDT_WRSR, &val);
+ 	wdog->bootstatus = val & IMX2_WDT_WRSR_TOUT ? WDIOF_CARDRESET : 0;
+ 
+@@ -311,6 +317,7 @@ static int __init imx2_wdt_probe(struct platform_device *pdev)
+ 	watchdog_set_nowayout(wdog, nowayout);
+ 	watchdog_set_restart_priority(wdog, 128);
+ 	watchdog_init_timeout(wdog, timeout, dev);
++	watchdog_stop_ping_on_suspend(wdog);
+ 
+ 	if (imx2_wdt_is_running(wdev)) {
+ 		imx2_wdt_set_timeout(wdog, wdog->timeout);
+@@ -361,6 +368,8 @@ static int __maybe_unused imx2_wdt_suspend(struct device *dev)
+ 
+ 	clk_disable_unprepare(wdev->clk);
+ 
++	wdev->clk_is_on = false;
++
+ 	return 0;
+ }
+ 
+@@ -375,6 +384,8 @@ static int __maybe_unused imx2_wdt_resume(struct device *dev)
+ 	if (ret)
+ 		return ret;
+ 
++	wdev->clk_is_on = true;
++
+ 	if (watchdog_active(wdog) && !imx2_wdt_is_running(wdev)) {
+ 		/*
+ 		 * If the watchdog is still active and resumes
+diff --git a/drivers/watchdog/it8712f_wdt.c b/drivers/watchdog/it8712f_wdt.c
+index 9b89d2f09568..3ce6a58bd81e 100644
+--- a/drivers/watchdog/it8712f_wdt.c
++++ b/drivers/watchdog/it8712f_wdt.c
+@@ -31,7 +31,6 @@
+ #include <linux/io.h>
+ #include <linux/ioport.h>
+ 
+-#define DEBUG
+ #define NAME "it8712f_wdt"
+ 
+ MODULE_AUTHOR("Jorge Boncompte - DTI2 <jorge@dti2.net>");
+diff --git a/drivers/watchdog/it87_wdt.c b/drivers/watchdog/it87_wdt.c
+index 2b4831842162..bb1122909396 100644
+--- a/drivers/watchdog/it87_wdt.c
++++ b/drivers/watchdog/it87_wdt.c
+@@ -152,14 +152,6 @@ static inline int superio_inw(int reg)
+ 	return val;
+ }
+ 
+-static inline void superio_outw(int val, int reg)
+-{
+-	outb(reg++, REG);
+-	outb(val >> 8, VAL);
+-	outb(reg, REG);
+-	outb(val, VAL);
+-}
+-
+ /* Internal function, should be called after superio_select(GPIO) */
+ static void _wdt_update_timeout(unsigned int t)
+ {
+diff --git a/drivers/watchdog/ixp4xx_wdt.c b/drivers/watchdog/ixp4xx_wdt.c
+index aae29dcfaf11..31b03fa71341 100644
+--- a/drivers/watchdog/ixp4xx_wdt.c
++++ b/drivers/watchdog/ixp4xx_wdt.c
+@@ -1,220 +1,173 @@
++// SPDX-License-Identifier: GPL-2.0-only
+ /*
+  * drivers/char/watchdog/ixp4xx_wdt.c
+  *
+  * Watchdog driver for Intel IXP4xx network processors
+  *
+  * Author: Deepak Saxena <dsaxena@plexity.net>
++ * Author: Linus Walleij <linus.walleij@linaro.org>
+  *
+  * Copyright 2004 (c) MontaVista, Software, Inc.
+  * Based on sa1100 driver, Copyright (C) 2000 Oleg Drokin <green@crimea.edu>
+- *
+- * This file is licensed under  the terms of the GNU General Public
+- * License version 2. This program is licensed "as is" without any
+- * warranty of any kind, whether express or implied.
+  */
+ 
+-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+-
+ #include <linux/module.h>
+-#include <linux/moduleparam.h>
+ #include <linux/types.h>
+ #include <linux/kernel.h>
+-#include <linux/fs.h>
+-#include <linux/miscdevice.h>
+-#include <linux/of.h>
+ #include <linux/watchdog.h>
+-#include <linux/init.h>
+-#include <linux/bitops.h>
+-#include <linux/uaccess.h>
+-#include <mach/hardware.h>
++#include <linux/bits.h>
++#include <linux/platform_device.h>
++#include <linux/clk.h>
++#include <linux/soc/ixp4xx/cpu.h>
++
++struct ixp4xx_wdt {
++	struct watchdog_device wdd;
++	void __iomem *base;
++	unsigned long rate;
++};
+ 
+-static bool nowayout = WATCHDOG_NOWAYOUT;
+-static int heartbeat = 60;	/* (secs) Default is 1 minute */
+-static unsigned long wdt_status;
+-static unsigned long boot_status;
+-static DEFINE_SPINLOCK(wdt_lock);
++/* Fallback if we do not have a clock for this */
++#define IXP4XX_TIMER_FREQ	66666000
+ 
+-#define WDT_TICK_RATE (IXP4XX_PERIPHERAL_BUS_CLOCK * 1000000UL)
++/* Registers after the timer registers */
++#define IXP4XX_OSWT_OFFSET	0x14  /* Watchdog Timer */
++#define IXP4XX_OSWE_OFFSET	0x18  /* Watchdog Enable */
++#define IXP4XX_OSWK_OFFSET	0x1C  /* Watchdog Key */
++#define IXP4XX_OSST_OFFSET	0x20  /* Timer Status */
+ 
+-#define	WDT_IN_USE		0
+-#define	WDT_OK_TO_CLOSE		1
++#define IXP4XX_OSST_TIMER_WDOG_PEND	0x00000008
++#define IXP4XX_OSST_TIMER_WARM_RESET	0x00000010
++#define IXP4XX_WDT_KEY			0x0000482E
++#define IXP4XX_WDT_RESET_ENABLE		0x00000001
++#define IXP4XX_WDT_IRQ_ENABLE		0x00000002
++#define IXP4XX_WDT_COUNT_ENABLE		0x00000004
+ 
+-static void wdt_enable(void)
++static inline
++struct ixp4xx_wdt *to_ixp4xx_wdt(struct watchdog_device *wdd)
+ {
+-	spin_lock(&wdt_lock);
+-	*IXP4XX_OSWK = IXP4XX_WDT_KEY;
+-	*IXP4XX_OSWE = 0;
+-	*IXP4XX_OSWT = WDT_TICK_RATE * heartbeat;
+-	*IXP4XX_OSWE = IXP4XX_WDT_COUNT_ENABLE | IXP4XX_WDT_RESET_ENABLE;
+-	*IXP4XX_OSWK = 0;
+-	spin_unlock(&wdt_lock);
++	return container_of(wdd, struct ixp4xx_wdt, wdd);
+ }
+ 
+-static void wdt_disable(void)
++static int ixp4xx_wdt_start(struct watchdog_device *wdd)
+ {
+-	spin_lock(&wdt_lock);
+-	*IXP4XX_OSWK = IXP4XX_WDT_KEY;
+-	*IXP4XX_OSWE = 0;
+-	*IXP4XX_OSWK = 0;
+-	spin_unlock(&wdt_lock);
+-}
++	struct ixp4xx_wdt *iwdt = to_ixp4xx_wdt(wdd);
+ 
+-static int ixp4xx_wdt_open(struct inode *inode, struct file *file)
+-{
+-	if (test_and_set_bit(WDT_IN_USE, &wdt_status))
+-		return -EBUSY;
++	__raw_writel(IXP4XX_WDT_KEY, iwdt->base + IXP4XX_OSWK_OFFSET);
++	__raw_writel(0, iwdt->base + IXP4XX_OSWE_OFFSET);
++	__raw_writel(wdd->timeout * iwdt->rate,
++		     iwdt->base + IXP4XX_OSWT_OFFSET);
++	__raw_writel(IXP4XX_WDT_COUNT_ENABLE | IXP4XX_WDT_RESET_ENABLE,
++		     iwdt->base + IXP4XX_OSWE_OFFSET);
++	__raw_writel(0, iwdt->base + IXP4XX_OSWK_OFFSET);
+ 
+-	clear_bit(WDT_OK_TO_CLOSE, &wdt_status);
+-	wdt_enable();
+-	return stream_open(inode, file);
++	return 0;
+ }
+ 
+-static ssize_t
+-ixp4xx_wdt_write(struct file *file, const char *data, size_t len, loff_t *ppos)
++static int ixp4xx_wdt_stop(struct watchdog_device *wdd)
+ {
+-	if (len) {
+-		if (!nowayout) {
+-			size_t i;
+-
+-			clear_bit(WDT_OK_TO_CLOSE, &wdt_status);
+-
+-			for (i = 0; i != len; i++) {
+-				char c;
+-
+-				if (get_user(c, data + i))
+-					return -EFAULT;
+-				if (c == 'V')
+-					set_bit(WDT_OK_TO_CLOSE, &wdt_status);
+-			}
+-		}
+-		wdt_enable();
+-	}
+-	return len;
+-}
++	struct ixp4xx_wdt *iwdt = to_ixp4xx_wdt(wdd);
+ 
+-static const struct watchdog_info ident = {
+-	.options	= WDIOF_CARDRESET | WDIOF_MAGICCLOSE |
+-			  WDIOF_SETTIMEOUT | WDIOF_KEEPALIVEPING,
+-	.identity	= "IXP4xx Watchdog",
+-};
++	__raw_writel(IXP4XX_WDT_KEY, iwdt->base + IXP4XX_OSWK_OFFSET);
++	__raw_writel(0, iwdt->base + IXP4XX_OSWE_OFFSET);
++	__raw_writel(0, iwdt->base + IXP4XX_OSWK_OFFSET);
+ 
+-
+-static long ixp4xx_wdt_ioctl(struct file *file, unsigned int cmd,
+-							unsigned long arg)
+-{
+-	int ret = -ENOTTY;
+-	int time;
+-
+-	switch (cmd) {
+-	case WDIOC_GETSUPPORT:
+-		ret = copy_to_user((struct watchdog_info *)arg, &ident,
+-				   sizeof(ident)) ? -EFAULT : 0;
+-		break;
+-
+-	case WDIOC_GETSTATUS:
+-		ret = put_user(0, (int *)arg);
+-		break;
+-
+-	case WDIOC_GETBOOTSTATUS:
+-		ret = put_user(boot_status, (int *)arg);
+-		break;
+-
+-	case WDIOC_KEEPALIVE:
+-		wdt_enable();
+-		ret = 0;
+-		break;
+-
+-	case WDIOC_SETTIMEOUT:
+-		ret = get_user(time, (int *)arg);
+-		if (ret)
+-			break;
+-
+-		if (time <= 0 || time > 60) {
+-			ret = -EINVAL;
+-			break;
+-		}
+-
+-		heartbeat = time;
+-		wdt_enable();
+-		fallthrough;
+-
+-	case WDIOC_GETTIMEOUT:
+-		ret = put_user(heartbeat, (int *)arg);
+-		break;
+-	}
+-	return ret;
++	return 0;
+ }
+ 
+-static int ixp4xx_wdt_release(struct inode *inode, struct file *file)
++static int ixp4xx_wdt_set_timeout(struct watchdog_device *wdd,
++				  unsigned int timeout)
+ {
+-	if (test_bit(WDT_OK_TO_CLOSE, &wdt_status))
+-		wdt_disable();
+-	else
+-		pr_crit("Device closed unexpectedly - timer will not stop\n");
+-	clear_bit(WDT_IN_USE, &wdt_status);
+-	clear_bit(WDT_OK_TO_CLOSE, &wdt_status);
++	wdd->timeout = timeout;
++	if (watchdog_active(wdd))
++		ixp4xx_wdt_start(wdd);
+ 
+ 	return 0;
+ }
+ 
+-
+-static const struct file_operations ixp4xx_wdt_fops = {
+-	.owner		= THIS_MODULE,
+-	.llseek		= no_llseek,
+-	.write		= ixp4xx_wdt_write,
+-	.unlocked_ioctl	= ixp4xx_wdt_ioctl,
+-	.compat_ioctl	= compat_ptr_ioctl,
+-	.open		= ixp4xx_wdt_open,
+-	.release	= ixp4xx_wdt_release,
++static const struct watchdog_ops ixp4xx_wdt_ops = {
++	.start = ixp4xx_wdt_start,
++	.stop = ixp4xx_wdt_stop,
++	.set_timeout = ixp4xx_wdt_set_timeout,
++	.owner = THIS_MODULE,
+ };
+ 
+-static struct miscdevice ixp4xx_wdt_miscdev = {
+-	.minor		= WATCHDOG_MINOR,
+-	.name		= "watchdog",
+-	.fops		= &ixp4xx_wdt_fops,
++static const struct watchdog_info ixp4xx_wdt_info = {
++	.options = WDIOF_KEEPALIVEPING
++		| WDIOF_MAGICCLOSE
++		| WDIOF_SETTIMEOUT,
++	.identity = KBUILD_MODNAME,
+ };
+ 
+-static int __init ixp4xx_wdt_init(void)
++/* Devres-handled clock disablement */
++static void ixp4xx_clock_action(void *d)
++{
++	clk_disable_unprepare(d);
++}
++
++static int ixp4xx_wdt_probe(struct platform_device *pdev)
+ {
++	struct device *dev = &pdev->dev;
++	struct ixp4xx_wdt *iwdt;
++	struct clk *clk;
+ 	int ret;
+ 
+-	/*
+-	 * FIXME: we bail out on device tree boot but this really needs
+-	 * to be fixed in a nicer way: this registers the MDIO bus before
+-	 * even matching the driver infrastructure, we should only probe
+-	 * detected hardware.
+-	 */
+-	if (of_have_populated_dt())
+-		return -ENODEV;
+ 	if (!(read_cpuid_id() & 0xf) && !cpu_is_ixp46x()) {
+-		pr_err("Rev. A0 IXP42x CPU detected - watchdog disabled\n");
+-
++		dev_err(dev, "Rev. A0 IXP42x CPU detected - watchdog disabled\n");
+ 		return -ENODEV;
+ 	}
+-	boot_status = (*IXP4XX_OSST & IXP4XX_OSST_TIMER_WARM_RESET) ?
+-			WDIOF_CARDRESET : 0;
+-	ret = misc_register(&ixp4xx_wdt_miscdev);
+-	if (ret == 0)
+-		pr_info("timer heartbeat %d sec\n", heartbeat);
+-	return ret;
+-}
+ 
+-static void __exit ixp4xx_wdt_exit(void)
+-{
+-	misc_deregister(&ixp4xx_wdt_miscdev);
+-}
++	iwdt = devm_kzalloc(dev, sizeof(*iwdt), GFP_KERNEL);
++	if (!iwdt)
++		return -ENOMEM;
++	iwdt->base = (void __iomem *)dev->platform_data;
+ 
++	/*
++	 * Retrieve rate from a fixed clock from the device tree if
++	 * the parent has that, else use the default clock rate.
++	 */
++	clk = devm_clk_get(dev->parent, NULL);
++	if (!IS_ERR(clk)) {
++		ret = clk_prepare_enable(clk);
++		if (ret)
++			return ret;
++		ret = devm_add_action_or_reset(dev, ixp4xx_clock_action, clk);
++		if (ret)
++			return ret;
++		iwdt->rate = clk_get_rate(clk);
++	}
++	if (!iwdt->rate)
++		iwdt->rate = IXP4XX_TIMER_FREQ;
+ 
+-module_init(ixp4xx_wdt_init);
+-module_exit(ixp4xx_wdt_exit);
++	iwdt->wdd.info = &ixp4xx_wdt_info;
++	iwdt->wdd.ops = &ixp4xx_wdt_ops;
++	iwdt->wdd.min_timeout = 1;
++	iwdt->wdd.max_timeout = U32_MAX / iwdt->rate;
++	iwdt->wdd.parent = dev;
++	/* Default to 60 seconds */
++	iwdt->wdd.timeout = 60U;
++	watchdog_init_timeout(&iwdt->wdd, 0, dev);
+ 
+-MODULE_AUTHOR("Deepak Saxena <dsaxena@plexity.net>");
+-MODULE_DESCRIPTION("IXP4xx Network Processor Watchdog");
++	if (__raw_readl(iwdt->base + IXP4XX_OSST_OFFSET) &
++	    IXP4XX_OSST_TIMER_WARM_RESET)
++		iwdt->wdd.bootstatus = WDIOF_CARDRESET;
++
++	ret = devm_watchdog_register_device(dev, &iwdt->wdd);
++	if (ret)
++		return ret;
++
++	dev_info(dev, "IXP4xx watchdog available\n");
+ 
+-module_param(heartbeat, int, 0);
+-MODULE_PARM_DESC(heartbeat, "Watchdog heartbeat in seconds (default 60s)");
++	return 0;
++}
+ 
+-module_param(nowayout, bool, 0);
+-MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started");
++static struct platform_driver ixp4xx_wdt_driver = {
++	.probe = ixp4xx_wdt_probe,
++	.driver = {
++		.name   = "ixp4xx-watchdog",
++	},
++};
++module_platform_driver(ixp4xx_wdt_driver);
+ 
++MODULE_AUTHOR("Deepak Saxena <dsaxena@plexity.net>");
++MODULE_DESCRIPTION("IXP4xx Network Processor Watchdog");
+ MODULE_LICENSE("GPL");
+diff --git a/drivers/watchdog/keembay_wdt.c b/drivers/watchdog/keembay_wdt.c
+new file mode 100644
+index 000000000000..2a39114dbc64
+--- /dev/null
++++ b/drivers/watchdog/keembay_wdt.c
+@@ -0,0 +1,296 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/*
++ * Watchdog driver for Intel Keem Bay non-secure watchdog.
++ *
++ * Copyright (C) 2020 Intel Corporation
++ */
++
++#include <linux/arm-smccc.h>
++#include <linux/bits.h>
++#include <linux/clk.h>
++#include <linux/interrupt.h>
++#include <linux/io.h>
++#include <linux/limits.h>
++#include <linux/module.h>
++#include <linux/mod_devicetable.h>
++#include <linux/platform_device.h>
++#include <linux/reboot.h>
++#include <linux/watchdog.h>
++
++/* Non-secure watchdog register offsets */
++#define TIM_WATCHDOG		0x0
++#define TIM_WATCHDOG_INT_THRES	0x4
++#define TIM_WDOG_EN		0x8
++#define TIM_SAFE		0xc
++
++#define WDT_TH_INT_MASK		BIT(8)
++#define WDT_TO_INT_MASK		BIT(9)
++#define WDT_INT_CLEAR_SMC	0x8200ff18
++
++#define WDT_UNLOCK		0xf1d0dead
++#define WDT_DISABLE		0x0
++#define WDT_ENABLE		0x1
++
++#define WDT_LOAD_MAX		U32_MAX
++#define WDT_LOAD_MIN		1
++
++#define WDT_TIMEOUT		5
++#define WDT_PRETIMEOUT		4
++
++static unsigned int timeout = WDT_TIMEOUT;
++module_param(timeout, int, 0);
++MODULE_PARM_DESC(timeout, "Watchdog timeout period in seconds (default = "
++		 __MODULE_STRING(WDT_TIMEOUT) ")");
++
++static bool nowayout = WATCHDOG_NOWAYOUT;
++module_param(nowayout, bool, 0);
++MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started (default = "
++		 __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
++
++struct keembay_wdt {
++	struct watchdog_device	wdd;
++	struct clk		*clk;
++	unsigned int		rate;
++	int			to_irq;
++	int			th_irq;
++	void __iomem		*base;
++};
++
++static inline u32 keembay_wdt_readl(struct keembay_wdt *wdt, u32 offset)
++{
++	return readl(wdt->base + offset);
++}
++
++static inline void keembay_wdt_writel(struct keembay_wdt *wdt, u32 offset, u32 val)
++{
++	writel(WDT_UNLOCK, wdt->base + TIM_SAFE);
++	writel(val, wdt->base + offset);
++}
++
++static void keembay_wdt_set_timeout_reg(struct watchdog_device *wdog)
++{
++	struct keembay_wdt *wdt = watchdog_get_drvdata(wdog);
++
++	keembay_wdt_writel(wdt, TIM_WATCHDOG, wdog->timeout * wdt->rate);
++}
++
++static void keembay_wdt_set_pretimeout_reg(struct watchdog_device *wdog)
++{
++	struct keembay_wdt *wdt = watchdog_get_drvdata(wdog);
++	u32 th_val = 0;
++
++	if (wdog->pretimeout)
++		th_val = wdog->timeout - wdog->pretimeout;
++
++	keembay_wdt_writel(wdt, TIM_WATCHDOG_INT_THRES, th_val * wdt->rate);
++}
++
++static int keembay_wdt_start(struct watchdog_device *wdog)
++{
++	struct keembay_wdt *wdt = watchdog_get_drvdata(wdog);
++
++	keembay_wdt_writel(wdt, TIM_WDOG_EN, WDT_ENABLE);
++
++	return 0;
++}
++
++static int keembay_wdt_stop(struct watchdog_device *wdog)
++{
++	struct keembay_wdt *wdt = watchdog_get_drvdata(wdog);
++
++	keembay_wdt_writel(wdt, TIM_WDOG_EN, WDT_DISABLE);
++
++	return 0;
++}
++
++static int keembay_wdt_ping(struct watchdog_device *wdog)
++{
++	keembay_wdt_set_timeout_reg(wdog);
++
++	return 0;
++}
++
++static int keembay_wdt_set_timeout(struct watchdog_device *wdog, u32 t)
++{
++	wdog->timeout = t;
++	keembay_wdt_set_timeout_reg(wdog);
++	keembay_wdt_set_pretimeout_reg(wdog);
++
++	return 0;
++}
++
++static int keembay_wdt_set_pretimeout(struct watchdog_device *wdog, u32 t)
++{
++	if (t > wdog->timeout)
++		return -EINVAL;
++
++	wdog->pretimeout = t;
++	keembay_wdt_set_pretimeout_reg(wdog);
++
++	return 0;
++}
++
++static unsigned int keembay_wdt_get_timeleft(struct watchdog_device *wdog)
++{
++	struct keembay_wdt *wdt = watchdog_get_drvdata(wdog);
++
++	return keembay_wdt_readl(wdt, TIM_WATCHDOG) / wdt->rate;
++}
++
++/*
++ * SMC call is used to clear the interrupt bits, because the TIM_GEN_CONFIG
++ * register is in the secure bank.
++ */
++static irqreturn_t keembay_wdt_to_isr(int irq, void *dev_id)
++{
++	struct keembay_wdt *wdt = dev_id;
++	struct arm_smccc_res res;
++
++	arm_smccc_smc(WDT_INT_CLEAR_SMC, WDT_TO_INT_MASK, 0, 0, 0, 0, 0, 0, &res);
++	dev_crit(wdt->wdd.parent, "Intel Keem Bay non-secure wdt timeout.\n");
++	emergency_restart();
++
++	return IRQ_HANDLED;
++}
++
++static irqreturn_t keembay_wdt_th_isr(int irq, void *dev_id)
++{
++	struct keembay_wdt *wdt = dev_id;
++	struct arm_smccc_res res;
++
++	keembay_wdt_set_pretimeout(&wdt->wdd, 0x0);
++
++	arm_smccc_smc(WDT_INT_CLEAR_SMC, WDT_TH_INT_MASK, 0, 0, 0, 0, 0, 0, &res);
++	dev_crit(wdt->wdd.parent, "Intel Keem Bay non-secure wdt pre-timeout.\n");
++	watchdog_notify_pretimeout(&wdt->wdd);
++
++	return IRQ_HANDLED;
++}
++
++static const struct watchdog_info keembay_wdt_info = {
++	.identity	= "Intel Keem Bay Watchdog Timer",
++	.options	= WDIOF_SETTIMEOUT |
++			  WDIOF_PRETIMEOUT |
++			  WDIOF_MAGICCLOSE |
++			  WDIOF_KEEPALIVEPING,
++};
++
++static const struct watchdog_ops keembay_wdt_ops = {
++	.owner		= THIS_MODULE,
++	.start		= keembay_wdt_start,
++	.stop		= keembay_wdt_stop,
++	.ping		= keembay_wdt_ping,
++	.set_timeout	= keembay_wdt_set_timeout,
++	.set_pretimeout	= keembay_wdt_set_pretimeout,
++	.get_timeleft	= keembay_wdt_get_timeleft,
++};
++
++static int keembay_wdt_probe(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct keembay_wdt *wdt;
++	int ret;
++
++	wdt = devm_kzalloc(dev, sizeof(*wdt), GFP_KERNEL);
++	if (!wdt)
++		return -ENOMEM;
++
++	wdt->base = devm_platform_ioremap_resource(pdev, 0);
++	if (IS_ERR(wdt->base))
++		return PTR_ERR(wdt->base);
++
++	/* we do not need to enable the clock as it is enabled by default */
++	wdt->clk = devm_clk_get(dev, NULL);
++	if (IS_ERR(wdt->clk))
++		return dev_err_probe(dev, PTR_ERR(wdt->clk), "Failed to get clock\n");
++
++	wdt->rate = clk_get_rate(wdt->clk);
++	if (!wdt->rate)
++		return dev_err_probe(dev, -EINVAL, "Failed to get clock rate\n");
++
++	wdt->th_irq = platform_get_irq_byname(pdev, "threshold");
++	if (wdt->th_irq < 0)
++		return dev_err_probe(dev, wdt->th_irq, "Failed to get IRQ for threshold\n");
++
++	ret = devm_request_irq(dev, wdt->th_irq, keembay_wdt_th_isr, 0,
++			       "keembay-wdt", wdt);
++	if (ret)
++		return dev_err_probe(dev, ret, "Failed to request IRQ for threshold\n");
++
++	wdt->to_irq = platform_get_irq_byname(pdev, "timeout");
++	if (wdt->to_irq < 0)
++		return dev_err_probe(dev, wdt->to_irq, "Failed to get IRQ for timeout\n");
++
++	ret = devm_request_irq(dev, wdt->to_irq, keembay_wdt_to_isr, 0,
++			       "keembay-wdt", wdt);
++	if (ret)
++		return dev_err_probe(dev, ret, "Failed to request IRQ for timeout\n");
++
++	wdt->wdd.parent		= dev;
++	wdt->wdd.info		= &keembay_wdt_info;
++	wdt->wdd.ops		= &keembay_wdt_ops;
++	wdt->wdd.min_timeout	= WDT_LOAD_MIN;
++	wdt->wdd.max_timeout	= WDT_LOAD_MAX / wdt->rate;
++	wdt->wdd.timeout	= WDT_TIMEOUT;
++	wdt->wdd.pretimeout	= WDT_PRETIMEOUT;
++
++	watchdog_set_drvdata(&wdt->wdd, wdt);
++	watchdog_set_nowayout(&wdt->wdd, nowayout);
++	watchdog_init_timeout(&wdt->wdd, timeout, dev);
++	keembay_wdt_set_timeout(&wdt->wdd, wdt->wdd.timeout);
++	keembay_wdt_set_pretimeout(&wdt->wdd, wdt->wdd.pretimeout);
++
++	ret = devm_watchdog_register_device(dev, &wdt->wdd);
++	if (ret)
++		return dev_err_probe(dev, ret, "Failed to register watchdog device.\n");
++
++	platform_set_drvdata(pdev, wdt);
++	dev_info(dev, "Initial timeout %d sec%s.\n",
++		 wdt->wdd.timeout, nowayout ? ", nowayout" : "");
++
++	return 0;
++}
++
++static int __maybe_unused keembay_wdt_suspend(struct device *dev)
++{
++	struct keembay_wdt *wdt = dev_get_drvdata(dev);
++
++	if (watchdog_active(&wdt->wdd))
++		return keembay_wdt_stop(&wdt->wdd);
++
++	return 0;
++}
++
++static int __maybe_unused keembay_wdt_resume(struct device *dev)
++{
++	struct keembay_wdt *wdt = dev_get_drvdata(dev);
++
++	if (watchdog_active(&wdt->wdd))
++		return keembay_wdt_start(&wdt->wdd);
++
++	return 0;
++}
++
++static SIMPLE_DEV_PM_OPS(keembay_wdt_pm_ops, keembay_wdt_suspend,
++			 keembay_wdt_resume);
++
++static const struct of_device_id keembay_wdt_match[] = {
++	{ .compatible = "intel,keembay-wdt" },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, keembay_wdt_match);
++
++static struct platform_driver keembay_wdt_driver = {
++	.probe	= keembay_wdt_probe,
++	.driver	= {
++		.name		= "keembay_wdt",
++		.of_match_table	= keembay_wdt_match,
++		.pm		= &keembay_wdt_pm_ops,
++	},
++};
++
++module_platform_driver(keembay_wdt_driver);
++
++MODULE_DESCRIPTION("Intel Keem Bay SoC watchdog driver");
++MODULE_AUTHOR("Wan Ahmad Zainie <wan.ahmad.zainie.wan.mohamad@intel.com");
++MODULE_LICENSE("GPL v2");
+diff --git a/drivers/watchdog/machzwd.c b/drivers/watchdog/machzwd.c
+index 743377c5b173..73f2221f6222 100644
+--- a/drivers/watchdog/machzwd.c
++++ b/drivers/watchdog/machzwd.c
+@@ -174,6 +174,7 @@ static inline void zf_set_timer(unsigned short new, unsigned char n)
+ 		fallthrough;
+ 	case WD2:
+ 		zf_writeb(COUNTER_2, new > 0xff ? 0xff : new);
++		fallthrough;
+ 	default:
+ 		return;
+ 	}
+diff --git a/drivers/watchdog/max63xx_wdt.c b/drivers/watchdog/max63xx_wdt.c
+index 3a899628a834..9e1541cfae0d 100644
+--- a/drivers/watchdog/max63xx_wdt.c
++++ b/drivers/watchdog/max63xx_wdt.c
+@@ -26,6 +26,7 @@
+ #include <linux/spinlock.h>
+ #include <linux/io.h>
+ #include <linux/slab.h>
++#include <linux/property.h>
+ 
+ #define DEFAULT_HEARTBEAT 60
+ #define MAX_HEARTBEAT     60
+@@ -99,8 +100,8 @@ static const struct max63xx_timeout max6373_table[] = {
+ 	{ },
+ };
+ 
+-static struct max63xx_timeout *
+-max63xx_select_timeout(struct max63xx_timeout *table, int value)
++static const struct max63xx_timeout *
++max63xx_select_timeout(const struct max63xx_timeout *table, int value)
+ {
+ 	while (table->twd) {
+ 		if (value <= table->twd) {
+@@ -202,14 +203,17 @@ static int max63xx_wdt_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
+ 	struct max63xx_wdt *wdt;
+-	struct max63xx_timeout *table;
++	const struct max63xx_timeout *table;
+ 	int err;
+ 
+ 	wdt = devm_kzalloc(dev, sizeof(*wdt), GFP_KERNEL);
+ 	if (!wdt)
+ 		return -ENOMEM;
+ 
+-	table = (struct max63xx_timeout *)pdev->id_entry->driver_data;
++	/* Attempt to use fwnode first */
++	table = device_get_match_data(dev);
++	if (!table)
++		table = (struct max63xx_timeout *)pdev->id_entry->driver_data;
+ 
+ 	if (heartbeat < 1 || heartbeat > MAX_HEARTBEAT)
+ 		heartbeat = DEFAULT_HEARTBEAT;
+@@ -255,11 +259,23 @@ static const struct platform_device_id max63xx_id_table[] = {
+ };
+ MODULE_DEVICE_TABLE(platform, max63xx_id_table);
+ 
++static const struct of_device_id max63xx_dt_id_table[] = {
++	{ .compatible = "maxim,max6369", .data = max6369_table, },
++	{ .compatible = "maxim,max6370", .data = max6369_table, },
++	{ .compatible = "maxim,max6371", .data = max6371_table, },
++	{ .compatible = "maxim,max6372", .data = max6371_table, },
++	{ .compatible = "maxim,max6373", .data = max6373_table, },
++	{ .compatible = "maxim,max6374", .data = max6373_table, },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, max63xx_dt_id_table);
++
+ static struct platform_driver max63xx_wdt_driver = {
+ 	.probe		= max63xx_wdt_probe,
+ 	.id_table	= max63xx_id_table,
+ 	.driver		= {
+ 		.name	= "max63xx_wdt",
++		.of_match_table = max63xx_dt_id_table,
+ 	},
+ };
+ 
+diff --git a/drivers/watchdog/mei_wdt.c b/drivers/watchdog/mei_wdt.c
+index c5967d8b4256..c7a7235e6224 100644
+--- a/drivers/watchdog/mei_wdt.c
++++ b/drivers/watchdog/mei_wdt.c
+@@ -105,7 +105,7 @@ struct mei_wdt {
+ #endif /* CONFIG_DEBUG_FS */
+ };
+ 
+-/*
++/**
+  * struct mei_mc_hdr - Management Control Command Header
+  *
+  * @command: Management Control (0x2)
+@@ -121,7 +121,7 @@ struct mei_mc_hdr {
+ };
+ 
+ /**
+- * struct mei_wdt_start_request watchdog start/ping
++ * struct mei_wdt_start_request - watchdog start/ping
+  *
+  * @hdr: Management Control Command Header
+  * @timeout: timeout value
+@@ -134,7 +134,7 @@ struct mei_wdt_start_request {
+ } __packed;
+ 
+ /**
+- * struct mei_wdt_start_response watchdog start/ping response
++ * struct mei_wdt_start_response - watchdog start/ping response
+  *
+  * @hdr: Management Control Command Header
+  * @status: operation status
+@@ -474,7 +474,7 @@ static void mei_wdt_rx(struct mei_cl_device *cldev)
+ 		complete(&wdt->response);
+ }
+ 
+-/*
++/**
+  * mei_wdt_notif - callback for event notification
+  *
+  * @cldev: bus device
+@@ -620,7 +620,7 @@ static int mei_wdt_probe(struct mei_cl_device *cldev,
+ 	return ret;
+ }
+ 
+-static int mei_wdt_remove(struct mei_cl_device *cldev)
++static void mei_wdt_remove(struct mei_cl_device *cldev)
+ {
+ 	struct mei_wdt *wdt = mei_cldev_get_drvdata(cldev);
+ 
+@@ -637,8 +637,6 @@ static int mei_wdt_remove(struct mei_cl_device *cldev)
+ 	dbgfs_unregister(wdt);
+ 
+ 	kfree(wdt);
+-
+-	return 0;
+ }
+ 
+ #define MEI_UUID_WD UUID_LE(0x05B79A6F, 0x4628, 0x4D7F, \
+diff --git a/drivers/watchdog/meson_wdt.c b/drivers/watchdog/meson_wdt.c
+index 459f3ae02c91..539feaa1f904 100644
+--- a/drivers/watchdog/meson_wdt.c
++++ b/drivers/watchdog/meson_wdt.c
+@@ -162,7 +162,6 @@ static int meson_wdt_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
+ 	struct meson_wdt_dev *meson_wdt;
+-	const struct of_device_id *of_id;
+ 	int err;
+ 
+ 	meson_wdt = devm_kzalloc(dev, sizeof(*meson_wdt), GFP_KERNEL);
+@@ -173,12 +172,7 @@ static int meson_wdt_probe(struct platform_device *pdev)
+ 	if (IS_ERR(meson_wdt->wdt_base))
+ 		return PTR_ERR(meson_wdt->wdt_base);
+ 
+-	of_id = of_match_device(meson_wdt_dt_ids, dev);
+-	if (!of_id) {
+-		dev_err(dev, "Unable to initialize WDT data\n");
+-		return -ENODEV;
+-	}
+-	meson_wdt->data = of_id->data;
++	meson_wdt->data = device_get_match_data(dev);
+ 
+ 	meson_wdt->wdt_dev.parent = dev;
+ 	meson_wdt->wdt_dev.info = &meson_wdt_info;
+diff --git a/drivers/watchdog/mpc8xxx_wdt.c b/drivers/watchdog/mpc8xxx_wdt.c
+index 3fc457bc16db..1c569be72ea2 100644
+--- a/drivers/watchdog/mpc8xxx_wdt.c
++++ b/drivers/watchdog/mpc8xxx_wdt.c
+@@ -118,7 +118,7 @@ static struct watchdog_info mpc8xxx_wdt_info = {
+ 	.identity = "MPC8xxx",
+ };
+ 
+-static struct watchdog_ops mpc8xxx_wdt_ops = {
++static const struct watchdog_ops mpc8xxx_wdt_ops = {
+ 	.owner = THIS_MODULE,
+ 	.start = mpc8xxx_wdt_start,
+ 	.ping = mpc8xxx_wdt_ping,
+@@ -175,8 +175,8 @@ static int mpc8xxx_wdt_probe(struct platform_device *ofdev)
+ 
+ 	spin_lock_init(&ddata->lock);
+ 
+-	ddata->wdd.info = &mpc8xxx_wdt_info,
+-	ddata->wdd.ops = &mpc8xxx_wdt_ops,
++	ddata->wdd.info = &mpc8xxx_wdt_info;
++	ddata->wdd.ops = &mpc8xxx_wdt_ops;
+ 
+ 	ddata->wdd.timeout = WATCHDOG_TIMEOUT;
+ 	watchdog_init_timeout(&ddata->wdd, timeout, dev);
+diff --git a/drivers/watchdog/msc313e_wdt.c b/drivers/watchdog/msc313e_wdt.c
+new file mode 100644
+index 000000000000..0d497aa0fb7d
+--- /dev/null
++++ b/drivers/watchdog/msc313e_wdt.c
+@@ -0,0 +1,166 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * MStar WDT driver
++ *
++ * Copyright (C) 2019 - 2021 Daniel Palmer
++ * Copyright (C) 2021 Romain Perier
++ *
++ */
++
++#include <linux/clk.h>
++#include <linux/io.h>
++#include <linux/mod_devicetable.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/watchdog.h>
++
++#define REG_WDT_CLR			0x0
++#define REG_WDT_MAX_PRD_L		0x10
++#define REG_WDT_MAX_PRD_H		0x14
++
++#define MSC313E_WDT_MIN_TIMEOUT		1
++#define MSC313E_WDT_DEFAULT_TIMEOUT	30
++
++static unsigned int timeout;
++
++module_param(timeout, int, 0);
++MODULE_PARM_DESC(timeout, "Watchdog timeout in seconds");
++
++struct msc313e_wdt_priv {
++	void __iomem *base;
++	struct watchdog_device wdev;
++	struct clk *clk;
++};
++
++static int msc313e_wdt_start(struct watchdog_device *wdev)
++{
++	struct msc313e_wdt_priv *priv = watchdog_get_drvdata(wdev);
++	u32 timeout;
++	int err;
++
++	err = clk_prepare_enable(priv->clk);
++	if (err)
++		return err;
++
++	timeout = wdev->timeout * clk_get_rate(priv->clk);
++	writew(timeout & 0xffff, priv->base + REG_WDT_MAX_PRD_L);
++	writew((timeout >> 16) & 0xffff, priv->base + REG_WDT_MAX_PRD_H);
++	writew(1, priv->base + REG_WDT_CLR);
++	return 0;
++}
++
++static int msc313e_wdt_ping(struct watchdog_device *wdev)
++{
++	struct msc313e_wdt_priv *priv = watchdog_get_drvdata(wdev);
++
++	writew(1, priv->base + REG_WDT_CLR);
++	return 0;
++}
++
++static int msc313e_wdt_stop(struct watchdog_device *wdev)
++{
++	struct msc313e_wdt_priv *priv = watchdog_get_drvdata(wdev);
++
++	writew(0, priv->base + REG_WDT_MAX_PRD_L);
++	writew(0, priv->base + REG_WDT_MAX_PRD_H);
++	writew(0, priv->base + REG_WDT_CLR);
++	clk_disable_unprepare(priv->clk);
++	return 0;
++}
++
++static int msc313e_wdt_settimeout(struct watchdog_device *wdev, unsigned int new_time)
++{
++	wdev->timeout = new_time;
++
++	return msc313e_wdt_start(wdev);
++}
++
++static const struct watchdog_info msc313e_wdt_ident = {
++	.identity = "MSC313e watchdog",
++	.options = WDIOF_MAGICCLOSE | WDIOF_KEEPALIVEPING | WDIOF_SETTIMEOUT,
++};
++
++static const struct watchdog_ops msc313e_wdt_ops = {
++	.owner = THIS_MODULE,
++	.start = msc313e_wdt_start,
++	.stop = msc313e_wdt_stop,
++	.ping = msc313e_wdt_ping,
++	.set_timeout = msc313e_wdt_settimeout,
++};
++
++static const struct of_device_id msc313e_wdt_of_match[] = {
++	{ .compatible = "mstar,msc313e-wdt", },
++	{ /* sentinel */ }
++};
++MODULE_DEVICE_TABLE(of, msc313e_wdt_of_match);
++
++static int msc313e_wdt_probe(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct msc313e_wdt_priv *priv;
++
++	priv = devm_kzalloc(&pdev->dev, sizeof(*priv), GFP_KERNEL);
++	if (!priv)
++		return -ENOMEM;
++
++	priv->base = devm_platform_ioremap_resource(pdev, 0);
++	if (IS_ERR(priv->base))
++		return PTR_ERR(priv->base);
++
++	priv->clk = devm_clk_get(dev, NULL);
++	if (IS_ERR(priv->clk)) {
++		dev_err(dev, "No input clock\n");
++		return PTR_ERR(priv->clk);
++	}
++
++	priv->wdev.info = &msc313e_wdt_ident,
++	priv->wdev.ops = &msc313e_wdt_ops,
++	priv->wdev.parent = dev;
++	priv->wdev.min_timeout = MSC313E_WDT_MIN_TIMEOUT;
++	priv->wdev.max_timeout = U32_MAX / clk_get_rate(priv->clk);
++	priv->wdev.timeout = MSC313E_WDT_DEFAULT_TIMEOUT;
++
++	watchdog_set_drvdata(&priv->wdev, priv);
++
++	watchdog_init_timeout(&priv->wdev, timeout, dev);
++	watchdog_stop_on_reboot(&priv->wdev);
++	watchdog_stop_on_unregister(&priv->wdev);
++
++	return devm_watchdog_register_device(dev, &priv->wdev);
++}
++
++static int __maybe_unused msc313e_wdt_suspend(struct device *dev)
++{
++	struct msc313e_wdt_priv *priv = dev_get_drvdata(dev);
++
++	if (watchdog_active(&priv->wdev))
++		msc313e_wdt_stop(&priv->wdev);
++
++	return 0;
++}
++
++static int __maybe_unused msc313e_wdt_resume(struct device *dev)
++{
++	struct msc313e_wdt_priv *priv = dev_get_drvdata(dev);
++
++	if (watchdog_active(&priv->wdev))
++		msc313e_wdt_start(&priv->wdev);
++
++	return 0;
++}
++
++static SIMPLE_DEV_PM_OPS(msc313e_wdt_pm_ops, msc313e_wdt_suspend, msc313e_wdt_resume);
++
++static struct platform_driver msc313e_wdt_driver = {
++	.driver = {
++		.name = "msc313e-wdt",
++		.of_match_table = msc313e_wdt_of_match,
++		.pm = &msc313e_wdt_pm_ops,
++	},
++	.probe = msc313e_wdt_probe,
++};
++module_platform_driver(msc313e_wdt_driver);
++
++MODULE_AUTHOR("Daniel Palmer <daniel@thingy.jp>");
++MODULE_DESCRIPTION("Watchdog driver for MStar MSC313e");
++MODULE_LICENSE("GPL v2");
+diff --git a/drivers/watchdog/mtk_wdt.c b/drivers/watchdog/mtk_wdt.c
+index d6a6393f609d..796fbb048cbe 100644
+--- a/drivers/watchdog/mtk_wdt.c
++++ b/drivers/watchdog/mtk_wdt.c
+@@ -11,6 +11,8 @@
+ 
+ #include <dt-bindings/reset-controller/mt2712-resets.h>
+ #include <dt-bindings/reset-controller/mt8183-resets.h>
++#include <dt-bindings/reset-controller/mt8192-resets.h>
++#include <dt-bindings/reset/mt8195-resets.h>
+ #include <linux/delay.h>
+ #include <linux/err.h>
+ #include <linux/init.h>
+@@ -24,9 +26,10 @@
+ #include <linux/reset-controller.h>
+ #include <linux/types.h>
+ #include <linux/watchdog.h>
++#include <linux/interrupt.h>
+ 
+ #define WDT_MAX_TIMEOUT		31
+-#define WDT_MIN_TIMEOUT		1
++#define WDT_MIN_TIMEOUT		2
+ #define WDT_LENGTH_TIMEOUT(n)	((n) << 5)
+ 
+ #define WDT_LENGTH		0x04
+@@ -76,6 +79,14 @@ static const struct mtk_wdt_data mt8183_data = {
+ 	.toprgu_sw_rst_num = MT8183_TOPRGU_SW_RST_NUM,
+ };
+ 
++static const struct mtk_wdt_data mt8192_data = {
++	.toprgu_sw_rst_num = MT8192_TOPRGU_SW_RST_NUM,
++};
++
++static const struct mtk_wdt_data mt8195_data = {
++	.toprgu_sw_rst_num = MT8195_TOPRGU_SW_RST_NUM,
++};
++
+ static int toprgu_reset_update(struct reset_controller_dev *rcdev,
+ 			       unsigned long id, bool assert)
+ {
+@@ -182,12 +193,19 @@ static int mtk_wdt_set_timeout(struct watchdog_device *wdt_dev,
+ 	u32 reg;
+ 
+ 	wdt_dev->timeout = timeout;
++	/*
++	 * In dual mode, irq will be triggered at timeout / 2
++	 * the real timeout occurs at timeout
++	 */
++	if (wdt_dev->pretimeout)
++		wdt_dev->pretimeout = timeout / 2;
+ 
+ 	/*
+ 	 * One bit is the value of 512 ticks
+ 	 * The clock has 32 KHz
+ 	 */
+-	reg = WDT_LENGTH_TIMEOUT(timeout << 6) | WDT_LENGTH_KEY;
++	reg = WDT_LENGTH_TIMEOUT((timeout - wdt_dev->pretimeout) << 6)
++			| WDT_LENGTH_KEY;
+ 	iowrite32(reg, wdt_base + WDT_LENGTH);
+ 
+ 	mtk_wdt_ping(wdt_dev);
+@@ -195,6 +213,19 @@ static int mtk_wdt_set_timeout(struct watchdog_device *wdt_dev,
+ 	return 0;
+ }
+ 
++static void mtk_wdt_init(struct watchdog_device *wdt_dev)
++{
++	struct mtk_wdt_dev *mtk_wdt = watchdog_get_drvdata(wdt_dev);
++	void __iomem *wdt_base;
++
++	wdt_base = mtk_wdt->wdt_base;
++
++	if (readl(wdt_base + WDT_MODE) & WDT_MODE_EN) {
++		set_bit(WDOG_HW_RUNNING, &wdt_dev->status);
++		mtk_wdt_set_timeout(wdt_dev, wdt_dev->timeout);
++	}
++}
++
+ static int mtk_wdt_stop(struct watchdog_device *wdt_dev)
+ {
+ 	struct mtk_wdt_dev *mtk_wdt = watchdog_get_drvdata(wdt_dev);
+@@ -221,13 +252,48 @@ static int mtk_wdt_start(struct watchdog_device *wdt_dev)
+ 		return ret;
+ 
+ 	reg = ioread32(wdt_base + WDT_MODE);
+-	reg &= ~(WDT_MODE_IRQ_EN | WDT_MODE_DUAL_EN);
++	if (wdt_dev->pretimeout)
++		reg |= (WDT_MODE_IRQ_EN | WDT_MODE_DUAL_EN);
++	else
++		reg &= ~(WDT_MODE_IRQ_EN | WDT_MODE_DUAL_EN);
+ 	reg |= (WDT_MODE_EN | WDT_MODE_KEY);
+ 	iowrite32(reg, wdt_base + WDT_MODE);
+ 
+ 	return 0;
+ }
+ 
++static int mtk_wdt_set_pretimeout(struct watchdog_device *wdd,
++				  unsigned int timeout)
++{
++	struct mtk_wdt_dev *mtk_wdt = watchdog_get_drvdata(wdd);
++	void __iomem *wdt_base = mtk_wdt->wdt_base;
++	u32 reg = ioread32(wdt_base + WDT_MODE);
++
++	if (timeout && !wdd->pretimeout) {
++		wdd->pretimeout = wdd->timeout / 2;
++		reg |= (WDT_MODE_IRQ_EN | WDT_MODE_DUAL_EN);
++	} else if (!timeout && wdd->pretimeout) {
++		wdd->pretimeout = 0;
++		reg &= ~(WDT_MODE_IRQ_EN | WDT_MODE_DUAL_EN);
++	} else {
++		return 0;
++	}
++
++	reg |= WDT_MODE_KEY;
++	iowrite32(reg, wdt_base + WDT_MODE);
++
++	return mtk_wdt_set_timeout(wdd, wdd->timeout);
++}
++
++static irqreturn_t mtk_wdt_isr(int irq, void *arg)
++{
++	struct watchdog_device *wdd = arg;
++
++	watchdog_notify_pretimeout(wdd);
++
++	return IRQ_HANDLED;
++}
++
+ static const struct watchdog_info mtk_wdt_info = {
+ 	.identity	= DRV_NAME,
+ 	.options	= WDIOF_SETTIMEOUT |
+@@ -235,12 +301,21 @@ static const struct watchdog_info mtk_wdt_info = {
+ 			  WDIOF_MAGICCLOSE,
+ };
+ 
++static const struct watchdog_info mtk_wdt_pt_info = {
++	.identity	= DRV_NAME,
++	.options	= WDIOF_SETTIMEOUT |
++			  WDIOF_PRETIMEOUT |
++			  WDIOF_KEEPALIVEPING |
++			  WDIOF_MAGICCLOSE,
++};
++
+ static const struct watchdog_ops mtk_wdt_ops = {
+ 	.owner		= THIS_MODULE,
+ 	.start		= mtk_wdt_start,
+ 	.stop		= mtk_wdt_stop,
+ 	.ping		= mtk_wdt_ping,
+ 	.set_timeout	= mtk_wdt_set_timeout,
++	.set_pretimeout	= mtk_wdt_set_pretimeout,
+ 	.restart	= mtk_wdt_restart,
+ };
+ 
+@@ -249,7 +324,7 @@ static int mtk_wdt_probe(struct platform_device *pdev)
+ 	struct device *dev = &pdev->dev;
+ 	struct mtk_wdt_dev *mtk_wdt;
+ 	const struct mtk_wdt_data *wdt_data;
+-	int err;
++	int err, irq;
+ 
+ 	mtk_wdt = devm_kzalloc(dev, sizeof(*mtk_wdt), GFP_KERNEL);
+ 	if (!mtk_wdt)
+@@ -261,10 +336,25 @@ static int mtk_wdt_probe(struct platform_device *pdev)
+ 	if (IS_ERR(mtk_wdt->wdt_base))
+ 		return PTR_ERR(mtk_wdt->wdt_base);
+ 
+-	mtk_wdt->wdt_dev.info = &mtk_wdt_info;
++	irq = platform_get_irq(pdev, 0);
++	if (irq > 0) {
++		err = devm_request_irq(&pdev->dev, irq, mtk_wdt_isr, 0, "wdt_bark",
++				       &mtk_wdt->wdt_dev);
++		if (err)
++			return err;
++
++		mtk_wdt->wdt_dev.info = &mtk_wdt_pt_info;
++		mtk_wdt->wdt_dev.pretimeout = WDT_MAX_TIMEOUT / 2;
++	} else {
++		if (irq == -EPROBE_DEFER)
++			return -EPROBE_DEFER;
++
++		mtk_wdt->wdt_dev.info = &mtk_wdt_info;
++	}
++
+ 	mtk_wdt->wdt_dev.ops = &mtk_wdt_ops;
+ 	mtk_wdt->wdt_dev.timeout = WDT_MAX_TIMEOUT;
+-	mtk_wdt->wdt_dev.max_timeout = WDT_MAX_TIMEOUT;
++	mtk_wdt->wdt_dev.max_hw_heartbeat_ms = WDT_MAX_TIMEOUT * 1000;
+ 	mtk_wdt->wdt_dev.min_timeout = WDT_MIN_TIMEOUT;
+ 	mtk_wdt->wdt_dev.parent = dev;
+ 
+@@ -274,7 +364,7 @@ static int mtk_wdt_probe(struct platform_device *pdev)
+ 
+ 	watchdog_set_drvdata(&mtk_wdt->wdt_dev, mtk_wdt);
+ 
+-	mtk_wdt_stop(&mtk_wdt->wdt_dev);
++	mtk_wdt_init(&mtk_wdt->wdt_dev);
+ 
+ 	watchdog_stop_on_reboot(&mtk_wdt->wdt_dev);
+ 	err = devm_watchdog_register_device(dev, &mtk_wdt->wdt_dev);
+@@ -322,6 +412,8 @@ static const struct of_device_id mtk_wdt_dt_ids[] = {
+ 	{ .compatible = "mediatek,mt2712-wdt", .data = &mt2712_data },
+ 	{ .compatible = "mediatek,mt6589-wdt" },
+ 	{ .compatible = "mediatek,mt8183-wdt", .data = &mt8183_data },
++	{ .compatible = "mediatek,mt8192-wdt", .data = &mt8192_data },
++	{ .compatible = "mediatek,mt8195-wdt", .data = &mt8195_data },
+ 	{ /* sentinel */ }
+ };
+ MODULE_DEVICE_TABLE(of, mtk_wdt_dt_ids);
+diff --git a/drivers/watchdog/mtx-1_wdt.c b/drivers/watchdog/mtx-1_wdt.c
+index 8aa1cb4a295f..ea1bbf5ee528 100644
+--- a/drivers/watchdog/mtx-1_wdt.c
++++ b/drivers/watchdog/mtx-1_wdt.c
+@@ -41,8 +41,6 @@
+ #include <linux/uaccess.h>
+ #include <linux/gpio/consumer.h>
+ 
+-#include <asm/mach-au1x00/au1000.h>
+-
+ #define MTX1_WDT_INTERVAL	(5 * HZ)
+ 
+ static int ticks = 100 * HZ;
+diff --git a/drivers/watchdog/npcm_wdt.c b/drivers/watchdog/npcm_wdt.c
+index 765577f11c8d..28a24caa2627 100644
+--- a/drivers/watchdog/npcm_wdt.c
++++ b/drivers/watchdog/npcm_wdt.c
+@@ -229,6 +229,7 @@ static int npcm_wdt_probe(struct platform_device *pdev)
+ 
+ #ifdef CONFIG_OF
+ static const struct of_device_id npcm_wdt_match[] = {
++	{.compatible = "nuvoton,wpcm450-wdt"},
+ 	{.compatible = "nuvoton,npcm750-wdt"},
+ 	{},
+ };
+diff --git a/drivers/watchdog/octeon-wdt-main.c b/drivers/watchdog/octeon-wdt-main.c
+index fde9e739b436..0fe71f7e66d5 100644
+--- a/drivers/watchdog/octeon-wdt-main.c
++++ b/drivers/watchdog/octeon-wdt-main.c
+@@ -54,6 +54,7 @@
+ #include <linux/delay.h>
+ #include <linux/cpu.h>
+ #include <linux/irq.h>
++#include <linux/irqdomain.h>
+ 
+ #include <asm/mipsregs.h>
+ #include <asm/uasm.h>
+@@ -119,7 +120,7 @@ static int cpu2core(int cpu)
+ }
+ 
+ /**
+- * Poke the watchdog when an interrupt is received
++ * octeon_wdt_poke_irq - Poke the watchdog when an interrupt is received
+  *
+  * @cpl:
+  * @dev_id:
+@@ -153,7 +154,7 @@ static irqreturn_t octeon_wdt_poke_irq(int cpl, void *dev_id)
+ extern int prom_putchar(char c);
+ 
+ /**
+- * Write a string to the uart
++ * octeon_wdt_write_string - Write a string to the uart
+  *
+  * @str:        String to write
+  */
+@@ -165,7 +166,7 @@ static void octeon_wdt_write_string(const char *str)
+ }
+ 
+ /**
+- * Write a hex number out of the uart
++ * octeon_wdt_write_hex() - Write a hex number out of the uart
+  *
+  * @value:      Number to display
+  * @digits:     Number of digits to print (1 to 16)
+@@ -192,6 +193,8 @@ static const char reg_name[][3] = {
+ };
+ 
+ /**
++ * octeon_wdt_nmi_stage3:
++ *
+  * NMI stage 3 handler. NMIs are handled in the following manner:
+  * 1) The first NMI handler enables CVMSEG and transfers from
+  * the bootbus region into normal memory. It is careful to not
+@@ -513,7 +516,7 @@ static struct watchdog_device octeon_wdt = {
+ 
+ static enum cpuhp_state octeon_wdt_online;
+ /**
+- * Module/ driver initialization.
++ * octeon_wdt_init - Module/ driver initialization.
+  *
+  * Returns Zero on success
+  */
+@@ -585,7 +588,7 @@ static int __init octeon_wdt_init(void)
+ }
+ 
+ /**
+- * Module / driver shutdown
++ * octeon_wdt_cleanup - Module / driver shutdown
+  */
+ static void __exit octeon_wdt_cleanup(void)
+ {
+diff --git a/drivers/watchdog/of_xilinx_wdt.c b/drivers/watchdog/of_xilinx_wdt.c
+index 7fe4f7c3f7ce..3318544366b8 100644
+--- a/drivers/watchdog/of_xilinx_wdt.c
++++ b/drivers/watchdog/of_xilinx_wdt.c
+@@ -6,6 +6,7 @@
+  * (C) Copyright 2011 (Alejandro Cabrera <aldaya@gmail.com>)
+  */
+ 
++#include <linux/bits.h>
+ #include <linux/clk.h>
+ #include <linux/err.h>
+ #include <linux/module.h>
+@@ -24,12 +25,12 @@
+ #define XWT_TBR_OFFSET      0x8 /* Timebase Register Offset */
+ 
+ /* Control/Status Register Masks  */
+-#define XWT_CSR0_WRS_MASK   0x00000008 /* Reset status */
+-#define XWT_CSR0_WDS_MASK   0x00000004 /* Timer state  */
+-#define XWT_CSR0_EWDT1_MASK 0x00000002 /* Enable bit 1 */
++#define XWT_CSR0_WRS_MASK	BIT(3) /* Reset status */
++#define XWT_CSR0_WDS_MASK	BIT(2) /* Timer state  */
++#define XWT_CSR0_EWDT1_MASK	BIT(1) /* Enable bit 1 */
+ 
+ /* Control/Status Register 0/1 bits  */
+-#define XWT_CSRX_EWDT2_MASK 0x00000001 /* Enable bit 2 */
++#define XWT_CSRX_EWDT2_MASK	BIT(0) /* Enable bit 2 */
+ 
+ /* SelfTest constants */
+ #define XWT_MAX_SELFTEST_LOOP_COUNT 0x00010000
+@@ -40,7 +41,7 @@
+ struct xwdt_device {
+ 	void __iomem *base;
+ 	u32 wdt_interval;
+-	spinlock_t spinlock;
++	spinlock_t spinlock; /* spinlock for register handling */
+ 	struct watchdog_device xilinx_wdt_wdd;
+ 	struct clk		*clk;
+ };
+@@ -70,6 +71,8 @@ static int xilinx_wdt_start(struct watchdog_device *wdd)
+ 
+ 	spin_unlock(&xdev->spinlock);
+ 
++	dev_dbg(wdd->parent, "Watchdog Started!\n");
++
+ 	return 0;
+ }
+ 
+@@ -91,7 +94,7 @@ static int xilinx_wdt_stop(struct watchdog_device *wdd)
+ 
+ 	clk_disable(xdev->clk);
+ 
+-	pr_info("Stopped!\n");
++	dev_dbg(wdd->parent, "Watchdog Stopped!\n");
+ 
+ 	return 0;
+ }
+@@ -208,6 +211,15 @@ static int xwdt_probe(struct platform_device *pdev)
+ 				 "The watchdog clock freq cannot be obtained\n");
+ 	} else {
+ 		pfreq = clk_get_rate(xdev->clk);
++		rc = clk_prepare_enable(xdev->clk);
++		if (rc) {
++			dev_err(dev, "unable to enable clock\n");
++			return rc;
++		}
++		rc = devm_add_action_or_reset(dev, xwdt_clk_disable_unprepare,
++					      xdev->clk);
++		if (rc)
++			return rc;
+ 	}
+ 
+ 	/*
+@@ -221,16 +233,6 @@ static int xwdt_probe(struct platform_device *pdev)
+ 	spin_lock_init(&xdev->spinlock);
+ 	watchdog_set_drvdata(xilinx_wdt_wdd, xdev);
+ 
+-	rc = clk_prepare_enable(xdev->clk);
+-	if (rc) {
+-		dev_err(dev, "unable to enable clock\n");
+-		return rc;
+-	}
+-	rc = devm_add_action_or_reset(dev, xwdt_clk_disable_unprepare,
+-				      xdev->clk);
+-	if (rc)
+-		return rc;
+-
+ 	rc = xwdt_selftest(xdev);
+ 	if (rc == XWT_TIMER_FAILED) {
+ 		dev_err(dev, "SelfTest routine error\n");
+@@ -243,8 +245,8 @@ static int xwdt_probe(struct platform_device *pdev)
+ 
+ 	clk_disable(xdev->clk);
+ 
+-	dev_info(dev, "Xilinx Watchdog Timer at %p with timeout %ds\n",
+-		 xdev->base, xilinx_wdt_wdd->timeout);
++	dev_info(dev, "Xilinx Watchdog Timer with timeout %ds\n",
++		 xilinx_wdt_wdd->timeout);
+ 
+ 	platform_set_drvdata(pdev, xdev);
+ 
+diff --git a/drivers/watchdog/orion_wdt.c b/drivers/watchdog/orion_wdt.c
+index 4ddb4ea2e4a3..127eefc9161d 100644
+--- a/drivers/watchdog/orion_wdt.c
++++ b/drivers/watchdog/orion_wdt.c
+@@ -174,7 +174,7 @@ static int armadaxp_wdt_clock_init(struct platform_device *pdev,
+ 		return ret;
+ 	}
+ 
+-	/* Fix the wdt and timer1 clock freqency to 25MHz */
++	/* Fix the wdt and timer1 clock frequency to 25MHz */
+ 	val = WDT_AXP_FIXED_ENABLE_BIT | TIMER1_FIXED_ENABLE_BIT;
+ 	atomic_io_modify(dev->reg + TIMER_CTRL, val, val);
+ 
+diff --git a/drivers/watchdog/pc87413_wdt.c b/drivers/watchdog/pc87413_wdt.c
+index 2d4504302c9e..9f9a340427fc 100644
+--- a/drivers/watchdog/pc87413_wdt.c
++++ b/drivers/watchdog/pc87413_wdt.c
+@@ -445,7 +445,7 @@ static long pc87413_ioctl(struct file *file, unsigned int cmd,
+ /* -- Notifier funtions -----------------------------------------*/
+ 
+ /**
+- *	notify_sys:
++ *	pc87413_notify_sys:
+  *	@this: our notifier block
+  *	@code: the event being reported
+  *	@unused: unused
+diff --git a/drivers/watchdog/pcwd.c b/drivers/watchdog/pcwd.c
+index e86fa7f8351d..a793b03a785d 100644
+--- a/drivers/watchdog/pcwd.c
++++ b/drivers/watchdog/pcwd.c
+@@ -951,14 +951,11 @@ static int pcwd_isa_probe(struct device *dev, unsigned int id)
+ 	return ret;
+ }
+ 
+-static int pcwd_isa_remove(struct device *dev, unsigned int id)
++static void pcwd_isa_remove(struct device *dev, unsigned int id)
+ {
+ 	if (debug >= DEBUG)
+ 		pr_debug("pcwd_isa_remove id=%d\n", id);
+ 
+-	if (!pcwd_private.io_addr)
+-		return 1;
+-
+ 	/*  Disable the board  */
+ 	if (!nowayout)
+ 		pcwd_stop();
+@@ -971,8 +968,6 @@ static int pcwd_isa_remove(struct device *dev, unsigned int id)
+ 			(pcwd_private.revision == PCWD_REVISION_A) ? 2 : 4);
+ 	pcwd_private.io_addr = 0x0000;
+ 	cards_found--;
+-
+-	return 0;
+ }
+ 
+ static void pcwd_isa_shutdown(struct device *dev, unsigned int id)
+diff --git a/drivers/watchdog/qcom-wdt.c b/drivers/watchdog/qcom-wdt.c
+index bdab184215d2..0d2209c5eaca 100644
+--- a/drivers/watchdog/qcom-wdt.c
++++ b/drivers/watchdog/qcom-wdt.c
+@@ -141,6 +141,13 @@ static int qcom_wdt_restart(struct watchdog_device *wdd, unsigned long action,
+ 	return 0;
+ }
+ 
++static int qcom_wdt_is_running(struct watchdog_device *wdd)
++{
++	struct qcom_wdt *wdt = to_qcom_wdt(wdd);
++
++	return (readl(wdt_addr(wdt, WDT_EN)) & QCOM_WDT_ENABLE);
++}
++
+ static const struct watchdog_ops qcom_wdt_ops = {
+ 	.start		= qcom_wdt_start,
+ 	.stop		= qcom_wdt_stop,
+@@ -283,6 +290,17 @@ static int qcom_wdt_probe(struct platform_device *pdev)
+ 	wdt->wdd.timeout = min(wdt->wdd.max_timeout, 30U);
+ 	watchdog_init_timeout(&wdt->wdd, 0, dev);
+ 
++	/*
++	 * If WDT is already running, call WDT start which
++	 * will stop the WDT, set timeouts as bootloader
++	 * might use different ones and set running bit
++	 * to inform the WDT subsystem to ping the WDT
++	 */
++	if (qcom_wdt_is_running(&wdt->wdd)) {
++		qcom_wdt_start(&wdt->wdd);
++		set_bit(WDOG_HW_RUNNING, &wdt->wdd.status);
++	}
++
+ 	ret = devm_watchdog_register_device(dev, &wdt->wdd);
+ 	if (ret)
+ 		return ret;
+@@ -311,7 +329,9 @@ static int __maybe_unused qcom_wdt_resume(struct device *dev)
+ 	return 0;
+ }
+ 
+-static SIMPLE_DEV_PM_OPS(qcom_wdt_pm_ops, qcom_wdt_suspend, qcom_wdt_resume);
++static const struct dev_pm_ops qcom_wdt_pm_ops = {
++	SET_LATE_SYSTEM_SLEEP_PM_OPS(qcom_wdt_suspend, qcom_wdt_resume)
++};
+ 
+ static const struct of_device_id qcom_wdt_of_table[] = {
+ 	{ .compatible = "qcom,kpss-timer", .data = &match_data_apcs_tmr },
+diff --git a/drivers/watchdog/renesas_wdt.c b/drivers/watchdog/renesas_wdt.c
+index 47fce4de0110..5791198960e6 100644
+--- a/drivers/watchdog/renesas_wdt.c
++++ b/drivers/watchdog/renesas_wdt.c
+@@ -9,6 +9,7 @@
+ #include <linux/clk.h>
+ #include <linux/delay.h>
+ #include <linux/io.h>
++#include <linux/iopoll.h>
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/of.h>
+@@ -50,6 +51,7 @@ struct rwdt_priv {
+ 	struct watchdog_device wdev;
+ 	unsigned long clk_rate;
+ 	u8 cks;
++	struct clk *clk;
+ };
+ 
+ static void rwdt_write(struct rwdt_priv *priv, u32 val, unsigned int reg)
+@@ -125,13 +127,33 @@ static unsigned int rwdt_get_timeleft(struct watchdog_device *wdev)
+ 	return DIV_BY_CLKS_PER_SEC(priv, 65536 - val);
+ }
+ 
++/* needs to be atomic - no RPM, no usleep_range, no scheduling! */
+ static int rwdt_restart(struct watchdog_device *wdev, unsigned long action,
+ 			void *data)
+ {
+ 	struct rwdt_priv *priv = watchdog_get_drvdata(wdev);
++	u8 val;
++
++	clk_prepare_enable(priv->clk);
++
++	/* Stop the timer before we modify any register */
++	val = readb_relaxed(priv->base + RWTCSRA) & ~RWTCSRA_TME;
++	rwdt_write(priv, val, RWTCSRA);
++	/* Delay 2 cycles before setting watchdog counter */
++	udelay(DIV_ROUND_UP(2 * 1000000, priv->clk_rate));
+ 
+-	rwdt_start(wdev);
+ 	rwdt_write(priv, 0xffff, RWTCNT);
++	/* smallest divider to reboot soon */
++	rwdt_write(priv, 0, RWTCSRA);
++
++	readb_poll_timeout_atomic(priv->base + RWTCSRA, val,
++				  !(val & RWTCSRA_WRFLG), 1, 100);
++
++	rwdt_write(priv, RWTCSRA_TME, RWTCSRA);
++
++	/* wait 2 cycles, so watchdog will trigger */
++	udelay(DIV_ROUND_UP(2 * 1000000, priv->clk_rate));
++
+ 	return 0;
+ }
+ 
+@@ -191,7 +213,6 @@ static int rwdt_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
+ 	struct rwdt_priv *priv;
+-	struct clk *clk;
+ 	unsigned long clks_per_sec;
+ 	int ret, i;
+ 	u8 csra;
+@@ -207,13 +228,13 @@ static int rwdt_probe(struct platform_device *pdev)
+ 	if (IS_ERR(priv->base))
+ 		return PTR_ERR(priv->base);
+ 
+-	clk = devm_clk_get(dev, NULL);
+-	if (IS_ERR(clk))
+-		return PTR_ERR(clk);
++	priv->clk = devm_clk_get(dev, NULL);
++	if (IS_ERR(priv->clk))
++		return PTR_ERR(priv->clk);
+ 
+ 	pm_runtime_enable(dev);
+ 	pm_runtime_get_sync(dev);
+-	priv->clk_rate = clk_get_rate(clk);
++	priv->clk_rate = clk_get_rate(priv->clk);
+ 	csra = readb_relaxed(priv->base + RWTCSRA);
+ 	priv->wdev.bootstatus = csra & RWTCSRA_WOVF ? WDIOF_CARDRESET : 0;
+ 	pm_runtime_put(dev);
+diff --git a/drivers/watchdog/retu_wdt.c b/drivers/watchdog/retu_wdt.c
+index 258dfcf9cbda..2b9017e1cd91 100644
+--- a/drivers/watchdog/retu_wdt.c
++++ b/drivers/watchdog/retu_wdt.c
+@@ -8,6 +8,7 @@
+  * Rewritten by Aaro Koskinen.
+  */
+ 
++#include <linux/devm-helpers.h>
+ #include <linux/slab.h>
+ #include <linux/errno.h>
+ #include <linux/device.h>
+@@ -127,9 +128,12 @@ static int retu_wdt_probe(struct platform_device *pdev)
+ 	wdev->rdev		= rdev;
+ 	wdev->dev		= &pdev->dev;
+ 
+-	INIT_DELAYED_WORK(&wdev->ping_work, retu_wdt_ping_work);
++	ret = devm_delayed_work_autocancel(&pdev->dev, &wdev->ping_work,
++					   retu_wdt_ping_work);
++	if (ret)
++		return ret;
+ 
+-	ret = watchdog_register_device(retu_wdt);
++	ret = devm_watchdog_register_device(&pdev->dev, retu_wdt);
+ 	if (ret < 0)
+ 		return ret;
+ 
+@@ -138,25 +142,11 @@ static int retu_wdt_probe(struct platform_device *pdev)
+ 	else
+ 		retu_wdt_ping_enable(wdev);
+ 
+-	platform_set_drvdata(pdev, retu_wdt);
+-
+-	return 0;
+-}
+-
+-static int retu_wdt_remove(struct platform_device *pdev)
+-{
+-	struct watchdog_device *wdog = platform_get_drvdata(pdev);
+-	struct retu_wdt_dev *wdev = watchdog_get_drvdata(wdog);
+-
+-	watchdog_unregister_device(wdog);
+-	cancel_delayed_work_sync(&wdev->ping_work);
+-
+ 	return 0;
+ }
+ 
+ static struct platform_driver retu_wdt_driver = {
+ 	.probe		= retu_wdt_probe,
+-	.remove		= retu_wdt_remove,
+ 	.driver		= {
+ 		.name	= "retu-wdt",
+ 	},
+diff --git a/drivers/watchdog/riowd.c b/drivers/watchdog/riowd.c
+index 7008596a575f..747e346ed06c 100644
+--- a/drivers/watchdog/riowd.c
++++ b/drivers/watchdog/riowd.c
+@@ -46,7 +46,6 @@
+ 
+ MODULE_AUTHOR("David S. Miller <davem@davemloft.net>");
+ MODULE_DESCRIPTION("Hardware watchdog driver for Sun RIO");
+-MODULE_SUPPORTED_DEVICE("watchdog");
+ MODULE_LICENSE("GPL");
+ 
+ #define DRIVER_NAME	"riowd"
+diff --git a/drivers/watchdog/sama5d4_wdt.c b/drivers/watchdog/sama5d4_wdt.c
+index e5d11d6a2600..ec20ad4e534f 100644
+--- a/drivers/watchdog/sama5d4_wdt.c
++++ b/drivers/watchdog/sama5d4_wdt.c
+@@ -268,8 +268,10 @@ static int sama5d4_wdt_probe(struct platform_device *pdev)
+ 	wdd->min_timeout = MIN_WDT_TIMEOUT;
+ 	wdd->max_timeout = MAX_WDT_TIMEOUT;
+ 	wdt->last_ping = jiffies;
+-	wdt->sam9x60_support = of_device_is_compatible(dev->of_node,
+-						       "microchip,sam9x60-wdt");
++
++	if (of_device_is_compatible(dev->of_node, "microchip,sam9x60-wdt") ||
++	    of_device_is_compatible(dev->of_node, "microchip,sama7g5-wdt"))
++		wdt->sam9x60_support = true;
+ 
+ 	watchdog_set_drvdata(wdd, wdt);
+ 
+@@ -329,6 +331,10 @@ static const struct of_device_id sama5d4_wdt_of_match[] = {
+ 	{
+ 		.compatible = "microchip,sam9x60-wdt",
+ 	},
++	{
++		.compatible = "microchip,sama7g5-wdt",
++	},
++
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(of, sama5d4_wdt_of_match);
+diff --git a/drivers/watchdog/sbc_fitpc2_wdt.c b/drivers/watchdog/sbc_fitpc2_wdt.c
+index 04483d6453d6..13db71e16583 100644
+--- a/drivers/watchdog/sbc_fitpc2_wdt.c
++++ b/drivers/watchdog/sbc_fitpc2_wdt.c
+@@ -78,7 +78,7 @@ static int fitpc2_wdt_open(struct inode *inode, struct file *file)
+ 	return stream_open(inode, file);
+ }
+ 
+-static ssize_t fitpc2_wdt_write(struct file *file, const char *data,
++static ssize_t fitpc2_wdt_write(struct file *file, const char __user *data,
+ 						size_t len, loff_t *ppos)
+ {
+ 	size_t i;
+@@ -125,16 +125,16 @@ static long fitpc2_wdt_ioctl(struct file *file, unsigned int cmd,
+ 
+ 	switch (cmd) {
+ 	case WDIOC_GETSUPPORT:
+-		ret = copy_to_user((struct watchdog_info *)arg, &ident,
++		ret = copy_to_user((struct watchdog_info __user *)arg, &ident,
+ 				   sizeof(ident)) ? -EFAULT : 0;
+ 		break;
+ 
+ 	case WDIOC_GETSTATUS:
+-		ret = put_user(0, (int *)arg);
++		ret = put_user(0, (int __user *)arg);
+ 		break;
+ 
+ 	case WDIOC_GETBOOTSTATUS:
+-		ret = put_user(0, (int *)arg);
++		ret = put_user(0, (int __user *)arg);
+ 		break;
+ 
+ 	case WDIOC_KEEPALIVE:
+@@ -143,7 +143,7 @@ static long fitpc2_wdt_ioctl(struct file *file, unsigned int cmd,
+ 		break;
+ 
+ 	case WDIOC_SETTIMEOUT:
+-		ret = get_user(time, (int *)arg);
++		ret = get_user(time, (int __user *)arg);
+ 		if (ret)
+ 			break;
+ 
+@@ -157,7 +157,7 @@ static long fitpc2_wdt_ioctl(struct file *file, unsigned int cmd,
+ 		fallthrough;
+ 
+ 	case WDIOC_GETTIMEOUT:
+-		ret = put_user(margin, (int *)arg);
++		ret = put_user(margin, (int __user *)arg);
+ 		break;
+ 	}
+ 
+diff --git a/drivers/watchdog/sbsa_gwdt.c b/drivers/watchdog/sbsa_gwdt.c
+index f0f1e3b2e463..9791c74aebd4 100644
+--- a/drivers/watchdog/sbsa_gwdt.c
++++ b/drivers/watchdog/sbsa_gwdt.c
+@@ -73,16 +73,21 @@
+ #define SBSA_GWDT_WCS_WS0	BIT(1)
+ #define SBSA_GWDT_WCS_WS1	BIT(2)
+ 
++#define SBSA_GWDT_VERSION_MASK  0xF
++#define SBSA_GWDT_VERSION_SHIFT 16
++
+ /**
+  * struct sbsa_gwdt - Internal representation of the SBSA GWDT
+  * @wdd:		kernel watchdog_device structure
+  * @clk:		store the System Counter clock frequency, in Hz.
++ * @version:            store the architecture version
+  * @refresh_base:	Virtual address of the watchdog refresh frame
+  * @control_base:	Virtual address of the watchdog control frame
+  */
+ struct sbsa_gwdt {
+ 	struct watchdog_device	wdd;
+ 	u32			clk;
++	int			version;
+ 	void __iomem		*refresh_base;
+ 	void __iomem		*control_base;
+ };
+@@ -112,6 +117,30 @@ MODULE_PARM_DESC(nowayout,
+ 		 "Watchdog cannot be stopped once started (default="
+ 		 __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
+ 
++/*
++ * Arm Base System Architecture 1.0 introduces watchdog v1 which
++ * increases the length watchdog offset register to 48 bits.
++ * - For version 0: WOR is 32 bits;
++ * - For version 1: WOR is 48 bits which comprises the register
++ * offset 0x8 and 0xC, and the bits [63:48] are reserved which are
++ * Read-As-Zero and Writes-Ignored.
++ */
++static u64 sbsa_gwdt_reg_read(struct sbsa_gwdt *gwdt)
++{
++	if (gwdt->version == 0)
++		return readl(gwdt->control_base + SBSA_GWDT_WOR);
++	else
++		return lo_hi_readq(gwdt->control_base + SBSA_GWDT_WOR);
++}
++
++static void sbsa_gwdt_reg_write(u64 val, struct sbsa_gwdt *gwdt)
++{
++	if (gwdt->version == 0)
++		writel((u32)val, gwdt->control_base + SBSA_GWDT_WOR);
++	else
++		lo_hi_writeq(val, gwdt->control_base + SBSA_GWDT_WOR);
++}
++
+ /*
+  * watchdog operation functions
+  */
+@@ -123,16 +152,14 @@ static int sbsa_gwdt_set_timeout(struct watchdog_device *wdd,
+ 	wdd->timeout = timeout;
+ 
+ 	if (action)
+-		writel(gwdt->clk * timeout,
+-		       gwdt->control_base + SBSA_GWDT_WOR);
++		sbsa_gwdt_reg_write(gwdt->clk * timeout, gwdt);
+ 	else
+ 		/*
+ 		 * In the single stage mode, The first signal (WS0) is ignored,
+ 		 * the timeout is (WOR * 2), so the WOR should be configured
+ 		 * to half value of timeout.
+ 		 */
+-		writel(gwdt->clk / 2 * timeout,
+-		       gwdt->control_base + SBSA_GWDT_WOR);
++		sbsa_gwdt_reg_write(gwdt->clk / 2 * timeout, gwdt);
+ 
+ 	return 0;
+ }
+@@ -149,7 +176,7 @@ static unsigned int sbsa_gwdt_get_timeleft(struct watchdog_device *wdd)
+ 	 */
+ 	if (!action &&
+ 	    !(readl(gwdt->control_base + SBSA_GWDT_WCS) & SBSA_GWDT_WCS_WS0))
+-		timeleft += readl(gwdt->control_base + SBSA_GWDT_WOR);
++		timeleft += sbsa_gwdt_reg_read(gwdt);
+ 
+ 	timeleft += lo_hi_readq(gwdt->control_base + SBSA_GWDT_WCV) -
+ 		    arch_timer_read_counter();
+@@ -172,6 +199,17 @@ static int sbsa_gwdt_keepalive(struct watchdog_device *wdd)
+ 	return 0;
+ }
+ 
++static void sbsa_gwdt_get_version(struct watchdog_device *wdd)
++{
++	struct sbsa_gwdt *gwdt = watchdog_get_drvdata(wdd);
++	int ver;
++
++	ver = readl(gwdt->control_base + SBSA_GWDT_W_IIDR);
++	ver = (ver >> SBSA_GWDT_VERSION_SHIFT) & SBSA_GWDT_VERSION_MASK;
++
++	gwdt->version = ver;
++}
++
+ static int sbsa_gwdt_start(struct watchdog_device *wdd)
+ {
+ 	struct sbsa_gwdt *gwdt = watchdog_get_drvdata(wdd);
+@@ -252,10 +290,14 @@ static int sbsa_gwdt_probe(struct platform_device *pdev)
+ 	wdd->info = &sbsa_gwdt_info;
+ 	wdd->ops = &sbsa_gwdt_ops;
+ 	wdd->min_timeout = 1;
+-	wdd->max_hw_heartbeat_ms = U32_MAX / gwdt->clk * 1000;
+ 	wdd->timeout = DEFAULT_TIMEOUT;
+ 	watchdog_set_drvdata(wdd, gwdt);
+ 	watchdog_set_nowayout(wdd, nowayout);
++	sbsa_gwdt_get_version(wdd);
++	if (gwdt->version == 0)
++		wdd->max_hw_heartbeat_ms = U32_MAX / gwdt->clk * 1000;
++	else
++		wdd->max_hw_heartbeat_ms = GENMASK_ULL(47, 0) / gwdt->clk * 1000;
+ 
+ 	status = readl(cf_base + SBSA_GWDT_WCS);
+ 	if (status & SBSA_GWDT_WCS_WS1) {
+@@ -369,4 +411,3 @@ MODULE_AUTHOR("Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>");
+ MODULE_AUTHOR("Al Stone <al.stone@linaro.org>");
+ MODULE_AUTHOR("Timur Tabi <timur@codeaurora.org>");
+ MODULE_LICENSE("GPL v2");
+-MODULE_ALIAS("platform:" DRV_NAME);
+diff --git a/drivers/watchdog/sl28cpld_wdt.c b/drivers/watchdog/sl28cpld_wdt.c
+index a45047d8d9ab..9ce456f09f73 100644
+--- a/drivers/watchdog/sl28cpld_wdt.c
++++ b/drivers/watchdog/sl28cpld_wdt.c
+@@ -108,7 +108,7 @@ static const struct watchdog_info sl28cpld_wdt_info = {
+ 	.identity = "sl28cpld watchdog",
+ };
+ 
+-static struct watchdog_ops sl28cpld_wdt_ops = {
++static const struct watchdog_ops sl28cpld_wdt_ops = {
+ 	.owner = THIS_MODULE,
+ 	.start = sl28cpld_wdt_start,
+ 	.stop = sl28cpld_wdt_stop,
+@@ -164,7 +164,7 @@ static int sl28cpld_wdt_probe(struct platform_device *pdev)
+ 
+ 	/*
+ 	 * Initial timeout value, may be overwritten by device tree or module
+-	 * parmeter in watchdog_init_timeout().
++	 * parameter in watchdog_init_timeout().
+ 	 *
+ 	 * Reading a zero here means that either the hardware has a default
+ 	 * value of zero (which is very unlikely and definitely a hardware
+diff --git a/drivers/watchdog/sp805_wdt.c b/drivers/watchdog/sp805_wdt.c
+index 2815f78d22bb..dbeb2146c968 100644
+--- a/drivers/watchdog/sp805_wdt.c
++++ b/drivers/watchdog/sp805_wdt.c
+@@ -11,7 +11,6 @@
+  * warranty of any kind, whether express or implied.
+  */
+ 
+-#include <linux/acpi.h>
+ #include <linux/device.h>
+ #include <linux/resource.h>
+ #include <linux/amba/bus.h>
+@@ -23,8 +22,8 @@
+ #include <linux/math64.h>
+ #include <linux/module.h>
+ #include <linux/moduleparam.h>
+-#include <linux/of.h>
+ #include <linux/pm.h>
++#include <linux/property.h>
+ #include <linux/slab.h>
+ #include <linux/spinlock.h>
+ #include <linux/types.h>
+@@ -58,7 +57,8 @@
+  * @wdd: instance of struct watchdog_device
+  * @lock: spin lock protecting dev structure and io access
+  * @base: base address of wdt
+- * @clk: clock structure of wdt
++ * @clk: (optional) clock structure of wdt
++ * @rate: (optional) clock rate when provided via properties
+  * @adev: amba device structure of wdt
+  * @status: current status of wdt
+  * @load_val: load value to be set for current timeout
+@@ -231,6 +231,7 @@ static int
+ sp805_wdt_probe(struct amba_device *adev, const struct amba_id *id)
+ {
+ 	struct sp805_wdt *wdt;
++	u64 rate = 0;
+ 	int ret = 0;
+ 
+ 	wdt = devm_kzalloc(&adev->dev, sizeof(*wdt), GFP_KERNEL);
+@@ -243,25 +244,23 @@ sp805_wdt_probe(struct amba_device *adev, const struct amba_id *id)
+ 	if (IS_ERR(wdt->base))
+ 		return PTR_ERR(wdt->base);
+ 
+-	if (adev->dev.of_node) {
+-		wdt->clk = devm_clk_get(&adev->dev, NULL);
+-		if (IS_ERR(wdt->clk)) {
+-			dev_err(&adev->dev, "Clock not found\n");
+-			return PTR_ERR(wdt->clk);
+-		}
+-		wdt->rate = clk_get_rate(wdt->clk);
+-	} else if (has_acpi_companion(&adev->dev)) {
+-		/*
+-		 * When Driver probe with ACPI device, clock devices
+-		 * are not available, so watchdog rate get from
+-		 * clock-frequency property given in _DSD object.
+-		 */
+-		device_property_read_u64(&adev->dev, "clock-frequency",
+-					 &wdt->rate);
+-		if (!wdt->rate) {
+-			dev_err(&adev->dev, "no clock-frequency property\n");
+-			return -ENODEV;
+-		}
++	/*
++	 * When driver probe with ACPI device, clock devices
++	 * are not available, so watchdog rate get from
++	 * clock-frequency property given in _DSD object.
++	 */
++	device_property_read_u64(&adev->dev, "clock-frequency", &rate);
++
++	wdt->clk = devm_clk_get_optional(&adev->dev, NULL);
++	if (IS_ERR(wdt->clk))
++		return dev_err_probe(&adev->dev, PTR_ERR(wdt->clk), "Clock not found\n");
++
++	wdt->rate = clk_get_rate(wdt->clk);
++	if (!wdt->rate)
++		wdt->rate = rate;
++	if (!wdt->rate) {
++		dev_err(&adev->dev, "no clock-frequency property\n");
++		return -ENODEV;
+ 	}
+ 
+ 	wdt->adev = adev;
+@@ -291,6 +290,7 @@ sp805_wdt_probe(struct amba_device *adev, const struct amba_id *id)
+ 		set_bit(WDOG_HW_RUNNING, &wdt->wdd.status);
+ 	}
+ 
++	watchdog_stop_on_reboot(&wdt->wdd);
+ 	ret = watchdog_register_device(&wdt->wdd);
+ 	if (ret)
+ 		goto err;
+diff --git a/drivers/watchdog/sprd_wdt.c b/drivers/watchdog/sprd_wdt.c
+index b9b1daa9e2a4..4e689b6ff141 100644
+--- a/drivers/watchdog/sprd_wdt.c
++++ b/drivers/watchdog/sprd_wdt.c
+@@ -6,6 +6,7 @@
+ 
+ #include <linux/bitops.h>
+ #include <linux/clk.h>
++#include <linux/delay.h>
+ #include <linux/device.h>
+ #include <linux/err.h>
+ #include <linux/interrupt.h>
+@@ -53,7 +54,7 @@
+ 
+ #define SPRD_WDT_CNT_HIGH_SHIFT		16
+ #define SPRD_WDT_LOW_VALUE_MASK		GENMASK(15, 0)
+-#define SPRD_WDT_LOAD_TIMEOUT		1000
++#define SPRD_WDT_LOAD_TIMEOUT		11
+ 
+ struct sprd_wdt {
+ 	void __iomem *base;
+@@ -109,15 +110,17 @@ static int sprd_wdt_load_value(struct sprd_wdt *wdt, u32 timeout,
+ 	u32 prtmr_step = pretimeout * SPRD_WDT_CNT_STEP;
+ 
+ 	/*
+-	 * Waiting the load value operation done,
+-	 * it needs two or three RTC clock cycles.
++	 * Checking busy bit to make sure the previous loading operation is
++	 * done. According to the specification, the busy bit would be set
++	 * after a new loading operation and last 2 or 3 RTC clock
++	 * cycles (about 60us~92us).
+ 	 */
+ 	do {
+ 		val = readl_relaxed(wdt->base + SPRD_WDT_INT_RAW);
+ 		if (!(val & SPRD_WDT_LD_BUSY_BIT))
+ 			break;
+ 
+-		cpu_relax();
++		usleep_range(10, 100);
+ 	} while (delay_cnt++ < SPRD_WDT_LOAD_TIMEOUT);
+ 
+ 	if (delay_cnt >= SPRD_WDT_LOAD_TIMEOUT)
+diff --git a/drivers/watchdog/stm32_iwdg.c b/drivers/watchdog/stm32_iwdg.c
+index 25188d6bbe15..a3436c296c97 100644
+--- a/drivers/watchdog/stm32_iwdg.c
++++ b/drivers/watchdog/stm32_iwdg.c
+@@ -162,18 +162,15 @@ static int stm32_iwdg_clk_init(struct platform_device *pdev,
+ 	u32 ret;
+ 
+ 	wdt->clk_lsi = devm_clk_get(dev, "lsi");
+-	if (IS_ERR(wdt->clk_lsi)) {
+-		dev_err(dev, "Unable to get lsi clock\n");
+-		return PTR_ERR(wdt->clk_lsi);
+-	}
++	if (IS_ERR(wdt->clk_lsi))
++		return dev_err_probe(dev, PTR_ERR(wdt->clk_lsi), "Unable to get lsi clock\n");
+ 
+ 	/* optional peripheral clock */
+ 	if (wdt->data->has_pclk) {
+ 		wdt->clk_pclk = devm_clk_get(dev, "pclk");
+-		if (IS_ERR(wdt->clk_pclk)) {
+-			dev_err(dev, "Unable to get pclk clock\n");
+-			return PTR_ERR(wdt->clk_pclk);
+-		}
++		if (IS_ERR(wdt->clk_pclk))
++			return dev_err_probe(dev, PTR_ERR(wdt->clk_pclk),
++					     "Unable to get pclk clock\n");
+ 
+ 		ret = clk_prepare_enable(wdt->clk_pclk);
+ 		if (ret) {
+diff --git a/drivers/watchdog/tqmx86_wdt.c b/drivers/watchdog/tqmx86_wdt.c
+index 72d0b0adde38..83860e94ce9d 100644
+--- a/drivers/watchdog/tqmx86_wdt.c
++++ b/drivers/watchdog/tqmx86_wdt.c
+@@ -62,7 +62,7 @@ static const struct watchdog_info tqmx86_wdt_info = {
+ 	.identity	= "TQMx86 Watchdog",
+ };
+ 
+-static struct watchdog_ops tqmx86_wdt_ops = {
++static const struct watchdog_ops tqmx86_wdt_ops = {
+ 	.owner		= THIS_MODULE,
+ 	.start		= tqmx86_wdt_start,
+ 	.set_timeout	= tqmx86_wdt_set_timeout,
+diff --git a/drivers/watchdog/watchdog_core.c b/drivers/watchdog/watchdog_core.c
+index 0e9a99559609..3fe8a7edc252 100644
+--- a/drivers/watchdog/watchdog_core.c
++++ b/drivers/watchdog/watchdog_core.c
+@@ -34,6 +34,7 @@
+ #include <linux/idr.h>		/* For ida_* macros */
+ #include <linux/err.h>		/* For IS_ERR macros */
+ #include <linux/of.h>		/* For of_get_timeout_sec */
++#include <linux/suspend.h>
+ 
+ #include "watchdog_core.h"	/* For watchdog_dev_register/... */
+ 
+@@ -158,7 +159,7 @@ static int watchdog_reboot_notifier(struct notifier_block *nb,
+ 
+ 	wdd = container_of(nb, struct watchdog_device, reboot_nb);
+ 	if (code == SYS_DOWN || code == SYS_HALT) {
+-		if (watchdog_active(wdd)) {
++		if (watchdog_active(wdd) || watchdog_hw_running(wdd)) {
+ 			int ret;
+ 
+ 			ret = wdd->ops->stop(wdd);
+@@ -185,6 +186,33 @@ static int watchdog_restart_notifier(struct notifier_block *nb,
+ 	return NOTIFY_DONE;
+ }
+ 
++static int watchdog_pm_notifier(struct notifier_block *nb, unsigned long mode,
++				void *data)
++{
++	struct watchdog_device *wdd;
++	int ret = 0;
++
++	wdd = container_of(nb, struct watchdog_device, pm_nb);
++
++	switch (mode) {
++	case PM_HIBERNATION_PREPARE:
++	case PM_RESTORE_PREPARE:
++	case PM_SUSPEND_PREPARE:
++		ret = watchdog_dev_suspend(wdd);
++		break;
++	case PM_POST_HIBERNATION:
++	case PM_POST_RESTORE:
++	case PM_POST_SUSPEND:
++		ret = watchdog_dev_resume(wdd);
++		break;
++	}
++
++	if (ret)
++		return NOTIFY_BAD;
++
++	return NOTIFY_DONE;
++}
++
+ /**
+  * watchdog_set_restart_priority - Change priority of restart handler
+  * @wdd: watchdog device
+@@ -292,6 +320,15 @@ static int __watchdog_register_device(struct watchdog_device *wdd)
+ 				wdd->id, ret);
+ 	}
+ 
++	if (test_bit(WDOG_NO_PING_ON_SUSPEND, &wdd->status)) {
++		wdd->pm_nb.notifier_call = watchdog_pm_notifier;
++
++		ret = register_pm_notifier(&wdd->pm_nb);
++		if (ret)
++			pr_warn("watchdog%d: Cannot register pm handler (%d)\n",
++				wdd->id, ret);
++	}
++
+ 	return 0;
+ }
+ 
+diff --git a/drivers/watchdog/watchdog_core.h b/drivers/watchdog/watchdog_core.h
+index a5062e8e0d13..5b35a8439e26 100644
+--- a/drivers/watchdog/watchdog_core.h
++++ b/drivers/watchdog/watchdog_core.h
+@@ -7,6 +7,8 @@
+  *
+  *	(c) Copyright 2008-2011 Wim Van Sebroeck <wim@iguana.be>.
+  *
++ *	(c) Copyright 2021 Hewlett Packard Enterprise Development LP.
++ *
+  *	This source code is part of the generic code that can be used
+  *	by all the watchdog timer drivers.
+  *
+@@ -22,8 +24,38 @@
+  *	This material is provided "AS-IS" and at no charge.
+  */
+ 
++#include <linux/hrtimer.h>
++#include <linux/kthread.h>
++
+ #define MAX_DOGS	32	/* Maximum number of watchdog devices */
+ 
++/*
++ * struct watchdog_core_data - watchdog core internal data
++ * @dev:	The watchdog's internal device
++ * @cdev:	The watchdog's Character device.
++ * @wdd:	Pointer to watchdog device.
++ * @lock:	Lock for watchdog core.
++ * @status:	Watchdog core internal status bits.
++ */
++struct watchdog_core_data {
++	struct device dev;
++	struct cdev cdev;
++	struct watchdog_device *wdd;
++	struct mutex lock;
++	ktime_t last_keepalive;
++	ktime_t last_hw_keepalive;
++	ktime_t open_deadline;
++	struct hrtimer timer;
++	struct kthread_work work;
++#if IS_ENABLED(CONFIG_WATCHDOG_HRTIMER_PRETIMEOUT)
++	struct hrtimer pretimeout_timer;
++#endif
++	unsigned long status;		/* Internal status bits */
++#define _WDOG_DEV_OPEN		0	/* Opened ? */
++#define _WDOG_ALLOW_RELEASE	1	/* Did we receive the magic char ? */
++#define _WDOG_KEEPALIVE		2	/* Did we receive a keepalive ? */
++};
++
+ /*
+  *	Functions/procedures to be called by the core
+  */
+@@ -31,3 +63,19 @@ extern int watchdog_dev_register(struct watchdog_device *);
+ extern void watchdog_dev_unregister(struct watchdog_device *);
+ extern int __init watchdog_dev_init(void);
+ extern void __exit watchdog_dev_exit(void);
++
++static inline bool watchdog_have_pretimeout(struct watchdog_device *wdd)
++{
++	return wdd->info->options & WDIOF_PRETIMEOUT ||
++	       IS_ENABLED(CONFIG_WATCHDOG_HRTIMER_PRETIMEOUT);
++}
++
++#if IS_ENABLED(CONFIG_WATCHDOG_HRTIMER_PRETIMEOUT)
++void watchdog_hrtimer_pretimeout_init(struct watchdog_device *wdd);
++void watchdog_hrtimer_pretimeout_start(struct watchdog_device *wdd);
++void watchdog_hrtimer_pretimeout_stop(struct watchdog_device *wdd);
++#else
++static inline void watchdog_hrtimer_pretimeout_init(struct watchdog_device *wdd) {}
++static inline void watchdog_hrtimer_pretimeout_start(struct watchdog_device *wdd) {}
++static inline void watchdog_hrtimer_pretimeout_stop(struct watchdog_device *wdd) {}
++#endif
+diff --git a/drivers/watchdog/watchdog_dev.c b/drivers/watchdog/watchdog_dev.c
+index 2ee017442dfc..3a3d8b5c7ad5 100644
+--- a/drivers/watchdog/watchdog_dev.c
++++ b/drivers/watchdog/watchdog_dev.c
+@@ -7,6 +7,7 @@
+  *
+  *	(c) Copyright 2008-2011 Wim Van Sebroeck <wim@iguana.be>.
+  *
++ *	(c) Copyright 2021 Hewlett Packard Enterprise Development LP.
+  *
+  *	This source code is part of the generic code that can be used
+  *	by all the watchdog timer drivers.
+@@ -46,30 +47,6 @@
+ #include "watchdog_core.h"
+ #include "watchdog_pretimeout.h"
+ 
+-/*
+- * struct watchdog_core_data - watchdog core internal data
+- * @dev:	The watchdog's internal device
+- * @cdev:	The watchdog's Character device.
+- * @wdd:	Pointer to watchdog device.
+- * @lock:	Lock for watchdog core.
+- * @status:	Watchdog core internal status bits.
+- */
+-struct watchdog_core_data {
+-	struct device dev;
+-	struct cdev cdev;
+-	struct watchdog_device *wdd;
+-	struct mutex lock;
+-	ktime_t last_keepalive;
+-	ktime_t last_hw_keepalive;
+-	ktime_t open_deadline;
+-	struct hrtimer timer;
+-	struct kthread_work work;
+-	unsigned long status;		/* Internal status bits */
+-#define _WDOG_DEV_OPEN		0	/* Opened ? */
+-#define _WDOG_ALLOW_RELEASE	1	/* Did we receive the magic char ? */
+-#define _WDOG_KEEPALIVE		2	/* Did we receive a keepalive ? */
+-};
+-
+ /* the dev_t structure to store the dynamically allocated watchdog devices */
+ static dev_t watchdog_devt;
+ /* Reference to watchdog device behind /dev/watchdog */
+@@ -185,6 +162,9 @@ static int __watchdog_ping(struct watchdog_device *wdd)
+ 	else
+ 		err = wdd->ops->start(wdd); /* restart watchdog */
+ 
++	if (err == 0)
++		watchdog_hrtimer_pretimeout_start(wdd);
++
+ 	watchdog_update_worker(wdd);
+ 
+ 	return err;
+@@ -275,8 +255,10 @@ static int watchdog_start(struct watchdog_device *wdd)
+ 	started_at = ktime_get();
+ 	if (watchdog_hw_running(wdd) && wdd->ops->ping) {
+ 		err = __watchdog_ping(wdd);
+-		if (err == 0)
++		if (err == 0) {
+ 			set_bit(WDOG_ACTIVE, &wdd->status);
++			watchdog_hrtimer_pretimeout_start(wdd);
++		}
+ 	} else {
+ 		err = wdd->ops->start(wdd);
+ 		if (err == 0) {
+@@ -284,6 +266,7 @@ static int watchdog_start(struct watchdog_device *wdd)
+ 			wd_data->last_keepalive = started_at;
+ 			wd_data->last_hw_keepalive = started_at;
+ 			watchdog_update_worker(wdd);
++			watchdog_hrtimer_pretimeout_start(wdd);
+ 		}
+ 	}
+ 
+@@ -325,6 +308,7 @@ static int watchdog_stop(struct watchdog_device *wdd)
+ 	if (err == 0) {
+ 		clear_bit(WDOG_ACTIVE, &wdd->status);
+ 		watchdog_update_worker(wdd);
++		watchdog_hrtimer_pretimeout_stop(wdd);
+ 	}
+ 
+ 	return err;
+@@ -361,6 +345,9 @@ static unsigned int watchdog_get_status(struct watchdog_device *wdd)
+ 	if (test_and_clear_bit(_WDOG_KEEPALIVE, &wd_data->status))
+ 		status |= WDIOF_KEEPALIVEPING;
+ 
++	if (IS_ENABLED(CONFIG_WATCHDOG_HRTIMER_PRETIMEOUT))
++		status |= WDIOF_PRETIMEOUT;
++
+ 	return status;
+ }
+ 
+@@ -408,13 +395,13 @@ static int watchdog_set_pretimeout(struct watchdog_device *wdd,
+ {
+ 	int err = 0;
+ 
+-	if (!(wdd->info->options & WDIOF_PRETIMEOUT))
++	if (!watchdog_have_pretimeout(wdd))
+ 		return -EOPNOTSUPP;
+ 
+ 	if (watchdog_pretimeout_invalid(wdd, timeout))
+ 		return -EINVAL;
+ 
+-	if (wdd->ops->set_pretimeout)
++	if (wdd->ops->set_pretimeout && (wdd->info->options & WDIOF_PRETIMEOUT))
+ 		err = wdd->ops->set_pretimeout(wdd, timeout);
+ 	else
+ 		wdd->pretimeout = timeout;
+@@ -451,7 +438,8 @@ static ssize_t nowayout_show(struct device *dev, struct device_attribute *attr,
+ {
+ 	struct watchdog_device *wdd = dev_get_drvdata(dev);
+ 
+-	return sprintf(buf, "%d\n", !!test_bit(WDOG_NO_WAY_OUT, &wdd->status));
++	return sysfs_emit(buf, "%d\n", !!test_bit(WDOG_NO_WAY_OUT,
++						  &wdd->status));
+ }
+ 
+ static ssize_t nowayout_store(struct device *dev, struct device_attribute *attr,
+@@ -485,7 +473,7 @@ static ssize_t status_show(struct device *dev, struct device_attribute *attr,
+ 	status = watchdog_get_status(wdd);
+ 	mutex_unlock(&wd_data->lock);
+ 
+-	return sprintf(buf, "0x%x\n", status);
++	return sysfs_emit(buf, "0x%x\n", status);
+ }
+ static DEVICE_ATTR_RO(status);
+ 
+@@ -494,7 +482,7 @@ static ssize_t bootstatus_show(struct device *dev,
+ {
+ 	struct watchdog_device *wdd = dev_get_drvdata(dev);
+ 
+-	return sprintf(buf, "%u\n", wdd->bootstatus);
++	return sysfs_emit(buf, "%u\n", wdd->bootstatus);
+ }
+ static DEVICE_ATTR_RO(bootstatus);
+ 
+@@ -510,7 +498,7 @@ static ssize_t timeleft_show(struct device *dev, struct device_attribute *attr,
+ 	status = watchdog_get_timeleft(wdd, &val);
+ 	mutex_unlock(&wd_data->lock);
+ 	if (!status)
+-		status = sprintf(buf, "%u\n", val);
++		status = sysfs_emit(buf, "%u\n", val);
+ 
+ 	return status;
+ }
+@@ -521,16 +509,34 @@ static ssize_t timeout_show(struct device *dev, struct device_attribute *attr,
+ {
+ 	struct watchdog_device *wdd = dev_get_drvdata(dev);
+ 
+-	return sprintf(buf, "%u\n", wdd->timeout);
++	return sysfs_emit(buf, "%u\n", wdd->timeout);
+ }
+ static DEVICE_ATTR_RO(timeout);
+ 
++static ssize_t min_timeout_show(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	struct watchdog_device *wdd = dev_get_drvdata(dev);
++
++	return sysfs_emit(buf, "%u\n", wdd->min_timeout);
++}
++static DEVICE_ATTR_RO(min_timeout);
++
++static ssize_t max_timeout_show(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	struct watchdog_device *wdd = dev_get_drvdata(dev);
++
++	return sysfs_emit(buf, "%u\n", wdd->max_timeout);
++}
++static DEVICE_ATTR_RO(max_timeout);
++
+ static ssize_t pretimeout_show(struct device *dev,
+ 			       struct device_attribute *attr, char *buf)
+ {
+ 	struct watchdog_device *wdd = dev_get_drvdata(dev);
+ 
+-	return sprintf(buf, "%u\n", wdd->pretimeout);
++	return sysfs_emit(buf, "%u\n", wdd->pretimeout);
+ }
+ static DEVICE_ATTR_RO(pretimeout);
+ 
+@@ -539,7 +545,7 @@ static ssize_t identity_show(struct device *dev, struct device_attribute *attr,
+ {
+ 	struct watchdog_device *wdd = dev_get_drvdata(dev);
+ 
+-	return sprintf(buf, "%s\n", wdd->info->identity);
++	return sysfs_emit(buf, "%s\n", wdd->info->identity);
+ }
+ static DEVICE_ATTR_RO(identity);
+ 
+@@ -549,9 +555,9 @@ static ssize_t state_show(struct device *dev, struct device_attribute *attr,
+ 	struct watchdog_device *wdd = dev_get_drvdata(dev);
+ 
+ 	if (watchdog_active(wdd))
+-		return sprintf(buf, "active\n");
++		return sysfs_emit(buf, "active\n");
+ 
+-	return sprintf(buf, "inactive\n");
++	return sysfs_emit(buf, "inactive\n");
+ }
+ static DEVICE_ATTR_RO(state);
+ 
+@@ -594,13 +600,11 @@ static umode_t wdt_is_visible(struct kobject *kobj, struct attribute *attr,
+ 
+ 	if (attr == &dev_attr_timeleft.attr && !wdd->ops->get_timeleft)
+ 		mode = 0;
+-	else if (attr == &dev_attr_pretimeout.attr &&
+-		 !(wdd->info->options & WDIOF_PRETIMEOUT))
++	else if (attr == &dev_attr_pretimeout.attr && !watchdog_have_pretimeout(wdd))
+ 		mode = 0;
+ 	else if ((attr == &dev_attr_pretimeout_governor.attr ||
+ 		  attr == &dev_attr_pretimeout_available_governors.attr) &&
+-		 (!(wdd->info->options & WDIOF_PRETIMEOUT) ||
+-		  !IS_ENABLED(CONFIG_WATCHDOG_PRETIMEOUT_GOV)))
++		 (!watchdog_have_pretimeout(wdd) || !IS_ENABLED(CONFIG_WATCHDOG_PRETIMEOUT_GOV)))
+ 		mode = 0;
+ 
+ 	return mode;
+@@ -609,6 +613,8 @@ static struct attribute *wdt_attrs[] = {
+ 	&dev_attr_state.attr,
+ 	&dev_attr_identity.attr,
+ 	&dev_attr_timeout.attr,
++	&dev_attr_min_timeout.attr,
++	&dev_attr_max_timeout.attr,
+ 	&dev_attr_pretimeout.attr,
+ 	&dev_attr_timeleft.attr,
+ 	&dev_attr_bootstatus.attr,
+@@ -1009,6 +1015,7 @@ static int watchdog_cdev_register(struct watchdog_device *wdd)
+ 	kthread_init_work(&wd_data->work, watchdog_ping_work);
+ 	hrtimer_init(&wd_data->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL_HARD);
+ 	wd_data->timer.function = watchdog_timer_expired;
++	watchdog_hrtimer_pretimeout_init(wdd);
+ 
+ 	if (wdd->id == 0) {
+ 		old_wd_data = wd_data;
+@@ -1089,6 +1096,8 @@ static void watchdog_cdev_unregister(struct watchdog_device *wdd)
+ 		watchdog_stop(wdd);
+ 	}
+ 
++	watchdog_hrtimer_pretimeout_stop(wdd);
++
+ 	mutex_lock(&wd_data->lock);
+ 	wd_data->wdd = NULL;
+ 	wdd->wd_data = NULL;
+@@ -1222,6 +1231,53 @@ void __exit watchdog_dev_exit(void)
+ 	kthread_destroy_worker(watchdog_kworker);
+ }
+ 
++int watchdog_dev_suspend(struct watchdog_device *wdd)
++{
++	struct watchdog_core_data *wd_data = wdd->wd_data;
++	int ret = 0;
++
++	if (!wdd->wd_data)
++		return -ENODEV;
++
++	/* ping for the last time before suspend */
++	mutex_lock(&wd_data->lock);
++	if (watchdog_worker_should_ping(wd_data))
++		ret = __watchdog_ping(wd_data->wdd);
++	mutex_unlock(&wd_data->lock);
++
++	if (ret)
++		return ret;
++
++	/*
++	 * make sure that watchdog worker will not kick in when the wdog is
++	 * suspended
++	 */
++	hrtimer_cancel(&wd_data->timer);
++	kthread_cancel_work_sync(&wd_data->work);
++
++	return 0;
++}
++
++int watchdog_dev_resume(struct watchdog_device *wdd)
++{
++	struct watchdog_core_data *wd_data = wdd->wd_data;
++	int ret = 0;
++
++	if (!wdd->wd_data)
++		return -ENODEV;
++
++	/*
++	 * __watchdog_ping will also retrigger hrtimer and therefore restore the
++	 * ping worker if needed.
++	 */
++	mutex_lock(&wd_data->lock);
++	if (watchdog_worker_should_ping(wd_data))
++		ret = __watchdog_ping(wd_data->wdd);
++	mutex_unlock(&wd_data->lock);
++
++	return ret;
++}
++
+ module_param(handle_boot_enabled, bool, 0444);
+ MODULE_PARM_DESC(handle_boot_enabled,
+ 	"Watchdog core auto-updates boot enabled watchdogs before userspace takes over (default="
+diff --git a/drivers/watchdog/watchdog_hrtimer_pretimeout.c b/drivers/watchdog/watchdog_hrtimer_pretimeout.c
+new file mode 100644
+index 000000000000..940b53718a91
+--- /dev/null
++++ b/drivers/watchdog/watchdog_hrtimer_pretimeout.c
+@@ -0,0 +1,44 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * (c) Copyright 2021 Hewlett Packard Enterprise Development LP.
++ */
++
++#include <linux/hrtimer.h>
++#include <linux/watchdog.h>
++
++#include "watchdog_core.h"
++#include "watchdog_pretimeout.h"
++
++static enum hrtimer_restart watchdog_hrtimer_pretimeout(struct hrtimer *timer)
++{
++	struct watchdog_core_data *wd_data;
++
++	wd_data = container_of(timer, struct watchdog_core_data, pretimeout_timer);
++
++	watchdog_notify_pretimeout(wd_data->wdd);
++	return HRTIMER_NORESTART;
++}
++
++void watchdog_hrtimer_pretimeout_init(struct watchdog_device *wdd)
++{
++	struct watchdog_core_data *wd_data = wdd->wd_data;
++
++	hrtimer_init(&wd_data->pretimeout_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
++	wd_data->pretimeout_timer.function = watchdog_hrtimer_pretimeout;
++}
++
++void watchdog_hrtimer_pretimeout_start(struct watchdog_device *wdd)
++{
++	if (!(wdd->info->options & WDIOF_PRETIMEOUT) &&
++	    !watchdog_pretimeout_invalid(wdd, wdd->pretimeout))
++		hrtimer_start(&wdd->wd_data->pretimeout_timer,
++			      ktime_set(wdd->timeout - wdd->pretimeout, 0),
++			      HRTIMER_MODE_REL);
++	else
++		hrtimer_cancel(&wdd->wd_data->pretimeout_timer);
++}
++
++void watchdog_hrtimer_pretimeout_stop(struct watchdog_device *wdd)
++{
++	hrtimer_cancel(&wdd->wd_data->pretimeout_timer);
++}
+diff --git a/drivers/watchdog/watchdog_pretimeout.c b/drivers/watchdog/watchdog_pretimeout.c
+index 01ca84be240f..376a495ab80c 100644
+--- a/drivers/watchdog/watchdog_pretimeout.c
++++ b/drivers/watchdog/watchdog_pretimeout.c
+@@ -9,6 +9,7 @@
+ #include <linux/string.h>
+ #include <linux/watchdog.h>
+ 
++#include "watchdog_core.h"
+ #include "watchdog_pretimeout.h"
+ 
+ /* Default watchdog pretimeout governor */
+@@ -55,7 +56,7 @@ int watchdog_pretimeout_available_governors_get(char *buf)
+ 	mutex_lock(&governor_lock);
+ 
+ 	list_for_each_entry(priv, &governor_list, entry)
+-		count += sprintf(buf + count, "%s\n", priv->gov->name);
++		count += sysfs_emit_at(buf, count, "%s\n", priv->gov->name);
+ 
+ 	mutex_unlock(&governor_lock);
+ 
+@@ -68,7 +69,7 @@ int watchdog_pretimeout_governor_get(struct watchdog_device *wdd, char *buf)
+ 
+ 	spin_lock_irq(&pretimeout_lock);
+ 	if (wdd->gov)
+-		count = sprintf(buf, "%s\n", wdd->gov->name);
++		count = sysfs_emit(buf, "%s\n", wdd->gov->name);
+ 	spin_unlock_irq(&pretimeout_lock);
+ 
+ 	return count;
+@@ -177,7 +178,7 @@ int watchdog_register_pretimeout(struct watchdog_device *wdd)
+ {
+ 	struct watchdog_pretimeout *p;
+ 
+-	if (!(wdd->info->options & WDIOF_PRETIMEOUT))
++	if (!watchdog_have_pretimeout(wdd))
+ 		return 0;
+ 
+ 	p = kzalloc(sizeof(*p), GFP_KERNEL);
+@@ -197,7 +198,7 @@ void watchdog_unregister_pretimeout(struct watchdog_device *wdd)
+ {
+ 	struct watchdog_pretimeout *p, *t;
+ 
+-	if (!(wdd->info->options & WDIOF_PRETIMEOUT))
++	if (!watchdog_have_pretimeout(wdd))
+ 		return;
+ 
+ 	spin_lock_irq(&pretimeout_lock);
+diff --git a/drivers/watchdog/wdat_wdt.c b/drivers/watchdog/wdat_wdt.c
+index 3065dd670a18..195c8c004b69 100644
+--- a/drivers/watchdog/wdat_wdt.c
++++ b/drivers/watchdog/wdat_wdt.c
+@@ -34,9 +34,9 @@ struct wdat_instruction {
+  * @period: How long is one watchdog period in ms
+  * @stopped_in_sleep: Is this watchdog stopped by the firmware in S1-S5
+  * @stopped: Was the watchdog stopped by the driver in suspend
+- * @actions: An array of instruction lists indexed by an action number from
+- *           the WDAT table. There can be %NULL entries for not implemented
+- *           actions.
++ * @instructions: An array of instruction lists indexed by an action number from
++ *                the WDAT table. There can be %NULL entries for not implemented
++ *                actions.
+  */
+ struct wdat_wdt {
+ 	struct platform_device *pdev;
+@@ -208,7 +208,7 @@ static int wdat_wdt_enable_reboot(struct wdat_wdt *wdat)
+ 	/*
+ 	 * WDAT specification says that the watchdog is required to reboot
+ 	 * the system when it fires. However, it also states that it is
+-	 * recommeded to make it configurable through hardware register. We
++	 * recommended to make it configurable through hardware register. We
+ 	 * enable reboot now if it is configurable, just in case.
+ 	 */
+ 	ret = wdat_wdt_run_action(wdat, ACPI_WDAT_SET_REBOOT, 0, NULL);
+@@ -475,7 +475,7 @@ static int wdat_wdt_suspend_noirq(struct device *dev)
+ 		return 0;
+ 
+ 	/*
+-	 * We need to stop the watchdog if firmare is not doing it or if we
++	 * We need to stop the watchdog if firmware is not doing it or if we
+ 	 * are going suspend to idle (where firmware is not involved). If
+ 	 * firmware is stopping the watchdog we kick it here one more time
+ 	 * to give it some time.
+diff --git a/drivers/watchdog/wdt.c b/drivers/watchdog/wdt.c
+index a9e40b5c633e..183876156243 100644
+--- a/drivers/watchdog/wdt.c
++++ b/drivers/watchdog/wdt.c
+@@ -494,7 +494,7 @@ static int wdt_temp_release(struct inode *inode, struct file *file)
+ }
+ 
+ /**
+- *	notify_sys:
++ *	wdt_notify_sys:
+  *	@this: our notifier block
+  *	@code: the event being reported
+  *	@unused: unused
+@@ -558,7 +558,7 @@ static struct notifier_block wdt_notifier = {
+ };
+ 
+ /**
+- *	cleanup_module:
++ *	wdt_exit:
+  *
+  *	Unload the watchdog. You cannot do this with any file handles open.
+  *	If your watchdog is set to continue ticking on close and you unload
+diff --git a/drivers/watchdog/wdt_pci.c b/drivers/watchdog/wdt_pci.c
+index c3254ba5ace6..d5e56b601351 100644
+--- a/drivers/watchdog/wdt_pci.c
++++ b/drivers/watchdog/wdt_pci.c
+@@ -537,7 +537,7 @@ static int wdtpci_temp_release(struct inode *inode, struct file *file)
+ }
+ 
+ /**
+- *	notify_sys:
++ *	wdtpci_notify_sys:
+  *	@this: our notifier block
+  *	@code: the event being reported
+  *	@unused: unused
+diff --git a/drivers/watchdog/ziirave_wdt.c b/drivers/watchdog/ziirave_wdt.c
+index cab86a08456b..c5a9b820d43a 100644
+--- a/drivers/watchdog/ziirave_wdt.c
++++ b/drivers/watchdog/ziirave_wdt.c
+@@ -18,7 +18,6 @@
+ #include <linux/slab.h>
+ #include <linux/sysfs.h>
+ #include <linux/types.h>
+-#include <linux/version.h>
+ #include <linux/watchdog.h>
+ 
+ #include <asm/unaligned.h>
+@@ -70,9 +69,6 @@ static char *ziirave_reasons[] = {"power cycle", "hw watchdog", NULL, NULL,
+ #define ZIIRAVE_CMD_JUMP_TO_BOOTLOADER_MAGIC	1
+ #define ZIIRAVE_CMD_RESET_PROCESSOR_MAGIC	1
+ 
+-#define ZIIRAVE_FW_VERSION_FMT	"02.%02u.%02u"
+-#define ZIIRAVE_BL_VERSION_FMT	"01.%02u.%02u"
+-
+ struct ziirave_wdt_rev {
+ 	unsigned char major;
+ 	unsigned char minor;
+@@ -446,8 +442,9 @@ static ssize_t ziirave_wdt_sysfs_show_firm(struct device *dev,
+ 	if (ret)
+ 		return ret;
+ 
+-	ret = sprintf(buf, ZIIRAVE_FW_VERSION_FMT, w_priv->firmware_rev.major,
+-		      w_priv->firmware_rev.minor);
++	ret = sysfs_emit(buf, "02.%02u.%02u\n",
++			 w_priv->firmware_rev.major,
++			 w_priv->firmware_rev.minor);
+ 
+ 	mutex_unlock(&w_priv->sysfs_mutex);
+ 
+@@ -469,8 +466,9 @@ static ssize_t ziirave_wdt_sysfs_show_boot(struct device *dev,
+ 	if (ret)
+ 		return ret;
+ 
+-	ret = sprintf(buf, ZIIRAVE_BL_VERSION_FMT, w_priv->bootloader_rev.major,
+-		      w_priv->bootloader_rev.minor);
++	ret = sysfs_emit(buf, "01.%02u.%02u\n",
++			 w_priv->bootloader_rev.major,
++			 w_priv->bootloader_rev.minor);
+ 
+ 	mutex_unlock(&w_priv->sysfs_mutex);
+ 
+@@ -492,7 +490,7 @@ static ssize_t ziirave_wdt_sysfs_show_reason(struct device *dev,
+ 	if (ret)
+ 		return ret;
+ 
+-	ret = sprintf(buf, "%s", ziirave_reasons[w_priv->reset_reason]);
++	ret = sysfs_emit(buf, "%s\n", ziirave_reasons[w_priv->reset_reason]);
+ 
+ 	mutex_unlock(&w_priv->sysfs_mutex);
+ 
+@@ -537,7 +535,7 @@ static ssize_t ziirave_wdt_sysfs_store_firm(struct device *dev,
+ 	}
+ 
+ 	dev_info(&client->dev,
+-		 "Firmware updated to version " ZIIRAVE_FW_VERSION_FMT "\n",
++		 "Firmware updated to version 02.%02u.%02u\n",
+ 		 w_priv->firmware_rev.major, w_priv->firmware_rev.minor);
+ 
+ 	/* Restore the watchdog timeout */
+@@ -678,7 +676,7 @@ static int ziirave_wdt_probe(struct i2c_client *client,
+ 	}
+ 
+ 	dev_info(&client->dev,
+-		 "Firmware version: " ZIIRAVE_FW_VERSION_FMT "\n",
++		 "Firmware version: 02.%02u.%02u\n",
+ 		 w_priv->firmware_rev.major, w_priv->firmware_rev.minor);
+ 
+ 	ret = ziirave_wdt_revision(client, &w_priv->bootloader_rev,
+@@ -689,7 +687,7 @@ static int ziirave_wdt_probe(struct i2c_client *client,
+ 	}
+ 
+ 	dev_info(&client->dev,
+-		 "Bootloader version: " ZIIRAVE_BL_VERSION_FMT "\n",
++		 "Bootloader version: 01.%02u.%02u\n",
+ 		 w_priv->bootloader_rev.major, w_priv->bootloader_rev.minor);
+ 
+ 	w_priv->reset_reason = i2c_smbus_read_byte_data(client,
+diff --git a/include/dt-bindings/reset-controller/mt8192-resets.h b/include/dt-bindings/reset-controller/mt8192-resets.h
+new file mode 100644
+index 000000000000..be9a7ca245b9
+--- /dev/null
++++ b/include/dt-bindings/reset-controller/mt8192-resets.h
+@@ -0,0 +1,30 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * Copyright (c) 2020 MediaTek Inc.
++ * Author: Yong Liang <yong.liang@mediatek.com>
++ */
++
++#ifndef _DT_BINDINGS_RESET_CONTROLLER_MT8192
++#define _DT_BINDINGS_RESET_CONTROLLER_MT8192
++
++#define MT8192_TOPRGU_MM_SW_RST					1
++#define MT8192_TOPRGU_MFG_SW_RST				2
++#define MT8192_TOPRGU_VENC_SW_RST				3
++#define MT8192_TOPRGU_VDEC_SW_RST				4
++#define MT8192_TOPRGU_IMG_SW_RST				5
++#define MT8192_TOPRGU_MD_SW_RST					7
++#define MT8192_TOPRGU_CONN_SW_RST				9
++#define MT8192_TOPRGU_CONN_MCU_SW_RST			12
++#define MT8192_TOPRGU_IPU0_SW_RST				14
++#define MT8192_TOPRGU_IPU1_SW_RST				15
++#define MT8192_TOPRGU_AUDIO_SW_RST				17
++#define MT8192_TOPRGU_CAMSYS_SW_RST				18
++#define MT8192_TOPRGU_MJC_SW_RST				19
++#define MT8192_TOPRGU_C2K_S2_SW_RST				20
++#define MT8192_TOPRGU_C2K_SW_RST				21
++#define MT8192_TOPRGU_PERI_SW_RST				22
++#define MT8192_TOPRGU_PERI_AO_SW_RST			23
++
++#define MT8192_TOPRGU_SW_RST_NUM				23
++
++#endif  /* _DT_BINDINGS_RESET_CONTROLLER_MT8192 */
+diff --git a/include/dt-bindings/reset/mt8195-resets.h b/include/dt-bindings/reset/mt8195-resets.h
+new file mode 100644
+index 000000000000..a26bccc8b957
+--- /dev/null
++++ b/include/dt-bindings/reset/mt8195-resets.h
+@@ -0,0 +1,29 @@
++/* SPDX-License-Identifier: (GPL-2.0+ OR BSD-3-Clause)*/
++/*
++ * Copyright (c) 2021 MediaTek Inc.
++ * Author: Christine Zhu <christine.zhu@mediatek.com>
++ */
++
++#ifndef _DT_BINDINGS_RESET_CONTROLLER_MT8195
++#define _DT_BINDINGS_RESET_CONTROLLER_MT8195
++
++#define MT8195_TOPRGU_CONN_MCU_SW_RST          0
++#define MT8195_TOPRGU_INFRA_GRST_SW_RST        1
++#define MT8195_TOPRGU_APU_SW_RST               2
++#define MT8195_TOPRGU_INFRA_AO_GRST_SW_RST     6
++#define MT8195_TOPRGU_MMSYS_SW_RST             7
++#define MT8195_TOPRGU_MFG_SW_RST               8
++#define MT8195_TOPRGU_VENC_SW_RST              9
++#define MT8195_TOPRGU_VDEC_SW_RST              10
++#define MT8195_TOPRGU_IMG_SW_RST               11
++#define MT8195_TOPRGU_APMIXEDSYS_SW_RST        13
++#define MT8195_TOPRGU_AUDIO_SW_RST             14
++#define MT8195_TOPRGU_CAMSYS_SW_RST            15
++#define MT8195_TOPRGU_EDPTX_SW_RST             16
++#define MT8195_TOPRGU_ADSPSYS_SW_RST           21
++#define MT8195_TOPRGU_DPTX_SW_RST              22
++#define MT8195_TOPRGU_SPMI_MST_SW_RST          23
++
++#define MT8195_TOPRGU_SW_RST_NUM               16
++
++#endif  /* _DT_BINDINGS_RESET_CONTROLLER_MT8195 */
+diff --git a/include/linux/watchdog.h b/include/linux/watchdog.h
+index 9b19e6bb68b5..99660197a36c 100644
+--- a/include/linux/watchdog.h
++++ b/include/linux/watchdog.h
+@@ -107,6 +107,7 @@ struct watchdog_device {
+ 	unsigned int max_hw_heartbeat_ms;
+ 	struct notifier_block reboot_nb;
+ 	struct notifier_block restart_nb;
++	struct notifier_block pm_nb;
+ 	void *driver_data;
+ 	struct watchdog_core_data *wd_data;
+ 	unsigned long status;
+@@ -116,6 +117,7 @@ struct watchdog_device {
+ #define WDOG_STOP_ON_REBOOT	2	/* Should be stopped on reboot */
+ #define WDOG_HW_RUNNING		3	/* True if HW watchdog running */
+ #define WDOG_STOP_ON_UNREGISTER	4	/* Should be stopped on unregister */
++#define WDOG_NO_PING_ON_SUSPEND	5	/* Ping worker should be stopped on suspend */
+ 	struct list_head deferred;
+ };
+ 
+@@ -156,6 +158,12 @@ static inline void watchdog_stop_on_unregister(struct watchdog_device *wdd)
+ 	set_bit(WDOG_STOP_ON_UNREGISTER, &wdd->status);
+ }
+ 
++/* Use the following function to stop the wdog ping worker when suspending */
++static inline void watchdog_stop_ping_on_suspend(struct watchdog_device *wdd)
++{
++	set_bit(WDOG_NO_PING_ON_SUSPEND, &wdd->status);
++}
++
+ /* Use the following function to check if a timeout value is invalid */
+ static inline bool watchdog_timeout_invalid(struct watchdog_device *wdd, unsigned int t)
+ {
+@@ -209,6 +217,8 @@ extern int watchdog_init_timeout(struct watchdog_device *wdd,
+ 				  unsigned int timeout_parm, struct device *dev);
+ extern int watchdog_register_device(struct watchdog_device *);
+ extern void watchdog_unregister_device(struct watchdog_device *);
++int watchdog_dev_suspend(struct watchdog_device *wdd);
++int watchdog_dev_resume(struct watchdog_device *wdd);
+ 
+ int watchdog_set_last_hw_keepalive(struct watchdog_device *, unsigned int);
+ 
