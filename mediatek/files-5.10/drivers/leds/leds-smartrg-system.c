@@ -21,10 +21,11 @@ struct srg_led {
 	struct led_classdev led_green;
 	struct led_classdev led_blue;
 	struct led_classdev led_white;
-	int index_red;
-	int index_green;
-	int index_blue;
-	int index_white;
+	u8 index_red;
+	u8 index_green;
+	u8 index_blue;
+	u8 index_white;
+	u8 control[5];
 };
 
 
@@ -38,18 +39,48 @@ srg_led_i2c_write(struct srg_led *sysled, u8 reg, u8 value)
  * MC LED Command: 0 = OFF, 1 = ON, 2 = Flash, 3 = Pulse, 4 = Blink
  * */
 static int
-srg_led_control_set(struct srg_led *sysled, u8 reg, u8 value)
+srg_led_control_sync(struct srg_led *sysled)
 {
-	u8 ledcmd;
+	int i, ret;
 
-	if (value > 4) {
-		ledcmd = 1;
-	} else {
-		ledcmd = value;
+	for (i = 1; i < 5; i++) {
+		if (sysled->control[i] > 1) {
+			ret = srg_led_i2c_write(sysled, i, sysled->control[i]);
+			if (i < 4) {
+				msleep(1);
+			}
+		}
 	}
-	return srg_led_i2c_write(sysled, reg, ledcmd);
+	return ret;
 }
 
+/*
+ * This function overrides the led driver timer trigger to offload
+ * flashing to the micro-controller.  The negative effect of this
+ * is the inability to configure the delay_on and delay_off periods.
+ *
+ * */
+#define SRG_LED_RGBW_PULSE(color)		\
+static int						\
+srg_led_set_##color##_pulse(struct led_classdev *led_cdev,	\
+				unsigned long *delay_on,	\
+				unsigned long *delay_off)	\
+{								\
+	struct srg_led *sysled = container_of(led_cdev,		\
+						struct srg_led,	\
+						led_##color);	\
+	int ret;						\
+	mutex_lock(&sysled->lock);				\
+	sysled->control[sysled->index_##color] = 3;		\
+	ret = srg_led_control_sync(sysled);			\
+	mutex_unlock(&sysled->lock);				\
+	return ret;						\
+}
+
+SRG_LED_RGBW_PULSE(red);
+SRG_LED_RGBW_PULSE(green);
+SRG_LED_RGBW_PULSE(blue);
+SRG_LED_RGBW_PULSE(white);
 
 #define SRG_LED_CONTROL_RGBW(color)		\
 static int						\
@@ -59,10 +90,19 @@ srg_led_set_##color##_brightness(struct led_classdev *led_cdev,	\
 	struct srg_led *sysled = container_of(led_cdev,		\
 						struct srg_led,	\
 						led_##color);	\
-	int ret;						\
+	int ret, index, control=value;				\
 	mutex_lock(&sysled->lock);				\
-	ret = srg_led_control_set(sysled,			\
-				sysled->index_##color, value);	\
+	if (value == 255) {					\
+		control = 1;					\
+	}							\
+	if (control > 4) {					\
+		index = sysled->index_##color + 4;		\
+		ret = srg_led_i2c_write(sysled, index, control); \
+	} else {						\
+		sysled->control[sysled->index_##color] = control; \
+		ret = srg_led_i2c_write(sysled, sysled->index_##color, control); \
+		msleep(1);					\
+	}							\
 	mutex_unlock(&sysled->lock);				\
 	return ret;						\
 }
@@ -73,7 +113,7 @@ SRG_LED_CONTROL_RGBW(blue);
 SRG_LED_CONTROL_RGBW(white);
 
 
-static int
+static u8
 srg_led_init_led(struct device_node *np, struct srg_led *sysled,
 				struct led_classdev *led_cdev)
 {
@@ -127,6 +167,7 @@ srg_led_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	i2c_set_clientdata(client, sysled);
 
 	sysled->led_red.brightness_set_blocking = srg_led_set_red_brightness;
+	sysled->led_red.blink_set = srg_led_set_red_pulse;
 	sysled->index_red = srg_led_init_led(of_get_child_by_name(np, "system_red"),
 						sysled, &sysled->led_red);
 
@@ -134,6 +175,7 @@ srg_led_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	msleep(5);
 
 	sysled->led_green.brightness_set_blocking = srg_led_set_green_brightness;
+	sysled->led_green.blink_set = srg_led_set_green_pulse;
 	sysled->index_green = srg_led_init_led(of_get_child_by_name(np, "system_green"),
 						sysled, &sysled->led_green);
 
@@ -141,6 +183,7 @@ srg_led_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	msleep(5);
 
 	sysled->led_blue.brightness_set_blocking = srg_led_set_blue_brightness;
+	sysled->led_blue.blink_set = srg_led_set_blue_pulse;
 	sysled->index_blue = srg_led_init_led(of_get_child_by_name(np, "system_blue"),
 						sysled, &sysled->led_blue);
 
@@ -148,6 +191,7 @@ srg_led_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	msleep(5);
 
 	sysled->led_white.brightness_set_blocking = srg_led_set_white_brightness;
+	sysled->led_white.blink_set = srg_led_set_white_pulse;
 	sysled->index_white = srg_led_init_led(of_get_child_by_name(np, "system_white"),
 						sysled, &sysled->led_white);
 
