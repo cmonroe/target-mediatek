@@ -151,16 +151,10 @@
 	gmac0: mac@0 {
 		compatible = "mediatek,eth-mac";
 		reg = <0>;
+
 		phy-handle = <&phy5>;
-
 		phy-mode = "2500base-x";
-
-		fixed-link {
-			speed = <2500>;
-			full-duplex;
-			pause;
-			extphy;
-		};
+		phy-connection-type = "2500base-x";
 	};
 
 	gmac1: mac@1 {
@@ -214,7 +208,7 @@
 
 		phy5: ethernet-phy@5 {
 			/* GPY211 */
-			compatible = "maxlinear,gpy211", "ethernet-phy-ieee802.3-c22";
+			compatible = "maxlinear,gpy211", "ethernet-phy-ieee802.3-c45";
 			reg = <5>;
 		};
 	};
