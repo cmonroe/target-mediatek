@@ -132,6 +132,9 @@ define Build/srgImageRun
 	$(STAGING_DIR_HOST)/bin/makeself.sh --sha256 --ssl-encrypt --ssl-pass-src file:$(TARGET_DIR)/usr/srg/scripts/pfsos $(KDIR)/img $(KDIR)/$(BINNAME).run "SOS self" ./self-upgrade.sh
 	$(CP) $(KDIR)/$(BINNAME).run $(BIN_DIR)/$(BINNAME).run
 	$(CP) $(KDIR)/$(BINNAME).runimg.tgz $(BIN_DIR)/$(BINNAME).runimg.tgz
+	@echo "RUNNING BuildPackage alt-os-image"
+	mkdir -p $(BIN_DIR)/alt-os-images
+	$(STAGING_DIR_HOST)/bin/alt-os-images/transition.sh -f plumeos -t sos -i $(BIN_DIR)/$(BINNAME).run -d $(BIN_DIR)/alt-os-images
 endef
 
 define Image/Flash/mkflash_emmc
