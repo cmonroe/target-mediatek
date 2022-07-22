@@ -1,0 +1,70 @@
+From 62d3aec50e15197b7327816c9b0d49b0ac84079a Mon Sep 17 00:00:00 2001
+From: Tim Hayes <tim.hayes@smartrg.com>
+Date: Wed, 29 Jun 2022 10:17:54 -0700
+Subject: [PATCH] OWRT-6281 interface 2500basex replacement for fixed phy
+
+---
+ drivers/net/phy/phylink.c | 31 ++++++++++++++++++++++++++++++-
+ 1 file changed, 30 insertions(+), 1 deletion(-)
+
+--- a/drivers/net/phy/phylink.c
++++ b/drivers/net/phy/phylink.c
+@@ -432,7 +432,17 @@ static void phylink_mac_config(struct ph
+ 		    __ETHTOOL_LINK_MODE_MASK_NBITS, state->advertising,
+ 		    state->pause, state->link, state->an_enabled);
+ 
+-	pl->mac_ops->mac_config(pl->config, pl->cur_link_an_mode, state);
++	if (state->interface == PHY_INTERFACE_MODE_2500BASEX) {
++		struct phylink_link_state link_state;
++		memcpy(&link_state,state,sizeof(struct phylink_link_state));
++		link_state.pause |= MLO_PAUSE_RX;
++ 		link_state.pause |= MLO_PAUSE_TX;
++		link_state.speed=SPEED_2500;
++		link_state.duplex=DUPLEX_FULL;
++		pl->mac_ops->mac_config(pl->config, pl->cur_link_an_mode, &link_state);
++	} else {
++		pl->mac_ops->mac_config(pl->config, pl->cur_link_an_mode, state);
++	}
+ }
+ 
+ static void phylink_mac_pcs_an_restart(struct phylink *pl)
+@@ -616,6 +626,19 @@ static void phylink_link_up(struct phyli
+ 			    struct phylink_link_state link_state)
+ {
+ 	struct net_device *ndev = pl->netdev;
++	struct phylink_link_state _link_state;
++
++	if (link_state.interface == PHY_INTERFACE_MODE_2500BASEX) {
++
++		_link_state.pause=link_state.pause;
++		_link_state.speed=link_state.speed;
++		_link_state.duplex=link_state.duplex;
++
++		link_state.pause |= MLO_PAUSE_RX;
++ 		link_state.pause |= MLO_PAUSE_TX;
++		link_state.speed=SPEED_2500;
++		link_state.duplex=DUPLEX_FULL;
++	}
+ 
+ 	pl->cur_interface = link_state.interface;
+ 
+@@ -624,6 +647,7 @@ static void phylink_link_up(struct phyli
+ 					 pl->cur_interface,
+ 					 link_state.speed, link_state.duplex);
+ 
++
+ 	pl->mac_ops->mac_link_up(pl->config, pl->phydev,
+ 				 pl->cur_link_an_mode, pl->cur_interface,
+ 				 link_state.speed, link_state.duplex,
+@@ -633,6 +657,11 @@ static void phylink_link_up(struct phyli
+ 	if (ndev)
+ 		netif_carrier_on(ndev);
+ 
++	if (link_state.interface == PHY_INTERFACE_MODE_2500BASEX) {
++		link_state.pause=_link_state.pause;
++		link_state.speed=_link_state.speed;
++		link_state.duplex=_link_state.duplex;
++	}
+ 	phylink_info(pl,
+ 		     "Link is Up - %s/%s - flow control %s\n",
+ 		     phy_speed_to_str(link_state.speed),

@@ -1,0 +1,20 @@
+From fcd50daf25e55cc617b729ddf607e85323832ab0 Mon Sep 17 00:00:00 2001
+From: Tim Hayes <tim.hayes@smartrg.com>
+Date: Mon, 27 Sep 2021 15:08:54 -0700
+Subject: [PATCH] OWRT-6281 added PHY_INTERFACE_MODE_2500BASEX return
+
+---
+ drivers/net/phy/mxl-gpy.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/drivers/net/phy/mxl-gpy.c
++++ b/drivers/net/phy/mxl-gpy.c
+@@ -264,6 +264,8 @@ static void gpy_update_interface(struct
+ 	    phydev->interface == PHY_INTERFACE_MODE_INTERNAL)
+ 		return;
+ 
++	if (phydev->interface == PHY_INTERFACE_MODE_2500BASEX) return;
++
+ 	/* Automatically switch SERDES interface between SGMII and 2500-BaseX
+ 	 * according to speed. Disable ANEG in 2500-BaseX mode.
+ 	 */
