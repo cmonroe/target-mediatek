@@ -162,8 +162,7 @@
 		reg = <1>;
 
 		phy-handle = <&phy0>;
-		phy-mode = "rgmii";
-		/* phy-mode = "rgmii-rxid"; */
+		phy-mode = "rgmii-rxid";
 	};
 
 	mdio: mdio-bus {
