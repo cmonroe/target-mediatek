@@ -118,6 +118,11 @@ define Build/srgImageRun
 	mkdir -p $(KDIR)/img/check_scripts
 	mkdir -p $(KDIR)/img/scripts
 	mkdir -p $(KDIR)/img/etc
+	mkdir -p $(KDIR)/img/cdt
+	if [ $(1) ]; then \
+		CDT_IPK=`find $(wildcard $(PACKAGE_SUBDIRS)) -type f -name 'cdt-$(1)_*.ipk' -print -quit` ; \
+		cp $$CDT_IPK $(KDIR)/img/cdt ; \
+	fi
 	$(CP) $(TARGET_DIR)/../flash-images/files/scripts/* $(KDIR)/img/check_scripts/
 	$(CP) $(TARGET_DIR)/Boot $(KDIR)/img/
 	$(CP) $(BIN_DIR)/$(IMG_PREFIX)-polecat-fit-multi.itb $(KDIR)/img/Boot/fit-multi.itb
@@ -130,11 +135,11 @@ define Build/srgImageRun
 	$(CP) $(KDIR)/root.squashfs.run.bin $(KDIR)/img/root.squashfs.bin
 	tar czf $(KDIR)/$(BINNAME).runimg.tgz -C $(KDIR) img
 	$(STAGING_DIR_HOST)/bin/makeself.sh --sha256 --ssl-encrypt --ssl-pass-src file:$(TARGET_DIR)/usr/srg/scripts/pfsos $(KDIR)/img $(KDIR)/$(BINNAME).run "SOS self" ./self-upgrade.sh
-	$(CP) $(KDIR)/$(BINNAME).run $(BIN_DIR)/$(BINNAME).run
+	$(CP) $(KDIR)/$(BINNAME).run $(BIN_DIR)/$(BINNAME)$(if $(1),-$(1),).run
 	$(CP) $(KDIR)/$(BINNAME).runimg.tgz $(BIN_DIR)/$(BINNAME).runimg.tgz
 	@echo "RUNNING BuildPackage alt-os-image"
 	mkdir -p $(BIN_DIR)/alt-os-images
-	$(STAGING_DIR_HOST)/bin/alt-os-images/transition.sh -f plumeos -t sos -i $(BIN_DIR)/$(BINNAME).run -d $(BIN_DIR)/alt-os-images
+	$(STAGING_DIR_HOST)/bin/alt-os-images/transition.sh -f plumeos -t sos -i $(BIN_DIR)/$(BINNAME)$(if $(1),-$(1),).run -d $(BIN_DIR)/alt-os-images
 endef
 
 define Image/Flash/mkflash_emmc
@@ -151,7 +156,7 @@ flashme:
 	$(call Image/Flash/mkflash_emmc,$(CDT),$(ENUM))
 
 cdt-image:
-	@echo "Build CDT image $(CDT)"
+	$(call Build/srgImageRun,$(CDT))
 	bash -c "CDT=$(CDT) $(SRGRUN) CDT $(BINNAME) $(VERNAME)"
 
 mini-cdt-image:
