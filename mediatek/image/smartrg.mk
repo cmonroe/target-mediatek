@@ -40,7 +40,7 @@ define Build/SrgFit
 		-e $(if $(KERNEL_ENTRY),$(KERNEL_ENTRY),$(KERNEL_LOADADDR)) \
 		-D "k1" -C lzma -c 1 \
 		-h "crc32" -h "sha1" \
-		-r $(BIN_DIR)/$(IMG_PREFIX)-initramfs.cpio.gz \
+		-r $(STAGING_DIR_IMAGE)/$(IMG_PREFIX)-initramfs.cpio.gz \
 		-D "rdisk" -c 1 \
 		-h "crc32" -h "sha1" \
 		-d $(KDIR)/image-mt7622-smartrg-srbpi.dtb \
