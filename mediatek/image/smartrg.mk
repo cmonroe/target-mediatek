@@ -141,7 +141,7 @@ define Build/srgImageRun
 	$(CP) $(TARGET_DIR)/etc/openwrt_release $(KDIR)/img/etc/
 	$(CP) $(KDIR)/root.squashfs.run.bin $(KDIR)/img/root.squashfs.bin
 	tar czf $(KDIR)/$(BINNAME).runimg.tgz -C $(KDIR) img
-	$(STAGING_DIR_HOST)/bin/makeself.sh --help-header $(KDIR)/img/metadata --sha256 --ssl-encrypt --ssl-pass-src file:$(TARGET_DIR)/usr/srg/scripts/pfsos $(KDIR)/img $(KDIR)/$(BINNAME).run "SOS self" ./self-upgrade.sh
+	$(STAGING_DIR_HOST)/bin/makeself.sh --sha256 --ssl-encrypt --ssl-pass-src file:$(TARGET_DIR)/usr/srg/scripts/pfsos $(KDIR)/img $(KDIR)/$(BINNAME).run "SOS self" ./self-upgrade.sh
 	$(CP) $(KDIR)/$(BINNAME).run $(BIN_DIR)/$(BINNAME)$(if $(1),-$(1),).run
 	$(CP) $(KDIR)/$(BINNAME).runimg.tgz $(BIN_DIR)/$(BINNAME).runimg.tgz
 	@echo "RUNNING BuildPackage alt-os-image"
