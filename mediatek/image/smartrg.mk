@@ -119,10 +119,17 @@ define Build/srgImageRun
 	mkdir -p $(KDIR)/img/scripts
 	mkdir -p $(KDIR)/img/etc
 	mkdir -p $(KDIR)/img/cdt
+	echo "###### metadata_start ######" > $(KDIR)/img/metadata
 	if [ $(1) ]; then \
 		CDT_IPK=`find $(wildcard $(PACKAGE_SUBDIRS)) -type f -name 'cdt-$(1)_*.ipk' -print -quit` ; \
 		cp $$CDT_IPK $(KDIR)/img/cdt ; \
+		echo "CDT=\"$(1)\"" >> $(KDIR)/img/metadata; \
+	else \
+		echo "CDT= " >> $(KDIR)/img/metadata; \
 	fi
+	cat $(TARGET_DIR)/etc/openwrt_release | sed "s/'/\"/g" >> $(KDIR)/img/metadata
+	cat $(TARGET_DIR)/../flash-images/files/scripts/arch_platforms.sh | grep PLATFORMS >> $(KDIR)/img/metadata
+	echo "###### metadata_end ######" >> $(KDIR)/img/metadata
 	$(CP) $(TARGET_DIR)/../flash-images/files/scripts/* $(KDIR)/img/check_scripts/
 	$(CP) $(TARGET_DIR)/Boot $(KDIR)/img/
 	$(CP) $(BIN_DIR)/$(IMG_PREFIX)-polecat-fit-multi.itb $(KDIR)/img/Boot/fit-multi.itb
@@ -134,7 +141,7 @@ define Build/srgImageRun
 	$(CP) $(TARGET_DIR)/etc/openwrt_release $(KDIR)/img/etc/
 	$(CP) $(KDIR)/root.squashfs.run.bin $(KDIR)/img/root.squashfs.bin
 	tar czf $(KDIR)/$(BINNAME).runimg.tgz -C $(KDIR) img
-	$(STAGING_DIR_HOST)/bin/makeself.sh --sha256 --ssl-encrypt --ssl-pass-src file:$(TARGET_DIR)/usr/srg/scripts/pfsos $(KDIR)/img $(KDIR)/$(BINNAME).run "SOS self" ./self-upgrade.sh
+	$(STAGING_DIR_HOST)/bin/makeself.sh --help-header $(KDIR)/img/metadata --sha256 --ssl-encrypt --ssl-pass-src file:$(TARGET_DIR)/usr/srg/scripts/pfsos $(KDIR)/img $(KDIR)/$(BINNAME).run "SOS self" ./self-upgrade.sh
 	$(CP) $(KDIR)/$(BINNAME).run $(BIN_DIR)/$(BINNAME)$(if $(1),-$(1),).run
 	$(CP) $(KDIR)/$(BINNAME).runimg.tgz $(BIN_DIR)/$(BINNAME).runimg.tgz
 	@echo "RUNNING BuildPackage alt-os-image"
