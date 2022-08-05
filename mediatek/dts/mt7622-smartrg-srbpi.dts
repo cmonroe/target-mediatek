@@ -85,7 +85,7 @@
 		#size-cells = <2>;
 		ranges;
 
-		/delete-node/ramoops@0x42ff0000;
+		/delete-node/ramoops@42ff0000;
 
 		bootdata_reserved: bootdata@0x45000000 {
 			no-map;
