@@ -5,6 +5,7 @@ BINNAME:=$(IMG_PREFIX)-polecat-root.squashfs
 VERNAME:=$(VERSION_NUMBER)-$(subst DEVICE_,,$(PROFILE))
 
 define Device/polecat
+  KERNEL_LOADADDR = 0x43200000
   KERNEL_SUFFIX := -fit-multi.itb
   KERNEL_INSTALL := 1
   KERNEL_NAME := Image
