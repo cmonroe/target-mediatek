@@ -76,7 +76,7 @@
  	{ .compatible = "cisco,spi-petra" },
  	{ .compatible = "micron,spi-authenta" },
 -	{ .compatible = "siliconlabs,si3210" },
-+	{ .compatible = "siliconlabs,slic" },
++	{ .compatible = "siliconlab,slic" },
  	{},
  };
  MODULE_DEVICE_TABLE(of, spidev_dt_ids);
