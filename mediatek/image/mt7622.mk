@@ -86,13 +86,18 @@ define Device/bananapi_bpi-r64
   ARTIFACT/sdcard.img.gz	:= mt7622-gpt sdmmc |\
 				   pad-to 512k | bl2 sdmmc-2ddr |\
 				   pad-to 2048k | bl31-uboot bananapi_bpi-r64-sdmmc |\
-				   pad-to 6144k | append-image-stage initramfs-recovery.itb |\
+				$(if $(CONFIG_TARGET_ROOTFS_INITRAMFS),\
+				   pad-to 6144k | append-image-stage initramfs-recovery.itb | check-size 38912k |\
+				) \
 				   pad-to 38912k | mt7622-gpt emmc |\
 				   pad-to 39424k | bl2 emmc-2ddr |\
 				   pad-to 40960k | bl31-uboot bananapi_bpi-r64-emmc |\
 				   pad-to 43008k | bl2 snand-2ddr |\
 				   pad-to 43520k | bl31-uboot bananapi_bpi-r64-snand |\
-				   pad-to 46080k | append-image squashfs-sysupgrade.itb | gzip
+				$(if $(CONFIG_TARGET_ROOTFS_SQUASHFS),\
+				   pad-to 46080k | append-image squashfs-sysupgrade.itb | check-size | gzip \
+				)
+  IMAGE_SIZE := $$(shell expr 45 + $$(CONFIG_TARGET_ROOTFS_PARTSIZE))m
   KERNEL			:= kernel-bin | gzip
   KERNEL_INITRAMFS		:= kernel-bin | lzma | fit lzma $$(DTS_DIR)/$$(DEVICE_DTS).dtb with-initrd | pad-to 128k
   IMAGE/sysupgrade.itb		:= append-kernel | fit gzip $$(DTS_DIR)/$$(DEVICE_DTS).dtb external-static-with-rootfs | append-metadata
@@ -136,6 +141,26 @@ define Device/elecom_wrc-2533gent
   DEVICE_PACKAGES := kmod-btmtkuart kmod-usb3 swconfig
 endef
 TARGET_DEVICES += elecom_wrc-2533gent
+
+define Device/elecom_wrc-x3200gst3
+  DEVICE_VENDOR := ELECOM
+  DEVICE_MODEL := WRC-X3200GST3
+  DEVICE_DTS := mt7622-elecom-wrc-x3200gst3
+  DEVICE_DTS_DIR := ../dts
+  IMAGE_SIZE := 25600k
+  KERNEL_SIZE := 6144k
+  BLOCKSIZE := 128k
+  PAGESIZE := 2048
+  UBINIZE_OPTS := -E 5
+  IMAGES += factory.bin
+  IMAGE/factory.bin := append-kernel | pad-to $$(KERNEL_SIZE) | \
+	append-ubi | check-size | \
+	elecom-wrc-gs-factory WRC-X3200GST3 0.00 -N | \
+	append-string MT7622_ELECOM_WRC-X3200GST3
+  IMAGE/sysupgrade.bin := sysupgrade-tar | append-metadata
+  DEVICE_PACKAGES := kmod-mt7915e
+endef
+TARGET_DEVICES += elecom_wrc-x3200gst3
 
 define Device/linksys_e8450
   DEVICE_VENDOR := Linksys
