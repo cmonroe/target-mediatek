@@ -9,7 +9,7 @@ Subject: [PATCH] OWRT-6281 interface 2500basex replacement for fixed phy
 
 --- a/drivers/net/phy/phylink.c
 +++ b/drivers/net/phy/phylink.c
-@@ -432,7 +432,17 @@ static void phylink_mac_config(struct ph
+@@ -768,7 +768,17 @@ static void phylink_mac_config(struct ph
  		    __ETHTOOL_LINK_MODE_MASK_NBITS, state->advertising,
  		    state->pause, state->link, state->an_enabled);
  
@@ -28,7 +28,7 @@ Subject: [PATCH] OWRT-6281 interface 2500basex replacement for fixed phy
  }
  
  static void phylink_mac_pcs_an_restart(struct phylink *pl)
-@@ -616,6 +626,19 @@ static void phylink_link_up(struct phyli
+@@ -970,6 +980,19 @@ static void phylink_link_up(struct phyli
  			    struct phylink_link_state link_state)
  {
  	struct net_device *ndev = pl->netdev;
@@ -48,7 +48,7 @@ Subject: [PATCH] OWRT-6281 interface 2500basex replacement for fixed phy
  
  	pl->cur_interface = link_state.interface;
  
-@@ -624,6 +647,7 @@ static void phylink_link_up(struct phyli
+@@ -978,6 +1001,7 @@ static void phylink_link_up(struct phyli
  					 pl->cur_interface,
  					 link_state.speed, link_state.duplex);
  
@@ -56,7 +56,7 @@ Subject: [PATCH] OWRT-6281 interface 2500basex replacement for fixed phy
  	pl->mac_ops->mac_link_up(pl->config, pl->phydev,
  				 pl->cur_link_an_mode, pl->cur_interface,
  				 link_state.speed, link_state.duplex,
-@@ -633,6 +657,11 @@ static void phylink_link_up(struct phyli
+@@ -987,6 +1011,11 @@ static void phylink_link_up(struct phyli
  	if (ndev)
  		netif_carrier_on(ndev);
  
