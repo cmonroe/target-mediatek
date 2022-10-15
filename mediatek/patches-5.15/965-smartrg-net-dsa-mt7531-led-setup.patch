@@ -1,7 +1,5 @@
-Index: linux-5.15.72/drivers/net/dsa/mt7530.c
-===================================================================
---- linux-5.15.72.orig/drivers/net/dsa/mt7530.c
-+++ linux-5.15.72/drivers/net/dsa/mt7530.c
+--- a/drivers/net/dsa/mt7530.c
++++ b/drivers/net/dsa/mt7530.c
 @@ -2792,6 +2792,23 @@ mt7531_setup(struct dsa_switch *ds)
  	if (ret < 0)
  		return ret;
@@ -26,10 +24,8 @@ Index: linux-5.15.72/drivers/net/dsa/mt7530.c
  	return 0;
  }
  
-Index: linux-5.15.72/drivers/net/dsa/mt7530.h
-===================================================================
---- linux-5.15.72.orig/drivers/net/dsa/mt7530.h
-+++ linux-5.15.72/drivers/net/dsa/mt7530.h
+--- a/drivers/net/dsa/mt7530.h
++++ b/drivers/net/dsa/mt7530.h
 @@ -640,6 +640,13 @@ enum mt7531_clk_skew {
  #define  CHIP_REV_M			0x0f
  #define  MT7531_ID			0x7531
