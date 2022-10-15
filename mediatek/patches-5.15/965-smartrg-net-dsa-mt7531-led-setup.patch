@@ -1,0 +1,46 @@
+Index: linux-5.15.72/drivers/net/dsa/mt7530.c
+===================================================================
+--- linux-5.15.72.orig/drivers/net/dsa/mt7530.c
++++ linux-5.15.72/drivers/net/dsa/mt7530.c
+@@ -2792,6 +2792,23 @@ mt7531_setup(struct dsa_switch *ds)
+ 	if (ret < 0)
+ 		return ret;
+ 
++	/**
++	 * Setup LED behavior
++	 *
++	 * LED0 (Green) - ON @ 1Gbps
++	 * LED1 (Amber) - ON @ 100Mbps or 100Mbps
++	 */
++	mt7531_ind_c45_phy_write(priv, MT753X_CTRL_PHY_ADDR, MDIO_MMD_VEND2,
++			LED_BASIC_CTRL, 0x8009);
++	mt7531_ind_c45_phy_write(priv, MT753X_CTRL_PHY_ADDR, MDIO_MMD_VEND2,
++			LED0_ON_CTRL, 0xc001);
++	mt7531_ind_c45_phy_write(priv, MT753X_CTRL_PHY_ADDR, MDIO_MMD_VEND2,
++			LED0_BLINK_CTRL, 0x0);
++	mt7531_ind_c45_phy_write(priv, MT753X_CTRL_PHY_ADDR, MDIO_MMD_VEND2,
++			LED1_ON_CTRL, 0xc006);
++	mt7531_ind_c45_phy_write(priv, MT753X_CTRL_PHY_ADDR, MDIO_MMD_VEND2,
++			LED1_BLINK_CTRL, 0x0);
++
+ 	return 0;
+ }
+ 
+Index: linux-5.15.72/drivers/net/dsa/mt7530.h
+===================================================================
+--- linux-5.15.72.orig/drivers/net/dsa/mt7530.h
++++ linux-5.15.72/drivers/net/dsa/mt7530.h
+@@ -640,6 +640,13 @@ enum mt7531_clk_skew {
+ #define  CHIP_REV_M			0x0f
+ #define  MT7531_ID			0x7531
+ 
++/* Registers for LED control through mmd indirect */
++#define LED_BASIC_CTRL		0x21
++#define LED0_ON_CTRL		0x24
++#define LED0_BLINK_CTRL		0x25
++#define LED1_ON_CTRL		0x26
++#define LED1_BLINK_CTRL		0x27
++
+ /* Registers for core PLL access through mmd indirect */
+ #define CORE_PLL_GROUP2			0x401
+ #define  RG_SYSPLL_EN_NORMAL		BIT(15)
