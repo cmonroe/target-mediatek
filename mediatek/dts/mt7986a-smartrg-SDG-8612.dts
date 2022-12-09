@@ -167,35 +167,41 @@
 		reg = <1>;
 		label = "wan";
 
-		phy-handle = <&phy6>;
-		link-gpio = <&pio 44 0>;
 		phy-mode = "2500base-x";
+		phy-handle = <&phy6>;
+		/* link-gpio = <&pio 44 0>; */
 		phy-connection-type = "2500base-x";
 	};
 
 	mdio: mdio-bus {
 		#address-cells = <1>;
 		#size-cells = <0>;
-
-		phy5: ethernet-phy@5 {
-			/* GPY211 */
-			compatible = "maxlinear,gpy211", "ethernet-phy-ieee802.3-c45";
-			reg = <5>;
-		};
-
-		phy6: ethernet-phy@6 {
-			/* GPY211 */
-			compatible = "maxlinear,gpy211", "ethernet-phy-ieee802.3-c45";
-			reg = <6>;
-		};
 	};
 };
 
 &mdio {
+	phy5: ethernet-phy@5 {
+		/* GPY211 */
+		/* compatible = "maxlinear,gpy211", "ethernet-phy-ieee802.3-c45"; */
+		compatible = "ethernet-phy-id67c9.de0a";
+		reg = <5>;
+
+		/* reset-gpios = <&pio 6 GPIO_ACTIVE_HIGH>; */
+		/* reset-assert-us = <600>; */
+		/* reset-deassert-us = <20000>; */
+	};
+
+	phy6: ethernet-phy@6 {
+		/* GPY211 */
+		/* compatible = "maxlinear,gpy211", "ethernet-phy-ieee802.3-c45"; */
+		compatible = "ethernet-phy-id67c9.de0a";
+		reg = <6>;
+	};
+
 	switch: switch@0 {
 		compatible = "mediatek,mt7531";
 		reg = <31>;
-		reset-gpios = <&pio 5 GPIO_ACTIVE_LOW>;
+		reset-gpios = <&pio 5 GPIO_ACTIVE_HIGH>;
 		interrupt-controller;
 		#interrupt-cells = <1>;
 		interrupt-parent = <&pio>;
@@ -227,9 +233,9 @@
 			reg = <5>;
 			label = "lan4";
 
-			phy-handle = <&phy5>;
-			link-gpio = <&pio 45 0>;
 			phy-mode = "2500base-x";
+			phy-handle = <&phy5>;
+			/* link-gpio = <&pio 45 0>; */
 			phy-connection-type = "2500base-x";
 		};
 
@@ -357,13 +363,6 @@
 		mux {
 			function = "spi";
 			groups = "spi0", "spi0_wp_hold";
-		};
-	};
-
-	uart1_pins: uart1-pins {
-		mux {
-			function = "uart";
-			groups = "uart1";
 		};
 	};
 
@@ -498,12 +497,6 @@
 	status = "okay";
 };
 
-&uart1 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&uart1_pins>;
-	status = "disabled";
-};
-
 &uart2 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&uart2_pins>;
@@ -556,8 +549,8 @@
 
 &fan {
 	pwms = <&pwm 1 10000 0>;
-	cooling-levels = <0 55 55 55>; /* FIXME: use actual % to operate @ 2020rpm */
-	/* cooling-levels = <255 96 52 0>; */
+	/* FIXME: use actual % to operate @ 2020rpm */
+	cooling-levels = <0 55 55 55>;
 	status = "okay";
 };
 
@@ -566,8 +559,11 @@
 	hysteresis = <5000>;
 };
 
+/* FIXME: enabling this section causes wifi init to fail in soc.c
+ * mt7986_wmac_init() @ devm_reset_control_get(pdev, "consys");
 &watchdog {
 	pinctrl-names = "default";
 	pinctrl-0 = <&watchdog_pins>;
-	status = "disabled"; /* FIXME: enable me */
+	status = "disabled";
 };
+*/
