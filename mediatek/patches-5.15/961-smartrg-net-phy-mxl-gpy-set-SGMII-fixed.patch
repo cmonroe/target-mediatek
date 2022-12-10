@@ -1,0 +1,14 @@
+Index: linux-5.15.80/drivers/net/phy/mxl-gpy.c
+===================================================================
+--- linux-5.15.80.orig/drivers/net/phy/mxl-gpy.c
++++ linux-5.15.80/drivers/net/phy/mxl-gpy.c
+@@ -112,6 +113,9 @@ static int gpy_probe(struct phy_device *
+ 	phydev_info(phydev, "Firmware Version: 0x%04X (%s)\n", ret,
+ 		    (ret & PHY_FWV_REL_MASK) ? "release" : "test");
+ 
++	/* Set SGMII fixed mode */
++	phy_write_mmd(phydev, MDIO_MMD_VEND1, VSPEC1_SGMII_CTRL, 0x24e2);
++
+ 	return 0;
+ }
+ 
