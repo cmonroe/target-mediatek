@@ -169,7 +169,7 @@
 
 		phy-mode = "2500base-x";
 		phy-handle = <&phy6>;
-		/* link-gpio = <&pio 44 0>; */
+		link-gpio = <&pio 44 0>;
 		phy-connection-type = "2500base-x";
 	};
 
@@ -182,8 +182,8 @@
 &mdio {
 	phy5: ethernet-phy@5 {
 		/* GPY211 */
-		/* compatible = "maxlinear,gpy211", "ethernet-phy-ieee802.3-c45"; */
-		compatible = "ethernet-phy-id67c9.de0a";
+		compatible = "maxlinear,gpy211", "ethernet-phy-ieee802.3-c45";
+		/* compatible = "ethernet-phy-id67c9.de0a"; */
 		reg = <5>;
 
 		/* reset-gpios = <&pio 6 GPIO_ACTIVE_HIGH>; */
@@ -193,8 +193,8 @@
 
 	phy6: ethernet-phy@6 {
 		/* GPY211 */
-		/* compatible = "maxlinear,gpy211", "ethernet-phy-ieee802.3-c45"; */
-		compatible = "ethernet-phy-id67c9.de0a";
+		compatible = "maxlinear,gpy211", "ethernet-phy-ieee802.3-c45";
+		/* compatible = "ethernet-phy-id67c9.de0a"; */
 		reg = <6>;
 	};
 
@@ -235,7 +235,7 @@
 
 			phy-mode = "2500base-x";
 			phy-handle = <&phy5>;
-			/* link-gpio = <&pio 45 0>; */
+			link-gpio = <&pio 45 0>;
 			phy-connection-type = "2500base-x";
 		};
 
