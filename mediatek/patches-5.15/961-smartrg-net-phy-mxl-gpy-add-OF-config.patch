@@ -1,0 +1,79 @@
+Index: linux-5.15.80/drivers/net/phy/mxl-gpy.c
+===================================================================
+--- linux-5.15.80.orig/drivers/net/phy/mxl-gpy.c
++++ linux-5.15.80/drivers/net/phy/mxl-gpy.c
+@@ -8,6 +8,7 @@
+ 
+ #include <linux/module.h>
+ #include <linux/bitfield.h>
++#include <linux/of.h>
+ #include <linux/phy.h>
+ #include <linux/netdevice.h>
+ 
+@@ -30,6 +31,7 @@
+ #define PHY_MIISTAT		0x18	/* MII state */
+ #define PHY_IMASK		0x19	/* interrupt mask */
+ #define PHY_ISTAT		0x1A	/* interrupt status */
++#define PHY_LED			0x1B	/* LED control register */
+ #define PHY_FWV			0x1E	/* firmware version */
+ 
+ #define PHY_MIISTAT_SPD_MASK	GENMASK(2, 0)
+@@ -57,6 +59,12 @@
+ #define PHY_FWV_TYPE_MASK	GENMASK(11, 8)
+ #define PHY_FWV_MINOR_MASK	GENMASK(7, 0)
+ 
++/* LED */
++#define VSPEC1_LED0		0x01
++#define VSPEC1_LED1		0x02
++#define VSPEC1_LED2		0x03
++#define VSPEC1_LED3		0x04
++
+ /* SGMII */
+ #define VSPEC1_SGMII_CTRL	0x08
+ #define VSPEC1_SGMII_CTRL_ANEN	BIT(12)		/* Aneg enable */
+@@ -94,6 +102,36 @@ static int gpy_config_init(struct phy_de
+ 	return ret < 0 ? ret : 0;
+ }
+ 
++static void gpy_of_init(struct phy_device *phydev)
++{
++	u32 val;
++	struct device *dev = &phydev->mdio.dev;
++	struct device_node *of_node = dev->of_node;
++
++	if (!of_node) {
++		phydev_info(phydev, "failed to get of_node, ignoring OF config\n");
++		return;
++	}
++
++	if (of_property_read_bool(of_node, "mxl,sgmii-fixed"))
++		phy_write_mmd(phydev, MDIO_MMD_VEND1, VSPEC1_SGMII_CTRL, 0x24e2);
++
++	if (of_property_read_bool(of_node, "mxl,led-drive-vdd"))
++		phy_write(phydev, PHY_LED, 0x0f00);
++
++	if (of_property_read_u32(of_node, "mxl,led0-config", &val) == 0)
++		phy_write_mmd(phydev, MDIO_MMD_VEND1, VSPEC1_LED0, val);
++
++	if (of_property_read_u32(of_node, "mxl,led1-config", &val) == 0)
++		phy_write_mmd(phydev, MDIO_MMD_VEND1, VSPEC1_LED1, val);
++
++	if (of_property_read_u32(of_node, "mxl,led2-config", &val) == 0)
++		phy_write_mmd(phydev, MDIO_MMD_VEND1, VSPEC1_LED2, val);
++
++	if (of_property_read_u32(of_node, "mxl,led3-config", &val) == 0)
++		phy_write_mmd(phydev, MDIO_MMD_VEND1, VSPEC1_LED3, val);
++}
++
+ static int gpy_probe(struct phy_device *phydev)
+ {
+ 	int ret;
+@@ -112,6 +150,8 @@ static int gpy_probe(struct phy_device *
+ 	phydev_info(phydev, "Firmware Version: 0x%04X (%s)\n", ret,
+ 		    (ret & PHY_FWV_REL_MASK) ? "release" : "test");
+ 
++	gpy_of_init(phydev);
++
+ 	return 0;
+ }
+ 
