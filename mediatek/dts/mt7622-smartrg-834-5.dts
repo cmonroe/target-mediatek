@@ -243,24 +243,6 @@
 	assigned-clocks = <&topckgen CLK_TOP_MSDC30_0_SEL>;
 	assigned-clock-parents = <&topckgen CLK_TOP_UNIV48M>;
 	non-removable;
-
-	emmc@0 {
-		#address-cells = <1>;
-		#size-cells = <1>;
-		compatible = "mmc-card";
-		reg = <0>;
-
-		partitions {
-			compatible = "fixed-partitions";
-			#address-cells = <1>;
-			#size-cells = <1>;
-
-			emmc_factory: partition@1c0000 {
-				label = "factory";
-				reg = <0x01c0000 0x00100000>;
-			};
-		};
-	};
 };
 
 &pcie0 {
@@ -272,7 +254,7 @@
 &slot0 {
 	mt7615@0,0 {
 		reg = <0x0000 0 0 0 0>;
-		mediatek,mtd-eeprom = <&emmc_factory 0x05000>;
+		mediatek,eeprom-file-offset = <0x5000>;
 		ieee80211-freq-limit = <5170000 5835000>;
 	};
 };
@@ -418,6 +400,6 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&wmac0_pins>;
 
-	mediatek,mtd-eeprom = <&emmc_factory 0x0000>;
+	mediatek,eeprom-file-offset = <0x0>;
 	status = "okay";
 };
