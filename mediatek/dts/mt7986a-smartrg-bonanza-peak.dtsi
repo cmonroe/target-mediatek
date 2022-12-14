@@ -41,7 +41,8 @@
 			no-map;
 			reg = <0x0 0x45000000 0x0 0x00001000>;
 		};
-		ramoops_reserved: ramoops1@45001000 {
+
+		ramoops_reserved: ramoops@45001000 {
 			no-map;
 			compatible = "ramoops";
 			reg = <0x0 0x45001000 0x0 0x00140000>;
