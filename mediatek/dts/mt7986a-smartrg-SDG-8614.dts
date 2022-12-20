@@ -38,6 +38,18 @@
 	};
 };
 
+/* 5 degree hysteresis to prevent fan toggling on/off */
+&cpu_trip_active_low {
+	hysteresis = <5000>;
+};
+
+&fan {
+	pwms = <&pwm 1 10000 0>;
+	/* FIXME: use actual % to operate @ 2020rpm */
+	cooling-levels = <0 55 55 55>;
+	status = "okay";
+};
+
 &gmac0 {
 	fixed-link {
 		speed = <2500>;
@@ -106,14 +118,6 @@
 	};
 };
 
-&fan {
-	pwms = <&pwm 1 10000 0>;
-	/* FIXME: use actual % to operate @ 2020rpm */
-	cooling-levels = <0 55 55 55>;
-	status = "okay";
-};
-
-/* 5 degree hysteresis to prevent fan toggling on/off */
-&cpu_trip_active_low {
-	hysteresis = <5000>;
+&wmac {
+	ieee80211-freq-limit = <2400000 2500000>, <5170000 5835000>;
 };
