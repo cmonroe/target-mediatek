@@ -6,7 +6,7 @@ define KernelPackage/ata-ahci-mtk
 	$(LINUX_DIR)/drivers/ata/libahci_platform.ko
   AUTOLOAD:=$(call AutoLoad,40,libahci libahci_platform ahci_mtk,1)
   $(call AddDepends/ata)
-  DEPENDS+=@(TARGET_mediatek_mt7622||TARGET_mediatek_mt7623)
+  DEPENDS+=@(TARGET_mediatek_mt7622||TARGET_mediatek_mt7623||TARGET_mediatek_filogic)
 endef
 
 define KernelPackage/ata-ahci-mtk/description
@@ -18,7 +18,7 @@ $(eval $(call KernelPackage,ata-ahci-mtk))
 define KernelPackage/btmtkuart
   SUBMENU:=Other modules
   TITLE:=MediaTek HCI UART driver
-  DEPENDS:=@TARGET_mediatek_mt7622 +kmod-bluetooth +mt7622bt-firmware
+  DEPENDS:=@(TARGET_mediatek_mt7622||TARGET_mediatek_filogic) +kmod-bluetooth +mt7622bt-firmware
   KCONFIG:=CONFIG_BT_MTKUART
   FILES:= \
 	$(LINUX_DIR)/drivers/bluetooth/btmtkuart.ko
