@@ -40,7 +40,18 @@ define Device/bonanza
 
   DEVICE_VENDOR := SmartRG
   DEVICE_MODEL := SmartRG Target
-  DEVICE_DTS := mt7986a-smartrg-bpi-r3 mt7986a-smartrg-SDG-8614 mt7986a-smartrg-SDG-8632 mt7986a-smartrg-SDG-8612 mt7986a-smartrg-SDG-8622
+  DEVICE_DTS := mt7622-smartrg-srbpi
+  DEVICE_DTS += mt7622-smartrg-834-5
+  DEVICE_DTS += mt7622-smartrg-841-t6
+  DEVICE_DTS += mt7622-smartrg-841-t6-mt7531
+  DEVICE_DTS += mt7622-smartrg-854-6
+  DEVICE_DTS += mt7622-smartrg-854-v6
+  DEVICE_DTS += mt7622-smartrg-834-v6
+  DEVICE_DTS += mt7986a-smartrg-bpi-r3
+  DEVICE_DTS += mt7986a-smartrg-SDG-8612
+  DEVICE_DTS += mt7986a-smartrg-SDG-8614
+  DEVICE_DTS += mt7986a-smartrg-SDG-8622
+  DEVICE_DTS += mt7986a-smartrg-SDG-8632
   DEVICE_DTS_CONFIG := config-mt7986a-bonanza
   DEVICE_DTS_DIR := ../dts
   DEVICE_PACKAGES := kmod-hwmon-pwmfan kmod-i2c-gpio kmod-sfp kmod-usb3 e2fsprogs f2fsck mkf2fs
@@ -66,20 +77,50 @@ define Build/SrgFit
 		-r $(STAGING_DIR_IMAGE)/$(IMG_PREFIX)-initramfs.cpio.gz \
 		-D "rdisk" -c 1 \
 		-h "crc32" -h "sha1" \
+		-d $(KDIR)/image-mt7622-smartrg-srbpi.dtb \
+		-D "srbpi" -n 300 -c 1 \
+		-h "crc32" -h "sha1" \
+		-d $(KDIR)/image-mt7622-smartrg-834-5.dtb \
+		-D "834-5-iPA" -n 402 -c 2 \
+		-h "crc32" -h "sha1" \
+		-d $(KDIR)/image-mt7622-smartrg-834-5.dtb \
+		-D "834-5-ePA" -n 403 -c 3 \
+		-h "crc32" -h "sha1" \
+		-d $(KDIR)/image-mt7622-smartrg-841-t6.dtb \
+		-D "841-t6" -n 404 -c 4 \
+		-h "crc32" -h "sha1" \
+		-d $(KDIR)/image-mt7622-smartrg-854-v6.dtb \
+		-D "854-v6-iPA" -n 405 -c 5 \
+		-h "crc32" -h "sha1" \
+		-d $(KDIR)/image-mt7622-smartrg-854-v6.dtb \
+		-D "854-v6-ePA" -n 406 -c 6 \
+		-h "crc32" -h "sha1" \
+		-d $(KDIR)/image-mt7622-smartrg-834-v6.dtb \
+		-D "834-v6" -n 407 -c 7 \
+		-h "crc32" -h "sha1" \
+		-d $(KDIR)/image-mt7622-smartrg-841-t6-mt7531.dtb \
+		-D "841-t6-mt7531" -n 414 -c 8 \
+		-h "crc32" -h "sha1" \
+		-d $(KDIR)/image-mt7622-smartrg-854-6.dtb \
+		-D "854-6-iPA" -n 415 -c 9 \
+		-h "crc32" -h "sha1" \
+		-d $(KDIR)/image-mt7622-smartrg-854-6.dtb \
+		-D "854-6-ePA" -n 416 -c 10 \
+		-h "crc32" -h "sha1" \
 		-d $(KDIR)/image-mt7986a-smartrg-bpi-r3.dtb \
-		-D "srbpi-r3" -n 302 -c 1 \
+		-D "srbpi-r3" -n 302 -c 11 \
 		-h "crc32" -h "sha1" \
 		-d $(KDIR)/image-mt7986a-smartrg-SDG-8612.dtb \
-		-D "SDG-8612" -n 420 -c 2 \
+		-D "SDG-8612" -n 420 -c 12 \
 		-h "crc32" -h "sha1" \
 		-d $(KDIR)/image-mt7986a-smartrg-SDG-8614.dtb \
-		-D "SDG-8614" -n 421 -c 3 \
+		-D "SDG-8614" -n 421 -c 13 \
 		-h "crc32" -h "sha1" \
 		-d $(KDIR)/image-mt7986a-smartrg-SDG-8622.dtb \
-		-D "SDG-8622" -n 422 -c 4 \
+		-D "SDG-8622" -n 422 -c 14 \
 		-h "crc32" -h "sha1" \
 		-d $(KDIR)/image-mt7986a-smartrg-SDG-8632.dtb \
-		-D "SDG-8632" -n 423 -c 5 \
+		-D "SDG-8632" -n 423 -c 15 \
 		-h "crc32" -h "sha1"
 	PATH=$(LINUX_DIR)/scripts/dtc:$(PATH) mkimage -f $@.its $@.new
 	@mv -f $@.new $@
