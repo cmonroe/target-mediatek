@@ -325,13 +325,6 @@
 		};
 	};
 
-	watchdog_pins: watchdog-pins {
-		mux {
-			function = "watchdog";
-			groups = "watchdog";
-		};
-	};
-
 	wf_led_pins: wf-led-pins {
 		mux {
 			function = "led";
@@ -485,11 +478,6 @@
 	status = "okay";
 };
 
-/* FIXME: enabling this section causes wifi init to fail in soc.c
- * mt7986_wmac_init() @ devm_reset_control_get(pdev, "consys");
 &watchdog {
-	pinctrl-names = "default";
-	pinctrl-0 = <&watchdog_pins>;
-	status = "disabled";
+	status = "okay";
 };
-*/
