@@ -1,0 +1,29 @@
+From 4b587dd7c4d13c1e4dad31571393a298007d4e33 Mon Sep 17 00:00:00 2001
+From: Tim Hayes <tim.hayes@smartrg.com>
+Date: Wed, 21 Dec 2022 08:52:29 -0800
+Subject: [PATCH] OWRT-7643 added Adtran 2.5 Gpon SFP
+
+---
+ drivers/net/phy/sfp.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/drivers/net/phy/sfp.c b/drivers/net/phy/sfp.c
+index a357682..5e3f862 100644
+--- a/drivers/net/phy/sfp.c
++++ b/drivers/net/phy/sfp.c
+@@ -387,7 +387,12 @@ static const struct sfp_quirk sfp_quirks[] = {
+ 		.vendor = "UBNT",
+ 		.part = "UF-INSTANT",
+ 		.modes = sfp_quirk_ubnt_uf_instant,
++	}, {
++		.vendor = "T&W",
++		.part = "TW2362H-CDEL-ADT",
++		.modes = sfp_quirk_2500basex,
+ 	}
++
+ };
+ 
+ static size_t sfp_strlen(const char *str, size_t maxlen)
+-- 
+2.30.2
+
