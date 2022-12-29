@@ -27,6 +27,8 @@
 	phy-handle = <&phy5>;
 	link-gpio = <&pio 45 0>;
 	phy-connection-type = "2500base-x";
+
+	label = "lan";
 };
 
 &gmac1 {
@@ -38,9 +40,14 @@
 &pcie {
 	status = "okay";
 
-	slot0: pcie@0,0 {
-		mediatek,eeprom-file-offset = <0x8000>;
-		ieee80211-freq-limit = <5170000 5330000>;
+	pcie@0,0 {
+		reg = <0x0000 0 0 0 0>;
+
+		mt7915@0,0 {
+			reg = <0x0000 0 0 0 0>;
+			mediatek,eeprom-file-offset = <0xa0000>;
+			ieee80211-freq-limit = <5170000 5330000>;
+		};
 	};
 };
 
