@@ -7,10 +7,12 @@ Subject: [PATCH] OWRT-6281 added gpy_lpa_fix to gpa_probe
  drivers/net/phy/mxl-gpy.c | 15 +++++++++++++++
  1 file changed, 15 insertions(+)
 
---- a/drivers/net/phy/mxl-gpy.c
-+++ b/drivers/net/phy/mxl-gpy.c
-@@ -94,10 +94,25 @@ static int gpy_config_init(struct phy_de
- 	return ret < 0 ? ret : 0;
+Index: linux-5.15.85/drivers/net/phy/mxl-gpy.c
+===================================================================
+--- linux-5.15.85.orig/drivers/net/phy/mxl-gpy.c
++++ linux-5.15.85/drivers/net/phy/mxl-gpy.c
+@@ -132,11 +132,25 @@ static void gpy_of_init(struct phy_devic
+ 		phy_write_mmd(phydev, MDIO_MMD_VEND1, VSPEC1_LED3, val);
  }
  
 +static void gpy_lpa_fix(struct phy_device *phydev)
@@ -25,9 +27,9 @@ Subject: [PATCH] OWRT-6281 added gpy_lpa_fix to gpa_probe
 +	}
 +}
 +
-+
  static int gpy_probe(struct phy_device *phydev)
  {
+ 	int fw_version;
  	int ret;
  
 +	gpy_lpa_fix(phydev);

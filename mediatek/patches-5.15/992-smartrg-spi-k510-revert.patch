@@ -1,7 +1,7 @@
-Index: linux-5.15.72/drivers/spi/spi-mt65xx.c
+Index: linux-5.15.86/drivers/spi/spi-mt65xx.c
 ===================================================================
---- linux-5.15.72.orig/drivers/spi/spi-mt65xx.c
-+++ linux-5.15.72/drivers/spi/spi-mt65xx.c
+--- linux-5.15.86.orig/drivers/spi/spi-mt65xx.c
++++ linux-5.15.86/drivers/spi/spi-mt65xx.c
 @@ -12,12 +12,11 @@
  #include <linux/ioport.h>
  #include <linux/module.h>
@@ -745,7 +745,7 @@ Index: linux-5.15.72/drivers/spi/spi-mt65xx.c
  
  	if (mdata->dev_comp->need_pad_sel) {
  		mdata->pad_num = of_property_count_u32_elems(
-@@ -1204,43 +737,29 @@ static int mtk_spi_probe(struct platform
+@@ -1204,49 +737,29 @@ static int mtk_spi_probe(struct platform
  		goto err_put_master;
  	}
  
@@ -766,13 +766,19 @@ Index: linux-5.15.72/drivers/spi/spi-mt65xx.c
  	if (ret < 0) {
  		dev_err(&pdev->dev, "failed to enable spi_clk (%d)\n", ret);
 -		goto err_disable_spi_hclk;
+-	}
+-
+-	ret = clk_prepare_enable(mdata->sel_clk);
+-	if (ret < 0) {
+-		dev_err(&pdev->dev, "failed to enable sel_clk (%d)\n", ret);
+-		goto err_disable_spi_clk;
 +		goto err_put_master;
  	}
  
  	ret = clk_set_parent(mdata->sel_clk, mdata->parent_clk);
  	if (ret < 0) {
  		dev_err(&pdev->dev, "failed to clk_set_parent (%d)\n", ret);
--		goto err_disable_spi_clk;
+-		goto err_disable_spi_sel_clk;
 -	}
 -
 -	mdata->spi_clk_hz = clk_get_rate(mdata->spi_clk);
@@ -799,7 +805,7 @@ Index: linux-5.15.72/drivers/spi/spi-mt65xx.c
  	if (mdata->dev_comp->need_pad_sel) {
  		if (mdata->pad_num != master->num_chipselect) {
  			dev_err(&pdev->dev,
-@@ -1250,12 +769,25 @@ static int mtk_spi_probe(struct platform
+@@ -1256,12 +769,25 @@ static int mtk_spi_probe(struct platform
  			goto err_disable_runtime_pm;
  		}
  
@@ -826,7 +832,7 @@ Index: linux-5.15.72/drivers/spi/spi-mt65xx.c
  	}
  
  	if (mdata->dev_comp->dma_ext)
-@@ -1267,20 +799,10 @@ static int mtk_spi_probe(struct platform
+@@ -1273,22 +799,10 @@ static int mtk_spi_probe(struct platform
  		dev_notice(&pdev->dev, "SPI dma_set_mask(%d) failed, ret:%d\n",
  			   addr_bits, ret);
  
@@ -840,6 +846,8 @@ Index: linux-5.15.72/drivers/spi/spi-mt65xx.c
  
  err_disable_runtime_pm:
  	pm_runtime_disable(&pdev->dev);
+-err_disable_spi_sel_clk:
+-	clk_disable_unprepare(mdata->sel_clk);
 -err_disable_spi_clk:
 -	clk_disable_unprepare(mdata->spi_clk);
 -err_disable_spi_hclk:
@@ -847,7 +855,16 @@ Index: linux-5.15.72/drivers/spi/spi-mt65xx.c
  err_put_master:
  	spi_master_put(master);
  
-@@ -1296,11 +818,6 @@ static int mtk_spi_remove(struct platfor
+@@ -1299,22 +813,11 @@ static int mtk_spi_remove(struct platfor
+ {
+ 	struct spi_master *master = platform_get_drvdata(pdev);
+ 	struct mtk_spi *mdata = spi_master_get_devdata(master);
+-	int ret;
+ 
+-	ret = pm_runtime_resume_and_get(&pdev->dev);
+-	if (ret < 0)
+-		return ret;
++	pm_runtime_disable(&pdev->dev);
  
  	mtk_spi_reset(mdata);
  
@@ -856,10 +873,13 @@ Index: linux-5.15.72/drivers/spi/spi-mt65xx.c
 -		clk_unprepare(mdata->spi_hclk);
 -	}
 -
+-	pm_runtime_put_noidle(&pdev->dev);
+-	pm_runtime_disable(&pdev->dev);
+-
  	return 0;
  }
  
-@@ -1315,10 +832,8 @@ static int mtk_spi_suspend(struct device
+@@ -1329,10 +832,8 @@ static int mtk_spi_suspend(struct device
  	if (ret)
  		return ret;
  
@@ -871,7 +891,7 @@ Index: linux-5.15.72/drivers/spi/spi-mt65xx.c
  
  	return ret;
  }
-@@ -1335,20 +850,11 @@ static int mtk_spi_resume(struct device
+@@ -1349,20 +850,11 @@ static int mtk_spi_resume(struct device
  			dev_err(dev, "failed to enable spi_clk (%d)\n", ret);
  			return ret;
  		}
@@ -893,7 +913,7 @@ Index: linux-5.15.72/drivers/spi/spi-mt65xx.c
  
  	return ret;
  }
-@@ -1360,13 +866,7 @@ static int mtk_spi_runtime_suspend(struc
+@@ -1374,13 +866,7 @@ static int mtk_spi_runtime_suspend(struc
  	struct spi_master *master = dev_get_drvdata(dev);
  	struct mtk_spi *mdata = spi_master_get_devdata(master);
  
@@ -908,7 +928,7 @@ Index: linux-5.15.72/drivers/spi/spi-mt65xx.c
  
  	return 0;
  }
-@@ -1377,31 +877,10 @@ static int mtk_spi_runtime_resume(struct
+@@ -1391,31 +877,10 @@ static int mtk_spi_runtime_resume(struct
  	struct mtk_spi *mdata = spi_master_get_devdata(master);
  	int ret;
  
@@ -944,11 +964,11 @@ Index: linux-5.15.72/drivers/spi/spi-mt65xx.c
  	}
  
  	return 0;
-Index: linux-5.15.72/drivers/spi/spidev.c
+Index: linux-5.15.86/drivers/spi/spidev.c
 ===================================================================
---- linux-5.15.72.orig/drivers/spi/spidev.c
-+++ linux-5.15.72/drivers/spi/spidev.c
-@@ -682,6 +682,7 @@ static const struct spi_device_id spidev
+--- linux-5.15.86.orig/drivers/spi/spidev.c
++++ linux-5.15.86/drivers/spi/spidev.c
+@@ -693,6 +693,7 @@ static const struct spi_device_id spidev
  	{ .name = "m53cpld" },
  	{ .name = "spi-petra" },
  	{ .name = "spi-authenta" },
