@@ -4,32 +4,6 @@ SRGRUN:= TARGET_DIR=$(TARGET_DIR) KDIR=$(KDIR) STAGING_DIR=$(STAGING_DIR_HOST) B
 BINNAME:=$(IMG_PREFIX)-bonanza-root.squashfs
 VERNAME:=$(VERSION_NUMBER)-$(subst DEVICE_,,$(PROFILE))
 
-define Device/bonanza2
-  KERNEL_LOADADDR = 0x43200000
-  KERNEL_SUFFIX := -fit-multi.itb
-  KERNEL_INSTALL := 1
-  KERNEL_NAME := Image
-  KERNEL = kernel-bin | lzma | SrgFit
-  FILESYSTEMS := squashfs
-  KERNEL_INITRAMFS :=
-  DEVICE_VENDOR := SmartRG
-  DEVICE_MODEL := SmartRG Target
-  DEVICE_PACKAGES := kmod-usb-ohci kmod-usb2 kmod-usb3 kmod-ata-ahci-mtk
-  DEVICE_DTS := mt7622-smartrg-srbpi
-  DEVICE_DTS += mt7622-smartrg-834-5
-  DEVICE_DTS += mt7622-smartrg-841-t6
-  DEVICE_DTS += mt7622-smartrg-841-t6-mt7531
-  DEVICE_DTS += mt7622-smartrg-854-6
-  DEVICE_DTS += mt7622-smartrg-854-v6
-  DEVICE_DTS += mt7622-smartrg-834-v6
-  DEVICE_DTS_DIR := ../dts
-  DTC_FLAGS += -@
-  IMAGES := root.squashfs img img.run
-  IMAGE/root.squashfs := SrgDisk
-  IMAGE/img := srgImage
-  IMAGE/img.run := srgImageRun
-endef
-
 define Device/bonanza
   KERNEL_LOADADDR = 0x43200000
   KERNEL_SUFFIX := -fit-multi.itb
@@ -136,8 +110,7 @@ define Build/SrgDiskSquashfs
 	mkdir -p $(TARGET_DIR)/boot
 	mkdir -p $(TARGET_DIR)/Boot
 
-	$(CP) $(BIN_DIR)/$(IMG_PREFIX)-bonanza-fit-multi.itb $(TARGET_DIR)/Boot/fit-multi.itb
-
+	# squashfs without fit-multi.itb for .run files
 	$(STAGING_DIR_HOST)/bin/mksquashfs4 $(TARGET_DIR) $(KDIR)/root.squashfs.run \
 		-nopad -noappend -root-owned \
 		-comp $(SQUASHFSCOMP) $(SQUASHFSOPT) \
@@ -146,9 +119,18 @@ define Build/SrgDiskSquashfs
 	dd if=/dev/zero bs=128k count=1 >> $(KDIR)/root.squashfs.run.bin
 	sha256sum  $(KDIR)/root.squashfs.run.bin  | cut -d ' ' -f 1 | xargs echo -n  >> $(KDIR)/root.squashfs.run.bin
 	$(CP) $(KDIR)/root.squashfs.run.bin $(KDIR)/$(BINNAME).run.bin
-	$(CP) $(KDIR)/root.squashfs.run.bin $(KDIR)/$(BINNAME).bin
-	$(CP) $(KDIR)/$(BINNAME).bin $(BIN_DIR)/
 
+	# squashfs with fit-multi.itb for .img files
+	$(CP) $(BIN_DIR)/$(IMG_PREFIX)-bonanza-fit-multi.itb $(TARGET_DIR)/Boot/fit-multi.itb
+	$(STAGING_DIR_HOST)/bin/mksquashfs4 $(TARGET_DIR) $(KDIR)/root.squashfs \
+		-nopad -noappend -root-owned \
+		-comp $(SQUASHFSCOMP) $(SQUASHFSOPT) \
+		-processors 1
+	$(CP) $(KDIR)/root.squashfs $(KDIR)/root.squashfs.bin 
+	dd if=/dev/zero bs=128k count=1 >> $(KDIR)/root.squashfs.bin
+	sha256sum  $(KDIR)/root.squashfs.bin  | cut -d ' ' -f 1 | xargs echo -n  >> $(KDIR)/root.squashfs.bin
+	$(CP) $(KDIR)/root.squashfs.bin $(KDIR)/$(BINNAME).bin
+	$(CP) $(KDIR)/$(BINNAME).bin $(BIN_DIR)/
 endef
 
 define Build/SrgDisk
