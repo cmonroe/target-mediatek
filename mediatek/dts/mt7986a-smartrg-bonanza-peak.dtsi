@@ -124,6 +124,31 @@
 	};
 };
 
+&cpu_trip_active_low {
+	/**
+	 * 5 degree hysteresis
+	 * prevent fan toggling on/off
+	 */
+	hysteresis = <5000>;
+};
+
+&fan {
+	pwms = <&pwm 1 10000 0>;
+
+	/**
+	 * set fan speed
+	 *
+	 * 255 = off
+	 * 202 = 20% duty cycle (minimum supported)
+	 * 194 = 24% duty cycle (2020 RPM)
+	 * 178 = 30% duty cycle (3000 RPM)
+	 * 152 = 40% duty cycle (3600 RPM)
+	 */
+	cooling-levels = <202 194 178 152>;
+
+	status = "okay";
+};
+
 &eth {
 	status = "okay";
 
