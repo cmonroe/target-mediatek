@@ -504,5 +504,6 @@
 };
 
 &watchdog {
+	interrupts = <GIC_SPI 74 IRQ_TYPE_LEVEL_HIGH>;
 	status = "okay";
 };
