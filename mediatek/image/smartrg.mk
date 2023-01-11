@@ -138,6 +138,7 @@ define Build/srgImageRun
 	$(CP) $(TARGET_DIR)/usr/srg/scripts/img.sh $(KDIR)/img/scripts/
 	$(CP) $(TARGET_DIR)/usr/srg/scripts/flash-manage.sh $(KDIR)/img/scripts/
 	$(CP) $(TARGET_DIR)/usr/srg/scripts/emmc-manage.sh $(KDIR)/img/scripts/
+	$(CP) $(TARGET_DIR)/usr/srg/scripts/emmc-disk-* $(KDIR)/img/scripts/
 	$(CP) $(TARGET_DIR)/usr/srg/scripts/console_manage.sh $(KDIR)/img/scripts/
 	$(CP) $(TARGET_DIR)/etc/openwrt_release $(KDIR)/img/etc/
 	$(CP) $(KDIR)/root.squashfs.run.bin $(KDIR)/img/root.squashfs.bin
