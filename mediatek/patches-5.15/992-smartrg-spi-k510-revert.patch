@@ -1,7 +1,7 @@
-Index: linux-5.15.86/drivers/spi/spi-mt65xx.c
+Index: linux-5.15.88/drivers/spi/spi-mt65xx.c
 ===================================================================
---- linux-5.15.86.orig/drivers/spi/spi-mt65xx.c
-+++ linux-5.15.86/drivers/spi/spi-mt65xx.c
+--- linux-5.15.88.orig/drivers/spi/spi-mt65xx.c
++++ linux-5.15.88/drivers/spi/spi-mt65xx.c
 @@ -12,12 +12,11 @@
  #include <linux/ioport.h>
  #include <linux/module.h>
@@ -964,14 +964,15 @@ Index: linux-5.15.86/drivers/spi/spi-mt65xx.c
  	}
  
  	return 0;
-Index: linux-5.15.86/drivers/spi/spidev.c
+Index: linux-5.15.88/drivers/spi/spidev.c
 ===================================================================
---- linux-5.15.86.orig/drivers/spi/spidev.c
-+++ linux-5.15.86/drivers/spi/spidev.c
-@@ -693,6 +693,7 @@ static const struct spi_device_id spidev
- 	{ .name = "m53cpld" },
+--- linux-5.15.88.orig/drivers/spi/spidev.c
++++ linux-5.15.88/drivers/spi/spidev.c
+@@ -694,7 +694,7 @@ static const struct spi_device_id spidev
  	{ .name = "spi-petra" },
  	{ .name = "spi-authenta" },
+ 	{ .name = "em3581" },
+-	{ .name = "si3210" },
 +	{ .name = "slic" },
  	{},
  };
