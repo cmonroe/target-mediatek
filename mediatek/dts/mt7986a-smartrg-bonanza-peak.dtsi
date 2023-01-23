@@ -133,7 +133,7 @@
 };
 
 &fan {
-	pwms = <&pwm 1 10000 0>;
+	pwms = <&pwm 1 40000 0>;
 
 	/**
 	 * set fan speed
