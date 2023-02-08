@@ -27,3 +27,30 @@ index a357682..5e3f862 100644
 -- 
 2.30.2
 
+From d5902d4c7569e56b9c4582c5fceb3c93bab3edad Mon Sep 17 00:00:00 2001
+From: Tim Hayes <tim.hayes@smartrg.com>
+Date: Wed, 8 Feb 2023 08:25:22 -0800
+Subject: [PATCH] OWRT-7643 Adtran 630 sfp added
+
+---
+ drivers/net/phy/sfp.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/net/phy/sfp.c b/drivers/net/phy/sfp.c
+index 5e3f862..f22002c 100644
+--- a/drivers/net/phy/sfp.c
++++ b/drivers/net/phy/sfp.c
+@@ -391,6 +391,10 @@ static const struct sfp_quirk sfp_quirks[] = {
+ 		.vendor = "T&W",
+ 		.part = "TW2362H-CDEL-ADT",
+ 		.modes = sfp_quirk_2500basex,
++	}, {
++		.vendor = "ADTRAN",
++		.part = "1287940F1",
++		.modes = sfp_quirk_2500basex,
+ 	}
+ 
+ };
+-- 
+2.30.2
+
