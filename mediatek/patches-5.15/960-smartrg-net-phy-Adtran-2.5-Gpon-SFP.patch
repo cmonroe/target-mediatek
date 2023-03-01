@@ -1,56 +1,92 @@
-From 4b587dd7c4d13c1e4dad31571393a298007d4e33 Mon Sep 17 00:00:00 2001
+From 05f482dfab1f1437767e74ac1592c0cb917f57bd Mon Sep 17 00:00:00 2001
 From: Tim Hayes <tim.hayes@smartrg.com>
-Date: Wed, 21 Dec 2022 08:52:29 -0800
-Subject: [PATCH] OWRT-7643 added Adtran 2.5 Gpon SFP
+Date: Tue, 28 Feb 2023 13:11:22 -0800
+Subject: [PATCH] OWRT-7643 Adtran quirks added
 
 ---
- drivers/net/phy/sfp.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ drivers/net/phy/sfp.c | 34 ++++++++++++++++++++++++++++++++--
+ 1 file changed, 32 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/net/phy/sfp.c b/drivers/net/phy/sfp.c
-index a357682..5e3f862 100644
+index a357682..8c54112 100644
 --- a/drivers/net/phy/sfp.c
 +++ b/drivers/net/phy/sfp.c
-@@ -387,7 +387,12 @@ static const struct sfp_quirk sfp_quirks[] = {
+@@ -333,6 +333,7 @@ static void sfp_fixup_halny_gsfp(struct sfp *sfp)
+ static void sfp_quirk_2500basex(const struct sfp_eeprom_id *id,
+ 				unsigned long *modes)
+ {
++	linkmode_zero(modes);
+ 	linkmode_set_bit(ETHTOOL_LINK_MODE_2500baseX_Full_BIT, modes);
+ }
+ 
+@@ -347,20 +348,31 @@ static void sfp_quirk_ubnt_uf_instant(const struct sfp_eeprom_id *id,
+ 	linkmode_set_bit(ETHTOOL_LINK_MODE_1000baseX_Full_BIT, modes);
+ }
+ 
++static void sfp_fixup_gpon_xxx(struct sfp *sfp)
++{
++	sfp->module_t_start_up = T_START_UP_BAD_GPON;
++	sfp->tx_fault_ignore = true;
++	sfp->state_hw_mask &= ~(SFP_F_TX_FAULT | SFP_F_LOS);
++	printk("%s SFP \n",__FUNCTION__);
++}
++
+ static const struct sfp_quirk sfp_quirks[] = {
+ 	{
+ 		// Alcatel Lucent G-010S-P can operate at 2500base-X, but
+ 		// incorrectly report 2500MBd NRZ in their EEPROM
++		// AKA Nokia from James Mouffat
+ 		.vendor = "ALCATELLUCENT",
+ 		.part = "G010SP",
+ 		.modes = sfp_quirk_2500basex,
++		.fixup = sfp_fixup_gpon_xxx,
+ 	}, {
+ 		// Alcatel Lucent G-010S-A can operate at 2500base-X, but
+ 		// report 3.2GBd NRZ in their EEPROM
++		// From Chad for reference
+ 		.vendor = "ALCATELLUCENT",
+ 		.part = "3FE46541AA",
+ 		.modes = sfp_quirk_2500basex,
+-		.fixup = sfp_fixup_long_startup,
++		.fixup = sfp_fixup_gpon_xxx,
+ 	}, {
+ 		.vendor = "HALNy",
+ 		.part = "HL-GSFP",
+@@ -371,7 +383,7 @@ static const struct sfp_quirk sfp_quirks[] = {
+ 		.vendor = "HUAWEI",
+ 		.part = "MA5671A",
+ 		.modes = sfp_quirk_2500basex,
+-		.fixup = sfp_fixup_ignore_tx_fault,
++		.fixup = sfp_fixup_gpon_xxx,
+ 	}, {
+ 		// OEM SFP-GE-T is 1000Base-T module
+ 		.vendor = "OEM",
+@@ -387,7 +399,25 @@ static const struct sfp_quirk sfp_quirks[] = {
  		.vendor = "UBNT",
  		.part = "UF-INSTANT",
  		.modes = sfp_quirk_ubnt_uf_instant,
 +	}, {
++		// F2
 +		.vendor = "T&W",
 +		.part = "TW2362H-CDEL-ADT",
 +		.modes = sfp_quirk_2500basex,
++		.fixup = sfp_fixup_gpon_xxx,
++	}, {
++		// F3
++		.vendor = "T&W",
++		.part = "TW2362H-CDEL-AD1",
++		.fixup = sfp_fixup_gpon_xxx,
++	}, {
++		// 630
++		.vendor = "ADTRAN",
++		.part = "1287940F1",
++		.modes = sfp_quirk_2500basex,
++		.fixup = sfp_fixup_gpon_xxx,
  	}
 +
  };
  
  static size_t sfp_strlen(const char *str, size_t maxlen)
--- 
-2.30.2
-
-From d5902d4c7569e56b9c4582c5fceb3c93bab3edad Mon Sep 17 00:00:00 2001
-From: Tim Hayes <tim.hayes@smartrg.com>
-Date: Wed, 8 Feb 2023 08:25:22 -0800
-Subject: [PATCH] OWRT-7643 Adtran 630 sfp added
-
----
- drivers/net/phy/sfp.c | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/drivers/net/phy/sfp.c b/drivers/net/phy/sfp.c
-index 5e3f862..f22002c 100644
---- a/drivers/net/phy/sfp.c
-+++ b/drivers/net/phy/sfp.c
-@@ -391,6 +391,10 @@ static const struct sfp_quirk sfp_quirks[] = {
- 		.vendor = "T&W",
- 		.part = "TW2362H-CDEL-ADT",
- 		.modes = sfp_quirk_2500basex,
-+	}, {
-+		.vendor = "ADTRAN",
-+		.part = "1287940F1",
-+		.modes = sfp_quirk_2500basex,
- 	}
- 
- };
 -- 
 2.30.2
 
