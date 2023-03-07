@@ -13,7 +13,6 @@
 
 &gmac0 {
 	phy-handle = <&phy5>;
-	link-gpio = <&pio 45 0>;
 	phy-connection-type = "2500base-x";
 
 	label = "lan";
@@ -21,7 +20,6 @@
 
 &gmac1 {
 	phy-handle = <&phy6>;
-	link-gpio = <&pio 44 0>;
 	phy-connection-type = "2500base-x";
 };
 

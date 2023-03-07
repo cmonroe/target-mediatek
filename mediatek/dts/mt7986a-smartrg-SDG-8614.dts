@@ -86,7 +86,6 @@
 
 				phy-mode = "2500base-x";
 				phy-handle = <&phy5>;
-				link-gpio = <&pio 45 0>;
 				phy-connection-type = "2500base-x";
 			};
 
