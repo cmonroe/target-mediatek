@@ -7,11 +7,9 @@ Subject: [PATCH] OWRT-7643 Adtran quirks added
  drivers/net/phy/sfp.c | 34 ++++++++++++++++++++++++++++++++--
  1 file changed, 32 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/phy/sfp.c b/drivers/net/phy/sfp.c
-index a357682..8c54112 100644
 --- a/drivers/net/phy/sfp.c
 +++ b/drivers/net/phy/sfp.c
-@@ -333,6 +333,7 @@ static void sfp_fixup_halny_gsfp(struct sfp *sfp)
+@@ -333,6 +333,7 @@ static void sfp_fixup_halny_gsfp(struct
  static void sfp_quirk_2500basex(const struct sfp_eeprom_id *id,
  				unsigned long *modes)
  {
@@ -19,7 +17,7 @@ index a357682..8c54112 100644
  	linkmode_set_bit(ETHTOOL_LINK_MODE_2500baseX_Full_BIT, modes);
  }
  
-@@ -347,20 +348,31 @@ static void sfp_quirk_ubnt_uf_instant(const struct sfp_eeprom_id *id,
+@@ -347,20 +348,31 @@ static void sfp_quirk_ubnt_uf_instant(co
  	linkmode_set_bit(ETHTOOL_LINK_MODE_1000baseX_Full_BIT, modes);
  }
  
@@ -52,7 +50,7 @@ index a357682..8c54112 100644
  	}, {
  		.vendor = "HALNy",
  		.part = "HL-GSFP",
-@@ -371,7 +383,7 @@ static const struct sfp_quirk sfp_quirks[] = {
+@@ -371,7 +383,7 @@ static const struct sfp_quirk sfp_quirks
  		.vendor = "HUAWEI",
  		.part = "MA5671A",
  		.modes = sfp_quirk_2500basex,
@@ -61,7 +59,7 @@ index a357682..8c54112 100644
  	}, {
  		// OEM SFP-GE-T is 1000Base-T module
  		.vendor = "OEM",
-@@ -387,7 +399,25 @@ static const struct sfp_quirk sfp_quirks[] = {
+@@ -387,7 +399,25 @@ static const struct sfp_quirk sfp_quirks
  		.vendor = "UBNT",
  		.part = "UF-INSTANT",
  		.modes = sfp_quirk_ubnt_uf_instant,
@@ -87,6 +85,3 @@ index a357682..8c54112 100644
  };
  
  static size_t sfp_strlen(const char *str, size_t maxlen)
--- 
-2.30.2
-

@@ -42,6 +42,11 @@ platform_do_upgrade() {
 	local board=$(board_name)
 
 	case "$board" in
+	asus,tuf-ax4200)
+		CI_UBIPART="UBI_DEV"
+		CI_KERNPART="linux"
+		nand_do_upgrade "$1"
+		;;
 	bananapi,bpi-r3)
 		local rootdev="$(cmdline_get_var root)"
 		rootdev="${rootdev##*/}"
@@ -95,7 +100,7 @@ platform_check_image() {
 		;;
 	*)
 		nand_do_platform_check "$board" "$1"
-		return 0
+		return $?
 		;;
 	esac
 

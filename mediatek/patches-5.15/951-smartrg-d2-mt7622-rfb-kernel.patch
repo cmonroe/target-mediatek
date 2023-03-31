@@ -1,7 +1,5 @@
-Index: linux-5.15.88/arch/arm64/boot/dts/mediatek/mt7622-rfb1.dts
-===================================================================
---- linux-5.15.88.orig/arch/arm64/boot/dts/mediatek/mt7622-rfb1.dts
-+++ linux-5.15.88/arch/arm64/boot/dts/mediatek/mt7622-rfb1.dts
+--- a/arch/arm64/boot/dts/mediatek/mt7622-rfb1.dts
++++ b/arch/arm64/boot/dts/mediatek/mt7622-rfb1.dts
 @@ -36,7 +36,7 @@
  			sram-supply = <&mt6380_vm_reg>;
  		};
@@ -71,11 +69,9 @@ Index: linux-5.15.88/arch/arm64/boot/dts/mediatek/mt7622-rfb1.dts
  };
  
  &ssusb {
-Index: linux-5.15.88/drivers/spi/spidev.c
-===================================================================
---- linux-5.15.88.orig/drivers/spi/spidev.c
-+++ linux-5.15.88/drivers/spi/spidev.c
-@@ -710,7 +710,7 @@ static const struct of_device_id spidev_
+--- a/drivers/spi/spidev.c
++++ b/drivers/spi/spidev.c
+@@ -708,7 +708,7 @@ static const struct of_device_id spidev_
  	{ .compatible = "cisco,spi-petra" },
  	{ .compatible = "micron,spi-authenta" },
  	{ .compatible = "silabs,em3581" },
@@ -84,10 +80,8 @@ Index: linux-5.15.88/drivers/spi/spidev.c
  	{},
  };
  MODULE_DEVICE_TABLE(of, spidev_dt_ids);
-Index: linux-5.15.88/sound/soc/codecs/wm8960.c
-===================================================================
---- linux-5.15.88.orig/sound/soc/codecs/wm8960.c
-+++ linux-5.15.88/sound/soc/codecs/wm8960.c
+--- a/sound/soc/codecs/wm8960.c
++++ b/sound/soc/codecs/wm8960.c
 @@ -1428,11 +1428,14 @@ static int wm8960_i2c_probe(struct i2c_c
  	else if (i2c->dev.of_node)
  		wm8960_set_pdata_from_of(i2c, &wm8960->pdata);
@@ -103,10 +97,8 @@ Index: linux-5.15.88/sound/soc/codecs/wm8960.c
  
  	if (wm8960->pdata.shared_lrclk) {
  		ret = regmap_update_bits(wm8960->regmap, WM8960_ADDCTL2,
-Index: linux-5.15.88/sound/soc/mediatek/mt2701/mt2701-afe-pcm.c
-===================================================================
---- linux-5.15.88.orig/sound/soc/mediatek/mt2701/mt2701-afe-pcm.c
-+++ linux-5.15.88/sound/soc/mediatek/mt2701/mt2701-afe-pcm.c
+--- a/sound/soc/mediatek/mt2701/mt2701-afe-pcm.c
++++ b/sound/soc/mediatek/mt2701/mt2701-afe-pcm.c
 @@ -26,11 +26,11 @@ static const struct snd_pcm_hardware mt2
  		| SNDRV_PCM_INFO_RESUME | SNDRV_PCM_INFO_MMAP_VALID,
  	.formats = SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S24_LE

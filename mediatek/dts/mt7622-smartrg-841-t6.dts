@@ -183,11 +183,7 @@
 			compatible = "maxlinear,gpy211", "ethernet-phy-ieee802.3-c45";
 			reg = <5>;
 
-			mxl,sgmii-fixed;
-			mxl,led0-config = <0x0>;
-			mxl,led1-config = <0x70>;
-			mxl,led2-config = <0x80>;
-			mxl,led3-config = <0x0>;
+			mxl,led-config = <0x0 0x70 0x80 0x0>;
 		};
 	};
 };

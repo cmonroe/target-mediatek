@@ -189,12 +189,8 @@
 		compatible = "maxlinear,gpy211", "ethernet-phy-ieee802.3-c45";
 		reg = <5>;
 
-		mxl,sgmii-fixed;
 		mxl,led-drive-vdd;
-		mxl,led0-config = <0x30>;
-		mxl,led1-config = <0x40>;
-		mxl,led2-config = <0x80>;
-		mxl,led3-config = <0x0>;
+		mxl,led-config = <0x30 0x40 0x80 0x0>;
 
 		/* reset-gpios = <&pio 6 GPIO_ACTIVE_HIGH>; */
 		/* reset-assert-us = <600>; */
@@ -206,12 +202,8 @@
 		compatible = "maxlinear,gpy211", "ethernet-phy-ieee802.3-c45";
 		reg = <6>;
 
-		mxl,sgmii-fixed;
 		mxl,led-drive-vdd;
-		mxl,led0-config = <0x30>;
-		mxl,led1-config = <0x40>;
-		mxl,led2-config = <0x80>;
-		mxl,led3-config = <0x0>;
+		mxl,led-config = <0x30 0x40 0x80 0x0>;
 	};
 };
 
