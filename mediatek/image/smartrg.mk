@@ -22,6 +22,11 @@ define Device/polecat
   DEVICE_DTS += mt7622-smartrg-854-6
   DEVICE_DTS += mt7622-smartrg-854-v6
   DEVICE_DTS += mt7622-smartrg-834-v6
+  DEVICE_DTS += mt7986a-smartrg-bpi-r3
+  DEVICE_DTS += mt7986a-smartrg-SDG-8612
+  DEVICE_DTS += mt7986a-smartrg-SDG-8614
+  DEVICE_DTS += mt7986a-smartrg-SDG-8622
+  DEVICE_DTS += mt7986a-smartrg-SDG-8632
   DEVICE_DTS_DIR := ../dts
   DTC_FLAGS += -@
   IMAGES := root.squashfs img img.run
@@ -36,46 +41,43 @@ TARGET_DEVICES := polecat
 
 define Build/SrgFit
 
-	mkits-multiple-config.sh -o $@.its -A $(LINUX_KARCH) \
-		-v $(LINUX_VERSION) -k $@ -a $(KERNEL_LOADADDR) \
-		-e $(if $(KERNEL_ENTRY),$(KERNEL_ENTRY),$(KERNEL_LOADADDR)) \
-		-D "k1" -C lzma -c 1 \
-		-h "crc32" -h "sha1" \
-		-r $(STAGING_DIR_IMAGE)/$(IMG_PREFIX)-initramfs.cpio.gz \
-		-D "rdisk" -c 1 \
-		-h "crc32" -h "sha1" \
-		-d $(KDIR)/image-mt7622-smartrg-srbpi.dtb \
-		-D "srbpi" -n 300 -c 1 \
-		-h "crc32" -h "sha1" \
-		-d $(KDIR)/image-mt7622-smartrg-834-5.dtb \
-		-D "834-5-iPA" -n 402 -c 2 \
-		-h "crc32" -h "sha1" \
-		-d $(KDIR)/image-mt7622-smartrg-834-5.dtb \
-		-D "834-5-ePA" -n 403 -c 3 \
-		-h "crc32" -h "sha1" \
-		-d $(KDIR)/image-mt7622-smartrg-841-t6.dtb \
-		-D "841-t6" -n 404 -c 4 \
-		-h "crc32" -h "sha1" \
-		-d $(KDIR)/image-mt7622-smartrg-854-v6.dtb \
-		-D "854-v6-iPA" -n 405 -c 5 \
-		-h "crc32" -h "sha1" \
-		-d $(KDIR)/image-mt7622-smartrg-854-v6.dtb \
-		-D "854-v6-ePA" -n 406 -c 6 \
-		-h "crc32" -h "sha1" \
-		-d $(KDIR)/image-mt7622-smartrg-834-v6.dtb \
-		-D "834-v6" -n 407 -c 7 \
-		-h "crc32" -h "sha1" \
-		-d $(KDIR)/image-mt7622-smartrg-841-t6-mt7531.dtb \
-		-D "841-t6-mt7531" -n 414 -c 8 \
-		-h "crc32" -h "sha1" \
-		-d $(KDIR)/image-mt7622-smartrg-854-6.dtb \
-		-D "854-6-iPA" -n 415 -c 9 \
-		-h "crc32" -h "sha1" \
-		-d $(KDIR)/image-mt7622-smartrg-854-6.dtb \
-		-D "854-6-ePA" -n 416 -c 10 \
-		-h "crc32" -h "sha1"
+	srg-mkits.sh -o $@.its -A $(LINUX_KARCH)  -v $(LINUX_VERSION) \
+	   	-i "k1" -k $@ -a $(KERNEL_LOADADDR) -e $(if $(KERNEL_ENTRY),$(KERNEL_ENTRY),$(KERNEL_LOADADDR)) -C lzma -h "crc32" -h "sha1" \
+		-i "rdisk" -r $(STAGING_DIR_IMAGE)/$(IMG_PREFIX)-initramfs.cpio.gz -h "crc32" -h "sha1" \
+		-i "srbpi" -d $(KDIR)/image-mt7622-smartrg-srbpi.dtb -h "crc32" -h "sha1" \
+		-i "834-5-iPA" -d $(KDIR)/image-mt7622-smartrg-834-5.dtb -h "crc32" -h "sha1" \
+		-i "834-5-ePA" -d $(KDIR)/image-mt7622-smartrg-834-5.dtb -h "crc32" -h "sha1" \
+		-i "841-t6" -d $(KDIR)/image-mt7622-smartrg-841-t6.dtb -h "crc32" -h "sha1" \
+		-i "854-v6-iPA" -d $(KDIR)/image-mt7622-smartrg-854-v6.dtb -h "crc32" -h "sha1" \
+		-i "854-v6-ePA" -d $(KDIR)/image-mt7622-smartrg-854-v6.dtb -h "crc32" -h "sha1" \
+		-i "834-v6" -d $(KDIR)/image-mt7622-smartrg-834-v6.dtb -h "crc32" -h "sha1" \
+		-i "841-t6-mt7531" -d $(KDIR)/image-mt7622-smartrg-841-t6-mt7531.dtb -h "crc32" -h "sha1" \
+		-i "854-6-iPA" -d $(KDIR)/image-mt7622-smartrg-854-6.dtb -h "crc32" -h "sha1" \
+		-i "854-6-ePA" -d $(KDIR)/image-mt7622-smartrg-854-6.dtb -h "crc32" -h "sha1" \
+		-i "srbpi-r3" -d $(KDIR)/image-mt7986a-smartrg-bpi-r3.dtb -h "crc32" -h "sha1" \
+		-i "SDG-8612" -d $(KDIR)/image-mt7986a-smartrg-SDG-8612.dtb -h "crc32" -h "sha1" \
+		-i "SDG-8614" -d $(KDIR)/image-mt7986a-smartrg-SDG-8614.dtb -h "crc32" -h "sha1" \
+		-i "SDG-8622" -d $(KDIR)/image-mt7986a-smartrg-SDG-8622.dtb -h "crc32" -h "sha1" \
+		-i "SDG-8632" -d $(KDIR)/image-mt7986a-smartrg-SDG-8632.dtb -h "crc32" -h "sha1" \
+		-c "300" -K k1 -R rdisk -D "srbpi" \
+		-c "402" -K k1 -R rdisk -D "834-5-iPA" \
+		-c "403" -K k1 -R rdisk -D "834-5-ePA" \
+		-c "404" -K k1 -R rdisk -D "841-t6" \
+		-c "405" -K k1 -R rdisk -D "854-v6-iPA" \
+		-c "405-SFP" -K k1 -R rdisk -D "854-v6-iPA" \
+		-c "406" -K k1 -R rdisk -D "854-v6-ePA" \
+		-c "407" -K k1 -R rdisk -D "834-v6" \
+		-c "414" -K k1 -R rdisk -D "841-t6-mt7531" \
+		-c "415" -K k1 -R rdisk -D "854-6-iPA" \
+		-c "416" -K k1 -R rdisk -D "854-6-ePA" \
+		-c "302" -K k1 -R rdisk -D "srbpi-r3" \
+		-c "420" -K k1 -R rdisk -D "SDG-8612" \
+		-c "421" -K k1 -R rdisk -D "SDG-8614" \
+		-c "422" -K k1 -R rdisk -D "SDG-8622" \
+		-c "423" -K k1 -R rdisk -D "SDG-8632"
 	PATH=$(LINUX_DIR)/scripts/dtc:$(PATH) mkimage -f $@.its $@.new
 	@mv -f $@.new $@
+
 endef
 
 define Build/SrgDiskSquashfs
