@@ -227,10 +227,13 @@
 					label = "lan1";
 				};
 
-				/* port@5 dtb overlay will be used to add more information during boot */
 				port_wan: port@5 {
 					reg = <5>;
 					label = "wan";
+
+					phy-mode = "2500base-x";
+					phy-connection-type = "2500base-x";
+					compatible = "ethernet-phy-ieee802.3-c45";
 				};
 
 				port@6 {

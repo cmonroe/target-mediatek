@@ -20,7 +20,9 @@ define Device/polecat
   DEVICE_DTS += mt7622-smartrg-841-t6
   DEVICE_DTS += mt7622-smartrg-841-t6-mt7531
   DEVICE_DTS += mt7622-smartrg-854-6
+  DEVICE_DTS += mt7622-smartrg-854-6-sfp
   DEVICE_DTS += mt7622-smartrg-854-v6
+  DEVICE_DTS += mt7622-smartrg-854-v6-sfp
   DEVICE_DTS += mt7622-smartrg-834-v6
   DEVICE_DTS += mt7986a-smartrg-bpi-r3
   DEVICE_DTS += mt7986a-smartrg-SDG-8612
@@ -45,31 +47,33 @@ define Build/SrgFit
 	   	-i "k1" -k $@ -a $(KERNEL_LOADADDR) -e $(if $(KERNEL_ENTRY),$(KERNEL_ENTRY),$(KERNEL_LOADADDR)) -C lzma -h "crc32" -h "sha1" \
 		-i "rdisk" -r $(STAGING_DIR_IMAGE)/$(IMG_PREFIX)-initramfs.cpio.gz -h "crc32" -h "sha1" \
 		-i "srbpi" -d $(KDIR)/image-mt7622-smartrg-srbpi.dtb -h "crc32" -h "sha1" \
-		-i "834-5-iPA" -d $(KDIR)/image-mt7622-smartrg-834-5.dtb -h "crc32" -h "sha1" \
-		-i "834-5-ePA" -d $(KDIR)/image-mt7622-smartrg-834-5.dtb -h "crc32" -h "sha1" \
+		-i "834-5" -d $(KDIR)/image-mt7622-smartrg-834-5.dtb -h "crc32" -h "sha1" \
 		-i "841-t6" -d $(KDIR)/image-mt7622-smartrg-841-t6.dtb -h "crc32" -h "sha1" \
-		-i "854-v6-iPA" -d $(KDIR)/image-mt7622-smartrg-854-v6.dtb -h "crc32" -h "sha1" \
-		-i "854-v6-ePA" -d $(KDIR)/image-mt7622-smartrg-854-v6.dtb -h "crc32" -h "sha1" \
+		-i "854-v6" -d $(KDIR)/image-mt7622-smartrg-854-v6.dtb -h "crc32" -h "sha1" \
+		-i "854-v6-SFP" -d $(KDIR)/image-mt7622-smartrg-854-v6-sfp.dtb -h "crc32" -h "sha1" \
 		-i "834-v6" -d $(KDIR)/image-mt7622-smartrg-834-v6.dtb -h "crc32" -h "sha1" \
 		-i "841-t6-mt7531" -d $(KDIR)/image-mt7622-smartrg-841-t6-mt7531.dtb -h "crc32" -h "sha1" \
-		-i "854-6-iPA" -d $(KDIR)/image-mt7622-smartrg-854-6.dtb -h "crc32" -h "sha1" \
-		-i "854-6-ePA" -d $(KDIR)/image-mt7622-smartrg-854-6.dtb -h "crc32" -h "sha1" \
+		-i "854-6" -d $(KDIR)/image-mt7622-smartrg-854-6.dtb -h "crc32" -h "sha1" \
+		-i "854-6-SFP" -d $(KDIR)/image-mt7622-smartrg-854-6-sfp.dtb -h "crc32" -h "sha1" \
 		-i "srbpi-r3" -d $(KDIR)/image-mt7986a-smartrg-bpi-r3.dtb -h "crc32" -h "sha1" \
 		-i "SDG-8612" -d $(KDIR)/image-mt7986a-smartrg-SDG-8612.dtb -h "crc32" -h "sha1" \
 		-i "SDG-8614" -d $(KDIR)/image-mt7986a-smartrg-SDG-8614.dtb -h "crc32" -h "sha1" \
 		-i "SDG-8622" -d $(KDIR)/image-mt7986a-smartrg-SDG-8622.dtb -h "crc32" -h "sha1" \
 		-i "SDG-8632" -d $(KDIR)/image-mt7986a-smartrg-SDG-8632.dtb -h "crc32" -h "sha1" \
 		-c "300" -K k1 -R rdisk -D "srbpi" \
-		-c "402" -K k1 -R rdisk -D "834-5-iPA" \
-		-c "403" -K k1 -R rdisk -D "834-5-ePA" \
+		-c "402" -K k1 -R rdisk -D "834-5" \
+		-c "403" -K k1 -R rdisk -D "834-5" \
 		-c "404" -K k1 -R rdisk -D "841-t6" \
-		-c "405" -K k1 -R rdisk -D "854-v6-iPA" \
-		-c "405-SFP" -K k1 -R rdisk -D "854-v6-iPA" \
-		-c "406" -K k1 -R rdisk -D "854-v6-ePA" \
+		-c "405" -K k1 -R rdisk -D "854-v6" \
+		-c "405-SFP" -K k1 -R rdisk -D "854-v6-SFP" \
+		-c "406" -K k1 -R rdisk -D "854-v6" \
+		-c "406-SFP" -K k1 -R rdisk -D "854-v6-SFP" \
 		-c "407" -K k1 -R rdisk -D "834-v6" \
 		-c "414" -K k1 -R rdisk -D "841-t6-mt7531" \
-		-c "415" -K k1 -R rdisk -D "854-6-iPA" \
-		-c "416" -K k1 -R rdisk -D "854-6-ePA" \
+		-c "415" -K k1 -R rdisk -D "854-6" \
+		-c "415-SFP" -K k1 -R rdisk -D "854-6-SFP" \
+		-c "416" -K k1 -R rdisk -D "854-6" \
+		-c "416-SFP" -K k1 -R rdisk -D "854-6-SFP" \
 		-c "302" -K k1 -R rdisk -D "srbpi-r3" \
 		-c "420" -K k1 -R rdisk -D "SDG-8612" \
 		-c "421" -K k1 -R rdisk -D "SDG-8614" \

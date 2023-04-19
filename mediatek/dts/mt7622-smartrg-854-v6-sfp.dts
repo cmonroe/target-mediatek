@@ -1,0 +1,22 @@
+/*
+ * Copyright (c) 2018 MediaTek Inc.
+ * Author: Ryder Lee <ryder.lee@mediatek.com>
+ *
+ * SPDX-License-Identifier: (GPL-2.0 OR MIT)
+ */
+
+#include "mt7622-smartrg-854-v6.dts"
+
+/ {
+	gpio-leds {
+		mux_sel {
+			default-state = "off";
+		};
+	};
+};
+
+&port_wan {
+	sfp = <&sfp_wan>;
+	phy-mode = "2500base-x";
+	managed = "in-band-status";
+};
