@@ -138,13 +138,14 @@
 	/**
 	 * set fan speed
 	 *
-	 * 255 = off
-	 * 202 = 20% duty cycle (minimum supported)
-	 * 194 = 24% duty cycle (2020 RPM)
-	 * 178 = 30% duty cycle (3000 RPM)
-	 * 152 = 40% duty cycle (3600 RPM)
+	 * 0 = off
+	 * 51 = 20% duty cycle (minimum supported)
+	 * 61 = 24% duty cycle (2020 RPM)
+	 * 77 = 30% duty cycle (3000 RPM)
+	 * 102 = 40% duty cycle (3600 RPM)
+	 * 255 = 100% duty cycle
 	 */
-	cooling-levels = <202 194 178 152>;
+	cooling-levels = <51 61 77 102>;
 
 	status = "okay";
 };
