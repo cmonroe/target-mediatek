@@ -192,4 +192,4 @@ endif
 endef
 TARGET_DEVICES += xiaomi_redmi-router-ax6000-ubootmod
 
-include smartrg_filogic.mk
+include smartrg.mk

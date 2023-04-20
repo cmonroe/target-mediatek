@@ -14,7 +14,7 @@ define Device/polecat
   KERNEL_INITRAMFS :=
   DEVICE_VENDOR := SmartRG
   DEVICE_MODEL := SmartRG Target
-  DEVICE_PACKAGES := kmod-usb-ohci kmod-usb2 kmod-usb3 kmod-ata-ahci-mtk
+  DEVICE_PACKAGES := kmod-hwmon-pwmfan kmod-i2c-gpio kmod-sfp kmod-usb-ohci kmod-usb2 kmod-usb3 kmod-ata-ahci-mtk e2fsprogs f2fsck mkf2fs
   DEVICE_DTS := mt7622-smartrg-srbpi
   DEVICE_DTS += mt7622-smartrg-834-5
   DEVICE_DTS += mt7622-smartrg-841-t6
@@ -30,6 +30,9 @@ define Device/polecat
   DEVICE_DTS += mt7986a-smartrg-SDG-8622
   DEVICE_DTS += mt7986a-smartrg-SDG-8632
   DEVICE_DTS_DIR := ../dts
+  ARTIFACTS := emmc-preloader.bin emmc-bl31-uboot.fip
+  ARTIFACT/emmc-preloader.bin := bl2 emmc-ddr4
+  ARTIFACT/emmc-bl31-uboot.fip := bl31-uboot smartrg_bonanza
   DTC_FLAGS += -@
   IMAGES := root.squashfs img img.run
   IMAGE/root.squashfs := SrgDisk
