@@ -1,15 +1,17 @@
---- a/drivers/net/phy/intel-xway.c
-+++ b/drivers/net/phy/intel-xway.c
+Index: linux-5.15.106/drivers/net/phy/intel-xway.c
+===================================================================
+--- linux-5.15.106.orig/drivers/net/phy/intel-xway.c
++++ linux-5.15.106/drivers/net/phy/intel-xway.c
 @@ -232,8 +232,6 @@ static int xway_gphy_rgmii_init(struct p
- static int xway_gphy_config_init(struct phy_device *phydev)
+ static int xway_gphy_probe(struct phy_device *phydev)
  {
  	int err;
 -	u32 ledxh;
 -	u32 ledxl;
  
- 	/* Mask all interrupts */
- 	err = phy_write(phydev, XWAY_MDIO_IMASK, 0);
-@@ -266,15 +264,20 @@ static int xway_gphy_config_init(struct
+ 	/* Ensure that integrated led function is enabled for all leds */
+ 	err = phy_write(phydev, XWAY_MDIO_LED,
+@@ -258,15 +256,20 @@ static int xway_gphy_probe(struct phy_de
  	 * only available in some packages, leave it in its reset
  	 * configuration.
  	 */
