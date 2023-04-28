@@ -173,9 +173,6 @@
 		reg = <1>;
 
 		phy-mode = "2500base-x";
-		/* phy-handle = <&phy6>;
-		link-gpio = <&pio 44 0>;
-		phy-connection-type = "2500base-x"; */
 	};
 
 	mdio: mdio-bus {
@@ -189,13 +186,12 @@
 		/* GPY211 */
 		compatible = "maxlinear,gpy211", "ethernet-phy-ieee802.3-c45";
 		reg = <5>;
+		reset-assert-us = <100000>;
+		reset-deassert-us = <100000>;
+		reset-gpios = <&pio 6 GPIO_ACTIVE_LOW>;
 
 		mxl,led-drive-vdd;
 		mxl,led-config = <0x30 0x40 0x80 0x0>;
-
-		/* reset-gpios = <&pio 6 GPIO_ACTIVE_HIGH>; */
-		/* reset-assert-us = <600>; */
-		/* reset-deassert-us = <20000>; */
 	};
 
 	phy6: ethernet-phy@6 {
