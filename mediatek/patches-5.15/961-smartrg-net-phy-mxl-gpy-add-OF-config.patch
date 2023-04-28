@@ -1,7 +1,17 @@
-Index: linux-5.15.104/drivers/net/phy/mxl-gpy.c
-===================================================================
---- linux-5.15.104.orig/drivers/net/phy/mxl-gpy.c
-+++ linux-5.15.104/drivers/net/phy/mxl-gpy.c
+From: Chad Monroe <chad@monroe.io>
+Date: Thu, 27 Apr 2023 16:45:33 -0700
+Subject: [PATCH] net: phy: mxl: add OF config
+
+mxl,sgmii-fixed: set SGMII fixed mode
+mxl,led-drive-vdd: leds are driven by VDDs
+
+Signed-off-by: Chad Monroe <chad@monroe.io>
+---
+ drivers/net/phy/mxl-gpy.c |   36 +++++++++++++++++++++++++++++++++++-
+ 1 file changed, 35 insertions(+), 1 deletion(-)
+
+--- a/drivers/net/phy/mxl-gpy.c
++++ b/drivers/net/phy/mxl-gpy.c
 @@ -70,6 +70,7 @@
  #define VSPEC1_SGMII_CTRL_ANRS	BIT(9)		/* Restart Aneg */
  #define VSPEC1_SGMII_ANEN_ANRS	(VSPEC1_SGMII_CTRL_ANEN | \
@@ -26,8 +36,8 @@ Index: linux-5.15.104/drivers/net/phy/mxl-gpy.c
 +	}
 +
 +	if (of_property_read_bool(of_node, "mxl,sgmii-fixed")) {
-+		ret = phy_modify_mmd(phydev, MDIO_MMD_VEND1, VSPEC1_SGMII_CTRL,
-+				VSPEC1_SGMII_CTRL_FIXED_2G5, 1);
++		ret = phy_set_bits_mmd(phydev, MDIO_MMD_VEND1, VSPEC1_SGMII_CTRL,
++				VSPEC1_SGMII_CTRL_FIXED_2G5);
 +
 +		if (ret < 0)
 +			return ret;
@@ -46,21 +56,12 @@ Index: linux-5.15.104/drivers/net/phy/mxl-gpy.c
  static int gpy_config_init(struct phy_device *phydev)
  {
  	int ret;
-@@ -132,7 +162,20 @@ static int gpy_config_init(struct phy_de
+@@ -126,7 +156,11 @@ static int gpy_config_init(struct phy_de
  	if (ret < 0)
  		return ret;
  
 -	return gpy_led_write(phydev);
 +	ret = gpy_led_write(phydev);
-+	if (ret < 0)
-+		return ret;
-+
-+	/**
-+	 * disable rate adaptation to handle upgrade case for platforms
-+	 * which don't perform a PHY reset on warm reboot like the 854
-+	 */
-+	ret = phy_modify_mmd(phydev, MDIO_MMD_VEND1, VSPEC1_SGMII_CTRL,
-+			VSPEC1_SGMII_CTRL_FIXED_2G5, 0);
 +	if (ret < 0)
 +		return ret;
 +
