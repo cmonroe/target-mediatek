@@ -245,7 +245,6 @@
 					label = "wan";
 
 					phy-mode = "2500base-x";
-					phy-connection-type = "2500base-x";
 					compatible = "ethernet-phy-ieee802.3-c45";
 				};
 

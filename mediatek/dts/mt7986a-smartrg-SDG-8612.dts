@@ -21,7 +21,6 @@
 
 &gmac1 {
 	phy-handle = <&phy6>;
-	phy-connection-type = "2500base-x";
 };
 
 &mdio {
@@ -55,7 +54,6 @@
 
 				phy-mode = "2500base-x";
 				phy-handle = <&phy5>;
-				phy-connection-type = "2500base-x";
 			};
 
 			port@6 {

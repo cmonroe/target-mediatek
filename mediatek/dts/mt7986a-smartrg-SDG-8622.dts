@@ -17,14 +17,12 @@
 
 &gmac0 {
 	phy-handle = <&phy5>;
-	phy-connection-type = "2500base-x";
 
 	label = "lan";
 };
 
 &gmac1 {
 	phy-handle = <&phy6>;
-	phy-connection-type = "2500base-x";
 };
 
 &pcie {
