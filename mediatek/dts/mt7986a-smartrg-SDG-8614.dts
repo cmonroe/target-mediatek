@@ -63,7 +63,7 @@
 
 			port@1 {
 				reg = <1>;
-				label = "lan1";
+				label = "lan3";
 			};
 
 			port@2 {
@@ -73,7 +73,7 @@
 
 			port@3 {
 				reg = <3>;
-				label = "lan3";
+				label = "lan1";
 			};
 
 			port5: port@5 {
