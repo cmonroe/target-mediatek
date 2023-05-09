@@ -19,4 +19,7 @@
 	sfp = <&sfp_wan>;
 	phy-mode = "2500base-x";
 	managed = "in-band-status";
+
+	/delete-property/phy-handle;
+	/delete-property/smartrg,fixed-phy-upgrade-hack;
 };
