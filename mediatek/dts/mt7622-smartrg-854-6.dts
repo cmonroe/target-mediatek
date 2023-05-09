@@ -212,6 +212,7 @@
 				compatible = "maxlinear,gpy211", "ethernet-phy-ieee802.3-c45";
 				reg = <5>;
 
+				mxl,soft-reset; /* no reset line on 854, do what we can.. */
 				mxl,led-config = <0x0 0x0 0x0 0x0>;
 			};
 		};
