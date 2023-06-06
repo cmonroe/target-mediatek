@@ -11,10 +11,6 @@
 	compatible = "smartrg,sdg-8622", "mediatek,mt7986a";
 };
 
-&fan {
-	cooling-levels = <202 194 178 152>;
-};
-
 &gmac0 {
 	phy-handle = <&phy5>;
 
