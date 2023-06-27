@@ -39,6 +39,6 @@
 	status = "okay";
 };
 
-&wmac {
+&wifi {
 	ieee80211-freq-limit = <2400000 2500000>, <5490000 5835000>;
 };

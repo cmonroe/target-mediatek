@@ -31,8 +31,8 @@ define Device/polecat
   DEVICE_DTS += mt7986a-smartrg-SDG-8632
   DEVICE_DTS_DIR := ../dts
   ARTIFACTS := emmc-preloader.bin emmc-bl31-uboot.fip
-  ARTIFACT/emmc-preloader.bin := bl2 emmc-ddr4
-  ARTIFACT/emmc-bl31-uboot.fip := bl31-uboot smartrg_bonanza
+  ARTIFACT/emmc-preloader.bin := mt7986-bl2 emmc-ddr4
+  ARTIFACT/emmc-bl31-uboot.fip := mt7986-bl31-uboot smartrg_bonanza
   DTC_FLAGS += -@
   IMAGES := root.squashfs img img.run
   IMAGE/root.squashfs := SrgDisk
@@ -174,6 +174,7 @@ flashme:
 	$(call Image/Flash/mkflash_emmc,$(CDT),$(ENUM))
 
 cdt-image:
+	@echo "Build CDT image $(CDT)"
 	$(call Build/srgImageRun,$(CDT))
 	bash -c "CDT=$(CDT) $(SRGRUN) CDT $(BINNAME) $(VERNAME)"
 

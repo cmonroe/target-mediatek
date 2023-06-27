@@ -14,7 +14,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 
 --- a/drivers/net/phy/mxl-gpy.c
 +++ b/drivers/net/phy/mxl-gpy.c
-@@ -370,17 +370,11 @@ static void gpy_update_interface(struct
+@@ -372,17 +372,11 @@ static void gpy_update_interface(struct
  	case SPEED_100:
  	case SPEED_10:
  		phydev->interface = PHY_INTERFACE_MODE_SGMII;

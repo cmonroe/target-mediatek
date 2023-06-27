@@ -85,6 +85,30 @@
 		regulator-always-on;
 	};
 
+	fan: pwm-fan {
+		compatible = "pwm-fan";
+		#cooling-cells = <2>;
+		pwms = <&pwm 1 40000 0>;
+
+		/**
+		 * set fan speed
+		 *
+		 * 0 = off
+		 * 51 = 20% duty cycle (minimum supported)
+		 * 61 = 24% duty cycle (2020 RPM)
+		 * 77 = 30% duty cycle (3000 RPM)
+		 * 102 = 40% duty cycle (3600 RPM)
+		 * 255 = 100% duty cycle
+		 */
+		cooling-levels = <51 61 77 102>;
+
+		interrupt-parent = <&pio>;
+		interrupts = <25 IRQ_TYPE_EDGE_FALLING>;
+		pulses-per-revolution = <2>;
+
+		status = "okay";
+	};
+
 	keys {
 		compatible = "gpio-keys";
 
@@ -124,33 +148,61 @@
 	};
 };
 
-&cpu_trip_active_low {
-	/**
-	 * 5 degree hysteresis
-	 * prevent fan toggling on/off
-	 */
-	hysteresis = <5000>;
+&cpu_thermal {
+	cooling-maps {
+		cpu-active-high {
+			/* active: set fan to cooling level 3 */
+			cooling-device = <&fan 3 3>;
+			trip = <&cpu_trip_active_high>;
+		};
+
+		cpu-active-medium {
+			/* active: set fan to cooling level 2 */
+			cooling-device = <&fan 2 2>;
+			trip = <&cpu_trip_active_low>;
+		};
+
+		cpu-active-low {
+			/* active: set fan to cooling level 1 */
+			cooling-device = <&fan 1 1>;
+			trip = <&cpu_trip_active_low>;
+		};
+
+		cpu-active-silent {
+			/* active: set fan to cooling level 0 */
+			cooling-device = <&fan 0 0>;
+			trip = <&cpu_trip_active_silent>;
+		};
+	};
+
+	trips {
+		cpu_trip_active_high: active-high {
+			temperature = <110000>;
+			hysteresis = <2000>;
+			type = "active";
+		};
+
+		cpu_trip_active_medium: active-medium {
+			temperature = <80000>;
+			hysteresis = <2000>;
+			type = "active";
+		};
+
+		cpu_trip_active_low: active-low {
+			temperature = <60000>;
+			hysteresis = <2000>;
+			type = "active";
+		};
+
+		cpu_trip_active_silent: active-silent {
+			temperature = <40000>;
+			hysteresis = <2000>;
+			type = "active";
+		};
+	};
 };
 
-&fan {
-	pwms = <&pwm 1 40000 0>;
-
-	/**
-	 * set fan speed
-	 *
-	 * 0 = off
-	 * 51 = 20% duty cycle (minimum supported)
-	 * 61 = 24% duty cycle (2020 RPM)
-	 * 77 = 30% duty cycle (3000 RPM)
-	 * 102 = 40% duty cycle (3600 RPM)
-	 * 255 = 100% duty cycle
-	 */
-	cooling-levels = <51 61 77 102>;
-
-	interrupt-parent = <&pio>;
-	interrupts = <25 IRQ_TYPE_EDGE_FALLING>;
-	pulses-per-revolution = <2>;
-
+&crypto {
 	status = "okay";
 };
 
@@ -240,7 +292,7 @@
 	status = "disabled";
 };
 
-&wmac {
+&wifi {
 	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&wf_2g_5g_pins>;
@@ -324,7 +376,7 @@
 	uart1_pins: uart1-pins {
 		mux {
 			function = "uart";
-			groups = "uart1_2";
+			groups = "uart1_2_rx_tx", "uart1_2_cts_rts";
 		};
 	};
 
@@ -414,6 +466,10 @@
 &ssusb {
 	vusb33-supply = <&reg_3p3v>;
 	vbus-supply = <&reg_5v>;
+	status = "okay";
+};
+
+&trng {
 	status = "okay";
 };
 
