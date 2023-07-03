@@ -1,0 +1,133 @@
+Index: linux-5.15.110/net/bridge/br_switchdev.c
+===================================================================
+--- linux-5.15.110.orig/net/bridge/br_switchdev.c
++++ linux-5.15.110/net/bridge/br_switchdev.c
+@@ -350,3 +350,36 @@ void br_switchdev_port_unoffload(struct
+ 
+ 	nbp_switchdev_del(p);
+ }
++
++void br_switchdev_add_vlanport( struct net_device *dev,
++			     struct netdev_phys_item_id ppid )
++{
++	struct net_bridge_port *p = br_port_get_rtnl(dev);
++	
++	if (p->offload_count) {
++		p->offload_count++;
++		return;
++	}
++
++	p->ppid = ppid;
++	p->offload_count = 1;
++
++	nbp_switchdev_hwdom_set(p);
++}
++
++void br_switchdev_del_vlanport( struct net_device *dev )
++{
++	struct net_bridge_port *p = br_port_get_rtnl(dev);
++
++	if (WARN_ON(!p->offload_count))
++		return;
++
++	p->offload_count--;
++
++	if (p->offload_count)
++		return;
++
++	if (p->hwdom)
++		nbp_switchdev_hwdom_put(p);
++}
++
+Index: linux-5.15.110/net/bridge/br_sysfs_if.c
+===================================================================
+--- linux-5.15.110.orig/net/bridge/br_sysfs_if.c
++++ linux-5.15.110/net/bridge/br_sysfs_if.c
+@@ -81,6 +81,31 @@ static int store_flag(struct net_bridge_
+ 	return 0;
+ }
+ 
++// Show brport ppid and hwdom
++//
++static ssize_t show_phys_id(struct net_bridge_port *p, char *buf)
++{
++        if (p->ppid.id_len)
++		return sprintf(buf, "%*phN\n", p->ppid.id_len, p->ppid.id);
++
++        return 0;
++}
++
++static BRPORT_ATTR(phys_id, 0444, show_phys_id, NULL);
++
++
++static ssize_t show_hwdom(struct net_bridge_port *p, char *buf)
++{
++        return sprintf(buf, "%d\n", p->hwdom);
++}
++static int store_hwdom(struct net_bridge_port *p, unsigned long v)
++{
++        p->hwdom = v;
++        return 0;
++}
++
++static BRPORT_ATTR(hwdom, 0644, show_hwdom, store_hwdom);
++
+ static ssize_t show_path_cost(struct net_bridge_port *p, char *buf)
+ {
+ 	return sprintf(buf, "%d\n", p->path_cost);
+@@ -262,6 +287,8 @@ BRPORT_ATTR_FLAG(multicast_to_unicast, B
+ #endif
+ 
+ static const struct brport_attribute *brport_attrs[] = {
++	&brport_attr_hwdom,
++	&brport_attr_phys_id,
+ 	&brport_attr_path_cost,
+ 	&brport_attr_priority,
+ 	&brport_attr_port_id,
+Index: linux-5.15.110/net/dsa/slave.c
+===================================================================
+--- linux-5.15.110.orig/net/dsa/slave.c
++++ linux-5.15.110/net/dsa/slave.c
+@@ -2268,6 +2268,11 @@ dsa_slave_prechangeupper_sanity_check(st
+ 	return NOTIFY_DONE;
+ }
+ 
++void br_switchdev_add_vlanport( struct net_device *dev,
++			     struct netdev_phys_item_id ppid );
++void br_switchdev_del_vlanport( struct net_device *dev );
++
++
+ static int dsa_slave_netdevice_event(struct notifier_block *nb,
+ 				     unsigned long event, void *ptr)
+ {
+@@ -2297,6 +2302,30 @@ static int dsa_slave_netdevice_event(str
+ 		if (netif_is_lag_master(dev))
+ 			return dsa_slave_lag_changeupper(dev, ptr);
+ 
++		if ( is_vlan_dev(dev) )
++		{
++			struct net_device *parent_dev = vlan_dev_real_dev(dev);
++			if ( dsa_slave_dev_check(parent_dev) )
++			{
++                struct netdev_notifier_changeupper_info *info = ptr;
++				struct netdev_phys_item_id ppid;
++
++				// Get the PPID of parent DSA port
++				dev_get_port_parent_id(parent_dev, &ppid, false);
++
++				printk("=== CW === VLAN - NETDEV_CHANGEUPPER %s %d", dev->name, info->linking );
++
++				if ( info->linking)
++				{
++					br_switchdev_add_vlanport( dev, ppid );
++				}
++				else
++				{
++					br_switchdev_del_vlanport( dev );
++				}
++			}
++		}
++
+ 		break;
+ 	case NETDEV_CHANGELOWERSTATE: {
+ 		struct netdev_notifier_changelowerstate_info *info = ptr;
