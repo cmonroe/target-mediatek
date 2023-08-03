@@ -1,0 +1,411 @@
+// SPDX-License-Identifier: (GPL-2.0 OR MIT)
+/*
+ * Copyright (C) 2023 SmartRG Inc.
+ * Author: Chad Monroe <chad.monroe@smartrg.com>
+ */
+
+/dts-v1/;
+#include "mt7988a.dtsi"
+#include <dt-bindings/leds/common.h>
+#include <dt-bindings/pinctrl/mt65xx.h>
+#include <dt-bindings/regulator/richtek,rt5190a-regulator.h>
+
+/ {
+/*
+	chosen {
+		stdout-path = "serial0:115200n8";
+	};
+
+	memory@40000000 {
+		device_type = "memory";
+		reg = <0 0x40000000 0 0x40000000>;
+	};
+*/
+
+	chosen {
+		bootargs = "console=ttyS0,115200n1 loglevel=8  \
+			    earlycon=uart8250,mmio32,0x11000000 \
+			    pci=pcie_bus_perf";
+	};
+
+	memory {
+		reg = <0 0x40000000 0 0x40000000>;
+	};
+
+	reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		/* /delete-node/ramoops@42ff0000; */
+
+		bootdata_reserved: bootdata@45000000 {
+			no-map;
+			reg = <0x0 0x45000000 0x0 0x00001000>;
+		};
+
+		ramoops_reserved: ramoops@45001000 {
+			no-map;
+			compatible = "ramoops";
+			reg = <0x0 0x45001000 0x0 0x00140000>;
+			ftrace-size = <0x20000>;
+			record-size = <0x20000>;
+			console-size = <0x20000>;
+			pmsg-size = <0x80000>;
+		};
+	};
+
+	bootdata {
+		compatible = "bootdata";
+		memory-region = <&bootdata_reserved>;
+	};
+
+	reg_1p8v: regulator-1p8v {
+		compatible = "regulator-fixed";
+		regulator-name = "fixed-1.8V";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	reg_3p3v: regulator-3p3v {
+		compatible = "regulator-fixed";
+		regulator-name = "fixed-3.3V";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+};
+
+&cpu0 {
+	proc-supply = <&rt5190_buck3>;
+};
+
+&cpu1 {
+	proc-supply = <&rt5190_buck3>;
+};
+
+&cpu2 {
+	proc-supply = <&rt5190_buck3>;
+};
+
+&cpu3 {
+	proc-supply = <&rt5190_buck3>;
+};
+
+&cci {
+	proc-supply = <&rt5190_buck3>;
+};
+
+&eth {
+	pinctrl-0 = <&mdio0_pins>;
+	pinctrl-names = "default";
+	status = "okay";
+};
+
+&gmac0 {
+	status = "okay";
+};
+
+&gmac1 {
+	label = "wan";
+	status = "okay";
+	phy-mode = "usxgmii";
+};
+
+&gmac2 {
+	label = "lan1";
+	status = "okay";
+	phy-mode = "usxgmii";
+	phy-connection-type = "usxgmii";
+	phy = <&phy8>;
+};
+
+&gsw_phy0 {
+	status = "disabled";
+};
+
+&gsw_phy1 {
+	pinctrl-names = "gbe-led";
+	pinctrl-0 = <&gbe1_led0_pins>, <&gbe1_led1_pins>;
+};
+
+&gsw_phy1_led0 {
+	status = "okay";
+	color = <LED_COLOR_ID_GREEN>;
+};
+
+&gsw_phy1_led1 {
+	status = "okay";
+	color = <LED_COLOR_ID_AMBER>;
+};
+
+&gsw_phy2 {
+	pinctrl-names = "gbe-led";
+	pinctrl-0 = <&gbe2_led0_pins>, <&gbe2_led1_pins>;
+};
+
+&gsw_phy2_led0 {
+	status = "okay";
+	color = <LED_COLOR_ID_GREEN>;
+};
+
+&gsw_phy2_led1 {
+	status = "okay";
+	color = <LED_COLOR_ID_AMBER>;
+};
+
+&gsw_phy3 {
+	pinctrl-names = "gbe-led";
+	pinctrl-0 = <&gbe3_led0_pins>, <&gbe3_led1_pins>;
+};
+
+&gsw_phy3_led0 {
+	status = "okay";
+	color = <LED_COLOR_ID_GREEN>;
+};
+
+&gsw_phy3_led1 {
+	status = "okay";
+	color = <LED_COLOR_ID_AMBER>;
+};
+
+&i2c0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c0_pins>;
+	status = "okay";
+
+	rt5190a_64: rt5190a@64 {
+		compatible = "richtek,rt5190a";
+		reg = <0x64>;
+		/*interrupts-extended = <&gpio26 0 IRQ_TYPE_LEVEL_LOW>;*/
+		vin2-supply = <&rt5190_buck1>;
+		vin3-supply = <&rt5190_buck1>;
+		vin4-supply = <&rt5190_buck1>;
+
+		regulators {
+			rt5190_buck1: buck1 {
+				regulator-name = "rt5190a-buck1";
+				regulator-min-microvolt = <5090000>;
+				regulator-max-microvolt = <5090000>;
+				regulator-allowed-modes =
+				<RT5190A_OPMODE_AUTO RT5190A_OPMODE_FPWM>;
+				regulator-boot-on;
+				regulator-always-on;
+			};
+			buck2 {
+				regulator-name = "vcore";
+				regulator-min-microvolt = <600000>;
+				regulator-max-microvolt = <1400000>;
+				regulator-boot-on;
+				regulator-always-on;
+			};
+			rt5190_buck3: buck3 {
+				regulator-name = "vproc";
+				regulator-min-microvolt = <600000>;
+				regulator-max-microvolt = <1400000>;
+				regulator-boot-on;
+				regulator-always-on; /* FIXME: need this for some reason to keep regulator on */
+			};
+			buck4 {
+				regulator-name = "rt5190a-buck4";
+				regulator-min-microvolt = <850000>;
+				regulator-max-microvolt = <850000>;
+				regulator-allowed-modes =
+				<RT5190A_OPMODE_AUTO RT5190A_OPMODE_FPWM>;
+				regulator-boot-on;
+				regulator-always-on;
+			};
+			ldo {
+				regulator-name = "rt5190a-ldo";
+				regulator-min-microvolt = <1200000>;
+				regulator-max-microvolt = <1200000>;
+				regulator-boot-on;
+				regulator-always-on;
+			};
+		};
+	};
+};
+
+&mdio_bus {
+	/* external Aquantia AQR113C */
+	phy0: ethernet-phy@0 {
+		reg = <0>;
+		compatible = "ethernet-phy-ieee802.3-c45";
+		reset-gpios = <&pio 76 1>;
+		reset-assert-us = <100000>;
+		reset-deassert-us = <221000>;
+	};
+
+	/* external Aquantia AQR113C */
+	phy8: ethernet-phy@8 {
+		reg = <8>;
+		compatible = "ethernet-phy-ieee802.3-c45";
+		reset-gpios = <&pio 71 1>;
+		reset-assert-us = <100000>;
+		reset-deassert-us = <221000>;
+	};
+};
+
+&mmc0 {
+	pinctrl-names = "default", "state_uhs";
+	pinctrl-0 = <&mmc0_pins_emmc_51>;
+	pinctrl-1 = <&mmc0_pins_emmc_51>;
+	bus-width = <8>;
+	max-frequency = <200000000>;
+	cap-mmc-highspeed;
+	mmc-hs200-1_8v;
+	mmc-hs400-1_8v;
+	/* hs400-ds-delay = <0x12814>; */
+	hs400-ds-delay = <0x14014>;
+	vmmc-supply = <&reg_3p3v>;
+	vqmmc-supply = <&reg_1p8v>;
+	non-removable;
+	no-sd;
+	no-sdio;
+	status = "okay";
+};
+
+&pcie0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pcie0_pins>;
+	status = "okay";
+};
+
+&pcie1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pcie1_pins>;
+	status = "okay";
+};
+
+&pcie2 {
+	status = "disabled";
+};
+
+&pcie3 {
+	status = "disabled";
+};
+
+&pio {
+	pcie0_pins: pcie0-pins {
+		mux {
+			function = "pcie";
+			groups = "pcie_2l_0_pereset";
+		};
+	};
+
+	pcie1_pins: pcie1-pins {
+		mux {
+			function = "pcie";
+			groups = "pcie_2l_1_pereset";
+		};
+	};
+
+	spi0_flash_pins: spi0-pins {
+		mux {
+			function = "spi";
+			groups = "spi0", "spi0_wp_hold";
+		};
+	};
+};
+
+&spi0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&spi0_flash_pins>;
+	status = "okay";
+
+	spi_nand: spi_nand@0 {
+		compatible = "spi-nand";
+		reg = <0>;
+		spi-max-frequency = <52000000>;
+		spi-tx-buswidth = <4>;
+		spi-rx-buswidth = <4>;
+	};
+
+};
+
+&spi_nand {
+	mediatek,nmbm;
+	mediatek,bmt-max-ratio = <1>;
+	mediatek,bmt-max-reserved-blocks = <64>;
+
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		partition@0 {
+			label = "BL2";
+			reg = <0x00000 0x0100000>;
+			read-only;
+		};
+
+		partition@100000 {
+			label = "u-boot-env";
+			reg = <0x0100000 0x0080000>;
+		};
+
+		factory: partition@180000 {
+			label = "Factory";
+			reg = <0x180000 0x0400000>;
+		};
+
+		partition@580000 {
+			label = "FIP";
+			reg = <0x580000 0x0200000>;
+		};
+
+		partition@780000 {
+			label = "ubi";
+			reg = <0x780000 0x7080000>;
+		};
+	};
+};
+
+&ssusb0 {
+	status = "okay";
+};
+
+&ssusb1 {
+	status = "okay";
+};
+
+&switch {
+	status = "okay";
+
+	ports {
+		port@0 {
+			status = "disabled";
+		};
+
+		port@1 {
+			label = "lan2";
+		};
+
+		port@2 {
+			label = "lan3";
+		};
+
+		port@3 {
+			label = "lan4";
+		};
+	};
+};
+
+&tphy {
+	status = "okay";
+};
+
+&uart0 {
+	status = "okay";
+};
+
+&watchdog {
+	status = "okay";
+};
+
+&xphy {
+	status = "okay";
+};
