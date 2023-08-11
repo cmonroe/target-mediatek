@@ -6,30 +6,28 @@
 
 /dts-v1/;
 #include "mt7988a.dtsi"
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/input/input.h>
 #include <dt-bindings/leds/common.h>
 #include <dt-bindings/pinctrl/mt65xx.h>
 #include <dt-bindings/regulator/richtek,rt5190a-regulator.h>
 
 / {
-/*
-	chosen {
-		stdout-path = "serial0:115200n8";
+	aliases {
+		serial0 = &uart0;
+		led-boot = &led_green;
+		led-failsafe = &led_green;
+		led-running = &led_green;
+		led-upgrade = &led_green;
 	};
 
-	memory@40000000 {
-		device_type = "memory";
-		reg = <0 0x40000000 0 0x40000000>;
-	};
-*/
-
 	chosen {
-		bootargs = "console=ttyS0,115200n1 loglevel=8  \
-			    earlycon=uart8250,mmio32,0x11000000 \
-			    pci=pcie_bus_perf";
+		stdout-path = &uart0;
+		bootargs = "console=ttyS0,115200n1 loglevel=8 pci=pcie_bus_perf";
 	};
 
 	memory {
-		reg = <0 0x40000000 0 0x40000000>;
+		reg = <0x0 0x40000000 0x0 0x40000000>;
 	};
 
 	reserved-memory {
@@ -76,6 +74,113 @@
 		regulator-max-microvolt = <3300000>;
 		regulator-boot-on;
 		regulator-always-on;
+	};
+
+	gpio-keys {
+		compatible = "gpio-keys";
+
+		factory {
+			label = "reset";
+			linux,code = <KEY_RESTART>;
+			gpios = <&pio 13 GPIO_ACTIVE_LOW>;
+		};
+
+		wps {
+			label = "sync";
+			linux,code = <KEY_WPS_BUTTON>;
+			gpios = <&pio 14 GPIO_ACTIVE_LOW>;
+		};
+	};
+
+	gpio-leds {
+		compatible = "gpio-leds";
+
+		bluetooth_reset: bluetooth_reset {
+			label = "bluetooth_reset";
+			gpios = <&pio 20 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		bluetooth_txrx_ctl: bluetooth_txrx_ctl {
+			label = "bluetooth_txrx_ctl";
+			gpios = <&pio 74 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		gps_enable: gps-enable {
+			label = "gps_enable";
+			gpios = <&pio 9 GPIO_ACTIVE_LOW>;
+			default-state = "off";
+		};
+
+		led_green: led-green {
+			label = "status:green";
+			function = LED_FUNCTION_STATUS;
+			color = <LED_COLOR_ID_GREEN>;
+			gpios = <&pio 58 GPIO_ACTIVE_HIGH>;
+			default-state = "on";
+		};
+
+		led_white: led-white {
+			label = "status:white";
+			function = LED_FUNCTION_STATUS;
+			color = <LED_COLOR_ID_WHITE>;
+			gpios = <&pio 62 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		led_red: led-red {
+			label = "status:red";
+			function = LED_FUNCTION_STATUS;
+			color = <LED_COLOR_ID_RED>;
+			gpios = <&pio 69 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		led_blue: led-blue {
+			label = "status:blue";
+			function = LED_FUNCTION_STATUS;
+			color = <LED_COLOR_ID_BLUE>;
+			gpios = <&pio 70 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		sfp_green: sfp-green {
+			label = "sfp_green";
+			function = LED_FUNCTION_STATUS;
+			color = <LED_COLOR_ID_GREEN>;
+			gpios = <&pio 7 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		sfp_red: sfp-red {
+			label = "sfp_red";
+			function = LED_FUNCTION_STATUS;
+			color = <LED_COLOR_ID_RED>;
+			gpios = <&pio 8 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+	};
+
+	i2c_sfp1: i2c-gpio-0 {
+		compatible = "i2c-gpio";
+		sda-gpios = <&pio 68 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
+		scl-gpios = <&pio 64 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
+		i2c-gpio,delay-us = <2>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+	};
+
+	sfp1: sfp1 {
+		compatible = "sff,sfp";
+		i2c-bus = <&i2c_sfp1>;
+		los-gpios = <&pio 32 GPIO_ACTIVE_HIGH>;
+		mod-def0-gpios = <&pio 35 GPIO_ACTIVE_LOW>;
+		rate-select0-gpios = <&pio 34 GPIO_ACTIVE_HIGH>;
+		rate-select1-gpios = <&pio 33 GPIO_ACTIVE_HIGH>;
+		tx-disable-gpios = <&pio 36 GPIO_ACTIVE_HIGH>;
+		tx-fault-gpios = <&pio 37 GPIO_ACTIVE_HIGH>;
+		maximum-power-milliwatt = <3000>;
 	};
 };
 
@@ -229,6 +334,14 @@
 	};
 };
 
+&i2c1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c1_pins>;
+	status = "okay";
+
+	/* I2C for USB-C PD */
+};
+
 &mdio_bus {
 	/* external Aquantia AQR113C */
 	phy0: ethernet-phy@0 {
@@ -237,6 +350,7 @@
 		reset-gpios = <&pio 76 1>;
 		reset-assert-us = <100000>;
 		reset-deassert-us = <221000>;
+		mdi-reversal = /bits/ 16 <1>;
 	};
 
 	/* external Aquantia AQR113C */
@@ -246,6 +360,7 @@
 		reset-gpios = <&pio 71 1>;
 		reset-assert-us = <100000>;
 		reset-deassert-us = <221000>;
+		mdi-reversal = /bits/ 16 <1>;
 	};
 };
 
@@ -258,8 +373,7 @@
 	cap-mmc-highspeed;
 	mmc-hs200-1_8v;
 	mmc-hs400-1_8v;
-	/* hs400-ds-delay = <0x12814>; */
-	hs400-ds-delay = <0x14014>;
+	hs400-ds-delay = <0x12814>;
 	vmmc-supply = <&reg_3p3v>;
 	vqmmc-supply = <&reg_1p8v>;
 	non-removable;
@@ -307,6 +421,20 @@
 		mux {
 			function = "spi";
 			groups = "spi0", "spi0_wp_hold";
+		};
+	};
+
+	uart1_pins: uart1-pins {
+		mux {
+			function = "uart";
+			groups = "uart1_2";
+		};
+	};
+
+	uart2_pins: uart2-pins {
+		mux {
+			function = "uart";
+			groups = "uart2";
 		};
 	};
 };
@@ -400,6 +528,22 @@
 
 &uart0 {
 	status = "okay";
+};
+
+&uart1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart1_pins>;
+	status = "okay";
+
+	/* Airoha AG3352 GPS */
+};
+
+&uart2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart2_pins>;
+	status = "okay";
+
+	/* DA14531MOD Bluetooth */
 };
 
 &watchdog {
