@@ -470,6 +470,46 @@
 			status = "disabled";
 		};
 
+		uart1: serial@11000100 {
+			compatible = "mediatek,mt7986-uart",
+				     "mediatek,mt6577-uart";
+			reg = <0 0x11000100 0 0x100>;
+			interrupts = <GIC_SPI 124 IRQ_TYPE_LEVEL_HIGH>;
+			/*
+			 * 8250-mtk driver don't control "baud" clock since commit
+			 * e32a83c70cf9 (kernel v5.7), but both "baud" and "bus" clocks
+			 * still need to be passed to the driver to prevent probe fail
+			 */
+			clocks = <&topckgen CLK_TOP_UART_SEL>,
+				 <&infracfg CLK_INFRA_52M_UART1_CK>;
+			clock-names = "baud", "bus";
+			assigned-clocks = <&topckgen CLK_TOP_UART_SEL>,
+					  <&infracfg CLK_INFRA_MUX_UART1_SEL>;
+			assigned-clock-parents = <&topckgen CLK_TOP_XTAL>,
+						 <&topckgen CLK_TOP_UART_SEL>;
+			status = "disabled";
+		};
+
+		uart2: serial@11000200 {
+			compatible = "mediatek,mt7986-uart",
+				     "mediatek,mt6577-uart";
+			reg = <0 0x11000200 0 0x100>;
+			interrupts = <GIC_SPI 125 IRQ_TYPE_LEVEL_HIGH>;
+			/*
+			 * 8250-mtk driver don't control "baud" clock since commit
+			 * e32a83c70cf9 (kernel v5.7), but both "baud" and "bus" clocks
+			 * still need to be passed to the driver to prevent probe fail
+			 */
+			clocks = <&topckgen CLK_TOP_UART_SEL>,
+				 <&infracfg CLK_INFRA_52M_UART2_CK>;
+			clock-names = "baud", "bus";
+			assigned-clocks = <&topckgen CLK_TOP_UART_SEL>,
+					  <&infracfg CLK_INFRA_MUX_UART2_SEL>;
+			assigned-clock-parents = <&topckgen CLK_TOP_XTAL>,
+						 <&topckgen CLK_TOP_UART_SEL>;
+			status = "disabled";
+		};
+
 		i2c0: i2c@11003000 {
 			compatible = "mediatek,mt7988-i2c",
 				     "mediatek,mt7981-i2c";
