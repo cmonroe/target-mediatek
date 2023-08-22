@@ -288,6 +288,15 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pcie_pins>;
 	status = "disabled";
+
+	slot0: pcie@0,0 {
+		reg = <0x0000 0 0 0 0>;
+
+		radio0: mt7915@0,0 {
+			reg = <0x0000 0 0 0 0>;
+			mediatek,eeprom-file-offset = <0xa0000>;
+		};
+	};
 };
 
 &pcie_phy {

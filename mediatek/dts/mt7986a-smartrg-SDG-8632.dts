@@ -23,20 +23,14 @@
 
 &pcie {
 	status = "okay";
-
-	pcie@0,0 {
-		reg = <0x0000 0 0 0 0>;
-
-		mt7915@0,0 {
-			reg = <0x0000 0 0 0 0>;
-			mediatek,eeprom-file-offset = <0xa0000>;
-			ieee80211-freq-limit = <5170000 5835000>;
-		};
-	};
 };
 
 &pcie_phy {
 	status = "okay";
+};
+
+&radio0 {
+	ieee80211-freq-limit = <5170000 5835000>;
 };
 
 &wifi {
