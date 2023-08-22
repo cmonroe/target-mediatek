@@ -5,6 +5,10 @@
  */
 
 #include "mt7986a-smartrg-bonanza-peak.dtsi"
+#include "mt7986a-smartrg-SDG-8622-power-limits-r1-RCM-AU-NZ.dtsi"
+#include "mt7986a-smartrg-SDG-8622-power-limits-r2-IC-CA.dtsi"
+#include "mt7986a-smartrg-SDG-8622-power-limits-r3-ETSI-GB.dtsi"
+#include "mt7986a-smartrg-SDG-8622-power-limits-r4-ETSI.dtsi"
 
 / {
 	model = "SmartRG SDG-8622";
