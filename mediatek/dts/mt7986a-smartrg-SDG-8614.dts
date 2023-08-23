@@ -39,6 +39,7 @@
 		rate-select1-gpios = <&pio 28 GPIO_ACTIVE_HIGH>;
 		tx-disable-gpios = <&pio 64 GPIO_ACTIVE_HIGH>;
 		tx-fault-gpios = <&pio 7 GPIO_ACTIVE_HIGH>;
+		maximum-power-milliwatt = <3000>;
 	};
 };
 
