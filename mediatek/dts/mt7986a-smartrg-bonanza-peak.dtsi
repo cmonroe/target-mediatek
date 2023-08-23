@@ -161,7 +161,7 @@
 		cpu-active-medium {
 			/* active: set fan to cooling level 2 */
 			cooling-device = <&fan 2 2>;
-			trip = <&cpu_trip_active_low>;
+			trip = <&cpu_trip_active_medium>;
 		};
 
 		cpu-active-low {
@@ -216,12 +216,6 @@
 		reg = <0>;
 
 		phy-mode = "2500base-x";
-
-	/*	fixed-link {
-			speed = <2500>;
-			full-duplex;
-			pause;
-		}; */
 	};
 
 	gmac1: mac@1 {
@@ -382,13 +376,6 @@
 		mediatek,pull-down-adv = <0>; /* bias-disable */
 	};
 
-	spi_flash_pins: spi-flash-pins {
-		mux {
-			function = "spi";
-			groups = "spi0", "spi0_wp_hold";
-		};
-	};
-
 	uart1_pins: uart1-pins {
 		mux {
 			function = "uart";
@@ -424,57 +411,6 @@
 			       "WF1_HB5", "WF1_HB6", "WF1_HB7", "WF1_HB8",
 			       "WF1_TOP_CLK", "WF1_TOP_DATA";
 			drive-strength = <4>;
-		};
-	};
-};
-
-&spi0 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&spi_flash_pins>;
-	status = "okay";
-
-	flash@0 {
-		compatible = "jedec,spi-nor";
-		reg = <0>;
-		spi-max-frequency = <10000000>;
-
-		partitions {
-			compatible = "fixed-partitions";
-			#address-cells = <1>;
-			#size-cells = <1>;
-
-			partition@0 {
-				label = "bl2";
-				reg = <0x0 0x40000>;
-				read-only;
-			};
-
-			partition@40000 {
-				label = "u-boot-env";
-				reg = <0x40000 0x40000>;
-			};
-
-			partition@80000 {
-				label = "reserved2";
-				reg = <0x80000 0x80000>;
-			};
-
-			partition@100000 {
-				label = "fip";
-				reg = <0x100000 0x80000>;
-				read-only;
-			};
-
-			partition@180000 {
-				label = "recovery";
-				reg = <0x180000 0xa80000>;
-			};
-
-			partition@c00000 {
-				label = "fit";
-				reg = <0xc00000 0x1400000>;
-				compatible = "denx,fit";
-			};
 		};
 	};
 };
