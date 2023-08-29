@@ -113,36 +113,10 @@
 			default-state = "off";
 		};
 
-		led_green: led-green {
-			label = "status:green";
-			function = LED_FUNCTION_STATUS;
-			color = <LED_COLOR_ID_GREEN>;
-			gpios = <&pio 58 GPIO_ACTIVE_HIGH>;
+		usb_enable: usb-enable {
+			label = "usb_enable";
+			gpios = <&pio 63 GPIO_ACTIVE_HIGH>;
 			default-state = "on";
-		};
-
-		led_white: led-white {
-			label = "status:white";
-			function = LED_FUNCTION_STATUS;
-			color = <LED_COLOR_ID_WHITE>;
-			gpios = <&pio 62 GPIO_ACTIVE_HIGH>;
-			default-state = "off";
-		};
-
-		led_red: led-red {
-			label = "status:red";
-			function = LED_FUNCTION_STATUS;
-			color = <LED_COLOR_ID_RED>;
-			gpios = <&pio 69 GPIO_ACTIVE_HIGH>;
-			default-state = "off";
-		};
-
-		led_blue: led-blue {
-			label = "status:blue";
-			function = LED_FUNCTION_STATUS;
-			color = <LED_COLOR_ID_BLUE>;
-			gpios = <&pio 70 GPIO_ACTIVE_HIGH>;
-			default-state = "off";
 		};
 
 		sfp_green: sfp-green {
@@ -181,6 +155,46 @@
 		tx-disable-gpios = <&pio 36 GPIO_ACTIVE_HIGH>;
 		tx-fault-gpios = <&pio 37 GPIO_ACTIVE_HIGH>;
 		maximum-power-milliwatt = <3000>;
+	};
+
+	uart1: serial@11000100 {
+		compatible = "mediatek,mt7986-uart",
+				 "mediatek,mt6577-uart";
+		reg = <0 0x11000100 0 0x100>;
+		interrupts = <GIC_SPI 124 IRQ_TYPE_LEVEL_HIGH>;
+		/*
+		 * 8250-mtk driver don't control "baud" clock since commit
+		 * e32a83c70cf9 (kernel v5.7), but both "baud" and "bus" clocks
+		 * still need to be passed to the driver to prevent probe fail
+		 */
+		clocks = <&topckgen CLK_TOP_UART_SEL>,
+			 <&infracfg CLK_INFRA_52M_UART1_CK>;
+		clock-names = "baud", "bus";
+		assigned-clocks = <&topckgen CLK_TOP_UART_SEL>,
+				  <&infracfg CLK_INFRA_MUX_UART1_SEL>;
+		assigned-clock-parents = <&topckgen CLK_TOP_XTAL>,
+					 <&topckgen CLK_TOP_UART_SEL>;
+		status = "disabled";
+	};
+
+	uart2: serial@11000200 {
+		compatible = "mediatek,mt7986-uart",
+				 "mediatek,mt6577-uart";
+		reg = <0 0x11000200 0 0x100>;
+		interrupts = <GIC_SPI 125 IRQ_TYPE_LEVEL_HIGH>;
+		/*
+		 * 8250-mtk driver don't control "baud" clock since commit
+		 * e32a83c70cf9 (kernel v5.7), but both "baud" and "bus" clocks
+		 * still need to be passed to the driver to prevent probe fail
+		 */
+		clocks = <&topckgen CLK_TOP_UART_SEL>,
+			 <&infracfg CLK_INFRA_52M_UART2_CK>;
+		clock-names = "baud", "bus";
+		assigned-clocks = <&topckgen CLK_TOP_UART_SEL>,
+				  <&infracfg CLK_INFRA_MUX_UART2_SEL>;
+		assigned-clock-parents = <&topckgen CLK_TOP_XTAL>,
+					 <&topckgen CLK_TOP_UART_SEL>;
+		status = "disabled";
 	};
 };
 
@@ -339,7 +353,31 @@
 	pinctrl-0 = <&i2c1_pins>;
 	status = "okay";
 
-	/* I2C for USB-C PD */
+	system-leds {
+		compatible = "srg,sysled";
+		reg = <0x30>;
+
+		led_red: led-red {
+			label = "red";
+			reg = <1>;
+		};
+
+		led_green: led-green {
+			label = "green";
+			reg = <2>;
+			linux,default-trigger = "timer";
+		};
+
+		led_blue: led-blue {
+			label = "blue";
+			reg = <3>;
+		};
+
+		led_white: led-white {
+			label = "white";
+			reg = <4>;
+		};
+	};
 };
 
 &mdio_bus {
@@ -386,6 +424,16 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pcie0_pins>;
 	status = "okay";
+
+	pcie@0,0 {
+		reg = <0x0000 0 0 0 0>;
+
+		mt7996@0,0 {
+			reg = <0x0000 0 0 0 0>;
+			mediatek,eeprom-file-offset = <0x0>;
+			ieee80211-freq-limit = <2400000 2500000>, <5170000 5835000>, <5945000 7125000>;
+		};
+	};
 };
 
 &pcie1 {
@@ -403,27 +451,6 @@
 };
 
 &pio {
-	pcie0_pins: pcie0-pins {
-		mux {
-			function = "pcie";
-			groups = "pcie_2l_0_pereset";
-		};
-	};
-
-	pcie1_pins: pcie1-pins {
-		mux {
-			function = "pcie";
-			groups = "pcie_2l_1_pereset";
-		};
-	};
-
-	spi0_flash_pins: spi0-pins {
-		mux {
-			function = "spi";
-			groups = "spi0", "spi0_wp_hold";
-		};
-	};
-
 	uart1_pins: uart1-pins {
 		mux {
 			function = "uart";
