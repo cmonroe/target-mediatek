@@ -422,7 +422,7 @@
 
 &pcie0 {
 	pinctrl-names = "default";
-	pinctrl-0 = <&pcie0_pins>;
+	pinctrl-0 = <&pcie0_1_pins>;
 	status = "okay";
 
 	pcie@0,0 {
@@ -438,7 +438,7 @@
 
 &pcie1 {
 	pinctrl-names = "default";
-	pinctrl-0 = <&pcie1_pins>;
+	pinctrl-0 = <&pcie1_1_pins>;
 	status = "okay";
 };
 
@@ -451,6 +451,20 @@
 };
 
 &pio {
+	pcie0_1_pins: pcie0-pins {
+		mux {
+			function = "pcie";
+			groups = "pcie_2l_0_pereset";
+		};
+	};
+
+	pcie1_1_pins: pcie1-pins {
+		mux {
+			function = "pcie";
+			groups = "pcie_2l_1_pereset";
+		};
+	};
+
 	uart1_pins: uart1-pins {
 		mux {
 			function = "uart";
