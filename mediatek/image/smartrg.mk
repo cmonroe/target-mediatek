@@ -30,6 +30,7 @@ define Device/polecat
   DEVICE_DTS += mt7986a-smartrg-SDG-8622
   DEVICE_DTS += mt7986a-smartrg-SDG-8632
   DEVICE_DTS += mt7988a-smartrg-SDG-8733
+  DEVICE_DTS += mt7988a-smartrg-SDG-8733v
   DEVICE_DTS_DIR := ../dts
   ARTIFACTS := emmc-preloader.bin emmc-bl31-uboot.fip
   ARTIFACT/emmc-preloader.bin := mt7986-bl2 emmc-ddr4
@@ -65,6 +66,7 @@ define Build/SrgFit
 		-i "SDG-8622" -d $(KDIR)/image-mt7986a-smartrg-SDG-8622.dtb -h "crc32" -h "sha1" \
 		-i "SDG-8632" -d $(KDIR)/image-mt7986a-smartrg-SDG-8632.dtb -h "crc32" -h "sha1" \
 		-i "SDG-8733" -d $(KDIR)/image-mt7988a-smartrg-SDG-8733.dtb -h "crc32" -h "sha1" \
+		-i "SDG-8733v" -d $(KDIR)/image-mt7988a-smartrg-SDG-8733v.dtb -h "crc32" -h "sha1" \
 		-c "300" -K k1 -R rdisk -D "srbpi" \
 		-c "402" -K k1 -R rdisk -D "834-5" \
 		-c "403" -K k1 -R rdisk -D "834-5" \
@@ -84,7 +86,8 @@ define Build/SrgFit
 		-c "421" -K k1 -R rdisk -D "SDG-8614" \
 		-c "422" -K k1 -R rdisk -D "SDG-8622" \
 		-c "423" -K k1 -R rdisk -D "SDG-8632" \
-		-c "430" -K k1 -R rdisk -D "SDG-8733"
+		-c "430" -K k1 -R rdisk -D "SDG-8733" \
+		-c "431" -K k1 -R rdisk -D "SDG-8733v"
 
 	PATH=$(LINUX_DIR)/scripts/dtc:$(PATH) mkimage -f $@.its $@.new
 	@mv -f $@.new $@
