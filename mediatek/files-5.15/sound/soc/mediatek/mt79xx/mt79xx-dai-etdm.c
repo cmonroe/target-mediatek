@@ -392,8 +392,8 @@ static struct snd_soc_dai_driver mtk_dai_etdm_driver[] = {
 			.formats = MTK_ETDM_FORMATS,
 		},
 		.ops = &mtk_dai_etdm_ops,
-		.symmetric_rates = 1,
-		.symmetric_samplebits = 1,
+		.symmetric_rate = 1,
+		.symmetric_sample_bits = 1,
 	},
 };
 
