@@ -234,13 +234,17 @@
 };
 
 &mdio {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	reset-gpios = <&pio 6 GPIO_ACTIVE_LOW>;
+	reset-delay-us = <1500000>;
+	reset-post-delay-us = <1000000>;
+
 	phy5: ethernet-phy@5 {
 		/* GPY211 */
 		compatible = "maxlinear,gpy211", "ethernet-phy-ieee802.3-c45";
 		reg = <5>;
-		reset-assert-us = <100000>;
-		reset-deassert-us = <100000>;
-		reset-gpios = <&pio 6 GPIO_ACTIVE_LOW>;
 
 		mxl,led-drive-vdd;
 		mxl,led-config = <0x30 0x40 0x80 0x0>;
