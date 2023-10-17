@@ -1,12 +1,12 @@
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
-@@ -4294,6 +4294,9 @@ static void mtk_pending_work(struct work
- 	u32 val;
- 	int i;
+@@ -3283,6 +3283,9 @@ static void mtk_tx_timeout(struct net_de
+ 	eth->netdev[mac->id]->stats.tx_errors++;
+ 	netif_err(eth, tx_err, dev, "transmit timed out\n");
  
 +	dev_err(eth->dev, "transmit queue timed out.. PANIC!\n");
 +	panic("mtk_soc_eth transmit queue timed out");
 +
- 	rtnl_lock();
- 	set_bit(MTK_RESETTING, &eth->state);
+ 	schedule_work(&eth->pending_work);
+ }
  
