@@ -218,9 +218,100 @@
 	proc-supply = <&rt5190_buck3>;
 };
 
+&cpu_thermal {
+	/delete-node/cooling-maps;
+	/delete-node/trips;
+
+	trips {
+		cpu_trip_crit: crit {
+			temperature = <125000>;
+			hysteresis = <2000>;
+			type = "critical";
+		};
+
+		cpu_trip_hot: hot {
+			temperature = <120000>;
+			hysteresis = <2000>;
+			type = "hot";
+		};
+
+		cpu_trip_active_high: active-high {
+			temperature = <110000>;
+			hysteresis = <2000>;
+			type = "active";
+		};
+
+		cpu_trip_active_med: active-med {
+			temperature = <80000>;
+			hysteresis = <2000>;
+			type = "active";
+		};
+
+		cpu_trip_active_low: active-low {
+			temperature = <60000>;
+			hysteresis = <2000>;
+			type = "active";
+		};
+
+		cpu_trip_active_silent: active-silent {
+			temperature = <40000>;
+			hysteresis = <2000>;
+			type = "active";
+		};
+	};
+
+	cooling-maps {
+		cpu-active-high {
+			/* active: set fan to cooling level 3 */
+			cooling-device = <&fan 3 3>;
+			trip = <&cpu_trip_active_high>;
+		};
+
+		cpu-active-med {
+			/* active: set fan to cooling level 2 */
+			cooling-device = <&fan 2 2>;
+			trip = <&cpu_trip_active_med>;
+		};
+
+		cpu-active-low {
+			/* active: set fan to cooling level 1 */
+			cooling-device = <&fan 1 1>;
+			trip = <&cpu_trip_active_low>;
+		};
+
+		cpu-active-silent {
+			/* active: set fan to cooling level 0 */
+			cooling-device = <&fan 0 0>;
+			trip = <&cpu_trip_active_silent>;
+		};
+	};
+};
+
 &eth {
 	pinctrl-0 = <&mdio0_pins>;
 	pinctrl-names = "default";
+	status = "okay";
+};
+
+&fan {
+	pwms = <&pwm 0 40000 0>;
+
+	/**
+	 * set fan speed
+	 *
+	 * 0 = off
+	 * 61 = 24% duty cycle
+	 * 77 = 30% duty cycle
+	 * 102 = 40% duty cycle
+	 * 128 - 50% duty cycle
+	 * 255 = 100% duty cycle
+	 */
+	cooling-levels = <61 77 102 128>;
+
+	interrupt-parent = <&pio>;
+	interrupts = <21 IRQ_TYPE_EDGE_FALLING>;
+	pulses-per-revolution = <2>;
+
 	status = "okay";
 };
 
@@ -465,6 +556,13 @@
 		};
 	};
 
+	pwm_pins: pwm-pins {
+		mux {
+			function = "pwm";
+			groups = "pwm0", "pwm1";
+		};
+	};
+
 	uart1_pins: uart1-pins {
 		mux {
 			function = "uart";
@@ -478,6 +576,12 @@
 			groups = "uart2";
 		};
 	};
+};
+
+&pwm {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pwm_pins>;
+	status = "okay";
 };
 
 &spi0 {
