@@ -85,26 +85,40 @@
 };
 
 &eth {
+	pinctrl-names = "default";
+	pinctrl-0 = <&mdio_pins>;
 	status = "okay";
 
 	gmac0: mac@0 {
+		label = "wan";
 		compatible = "mediatek,eth-mac";
 		reg = <0>;
-		phy-mode = "2500base-x";
 
-		fixed-link {
-			speed = <2500>;
-			full-duplex;
-			pause;
-		};
+		phy-mode = "2500base-x";
+		phy-handle = <&phy5>;
 	};
 
 	gmac1: mac@1 {
         label = "lan";
 		compatible = "mediatek,eth-mac";
 		reg = <1>;
+
 		phy-mode = "gmii";
 		phy-handle = <&int_gbe_phy>;
+	};
+};
+
+&mdio_bus {
+	reset-gpios = <&pio 39 GPIO_ACTIVE_LOW>;
+	reset-delay-us = <1500000>;
+	reset-post-delay-us = <1000000>;
+
+	phy5: ethernet-phy@5 {
+		/* GPY211 */
+		compatible = "maxlinear,gpy211", "ethernet-phy-ieee802.3-c45";
+		reg = <5>;
+
+		mxl,led-config = <0x0 0x70 0x80 0x0>;
 	};
 };
 
@@ -160,4 +174,5 @@
 
 &wifi {
 	status = "okay";
+	mediatek,eeprom-file-offset = <0x0>;
 };
