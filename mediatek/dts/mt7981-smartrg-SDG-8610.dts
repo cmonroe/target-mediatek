@@ -23,6 +23,34 @@
 		reg = <0 0x40000000 0 0x20000000>;
 	};
 
+	reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		/delete-node/ramoops@42ff0000;
+
+		bootdata_reserved: bootdata@45000000 {
+			no-map;
+			reg = <0x0 0x45000000 0x0 0x00001000>;
+		};
+
+		ramoops_reserved: ramoops@45001000 {
+			no-map;
+			compatible = "ramoops";
+			reg = <0x0 0x45001000 0x0 0x00140000>;
+			ftrace-size = <0x20000>;
+			record-size = <0x20000>;
+			console-size = <0x20000>;
+			pmsg-size = <0x80000>;
+		};
+	};
+
+	bootdata {
+		compatible = "bootdata";
+		memory-region = <&bootdata_reserved>;
+	};
+
 	reg_3p3v: regulator-3p3v {
 		compatible = "regulator-fixed";
 		regulator-name = "fixed-3.3V";
