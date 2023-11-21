@@ -1,0 +1,17 @@
+// SPDX-License-Identifier: (GPL-2.0 OR MIT)
+/*
+ * Copyright (C) 2023 SmartRG Inc.
+ * Author: Chad Monroe <chad.monroe@smartrg.com>
+ */
+
+#include "mt7988a-smartrg-mt-stuart.dtsi"
+
+/ {
+	model = "SmartRG SDG-8734";
+	compatible = "smartrg,sdg-8734", "mediatek,mt7988a";
+};
+
+&gmac1 {
+	sfp = <&sfp1>;
+	managed = "in-band-status";
+};
