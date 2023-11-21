@@ -15,10 +15,12 @@
 / {
 	aliases {
 		serial0 = &uart0;
-		led-boot = &led_green;
-		led-failsafe = &led_green;
-		led-running = &led_green;
-		led-upgrade = &led_green;
+		ethernet0 = &gmac0;
+		ethernet1 = &gmac1;
+		led-boot = &sys_status;
+		led-failsafe = &sys_status;
+		led-running = &sys_status;
+		led-upgrade = &sys_status;
 	};
 
 	chosen {
@@ -78,6 +80,8 @@
 
 	gpio-keys {
 		compatible = "gpio-keys";
+		pinctrl-names = "default";
+		pinctrl-0 = <&button_pins>;
 
 		factory {
 			label = "reset";
@@ -113,17 +117,11 @@
 			default-state = "off";
 		};
 
-		usb_enable: usb-enable {
-			label = "usb_enable";
-			gpios = <&pio 63 GPIO_ACTIVE_HIGH>;
-			default-state = "on";
-		};
-
 		sfp_green: sfp-green {
 			label = "sfp_green";
 			function = LED_FUNCTION_STATUS;
 			color = <LED_COLOR_ID_GREEN>;
-			gpios = <&pio 7 GPIO_ACTIVE_HIGH>;
+			gpios = <&pio 69 GPIO_ACTIVE_HIGH>;
 			default-state = "off";
 		};
 
@@ -131,12 +129,21 @@
 			label = "sfp_red";
 			function = LED_FUNCTION_STATUS;
 			color = <LED_COLOR_ID_RED>;
-			gpios = <&pio 8 GPIO_ACTIVE_HIGH>;
+			gpios = <&pio 70 GPIO_ACTIVE_HIGH>;
 			default-state = "off";
+		};
+
+		usb_enable: usb-enable {
+			label = "usb_enable";
+			gpios = <&pio 63 GPIO_ACTIVE_HIGH>;
+			default-state = "on";
 		};
 	};
 
 	i2c_sfp1: i2c-gpio-0 {
+		pinctrl-names = "default";
+		pinctrl-0 = <&sfp_i2c_pins>;
+
 		compatible = "i2c-gpio";
 		sda-gpios = <&pio 68 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
 		scl-gpios = <&pio 64 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
@@ -448,23 +455,23 @@
 		compatible = "srg,sysled";
 		reg = <0x30>;
 
-		led_red: led-red {
+		system_red {
 			label = "red";
 			reg = <1>;
 		};
 
-		led_green: led-green {
+		sys_status: system_green {
 			label = "green";
 			reg = <2>;
 			linux,default-trigger = "timer";
 		};
 
-		led_blue: led-blue {
+		system_blue {
 			label = "blue";
 			reg = <3>;
 		};
 
-		led_white: led-white {
+		system_white {
 			label = "white";
 			reg = <4>;
 		};
@@ -476,7 +483,7 @@
 	phy0: ethernet-phy@0 {
 		reg = <0>;
 		compatible = "ethernet-phy-ieee802.3-c45";
-		reset-gpios = <&pio 76 1>;
+		reset-gpios = <&pio 62 1>;
 		reset-assert-us = <100000>;
 		reset-deassert-us = <221000>;
 		mdi-reversal = /bits/ 16 <1>;
@@ -513,7 +520,7 @@
 
 &pcie0 {
 	pinctrl-names = "default";
-	pinctrl-0 = <&pcie0_1_pins>;
+	pinctrl-0 = <&pcie0_pins>;
 	status = "okay";
 
 	pcie@0,0 {
@@ -529,7 +536,7 @@
 
 &pcie1 {
 	pinctrl-names = "default";
-	pinctrl-0 = <&pcie1_1_pins>;
+	pinctrl-0 = <&pcie1_pins>;
 	status = "okay";
 };
 
@@ -542,24 +549,28 @@
 };
 
 &pio {
-	pcie0_1_pins: pcie0-pins {
-		mux {
-			function = "pcie";
-			groups = "pcie_2l_0_pereset";
-		};
-	};
-
-	pcie1_1_pins: pcie1-pins {
-		mux {
-			function = "pcie";
-			groups = "pcie_2l_1_pereset";
-		};
+	button_pins: button-pins {
+		pins = "GPIO_RESET", "GPIO_WPS";
+		mediatek,pull-down-adv = <0>; /* bias-disable */
 	};
 
 	pwm_pins: pwm-pins {
 		mux {
 			function = "pwm";
 			groups = "pwm0", "pwm1";
+		};
+	};
+
+	sfp_i2c_pins: sfp-i2c-pins {
+		conf-scl {
+			pins = "LED_A";
+			drive-strength =  <8>;
+			mediatek,pull-up-adv = <1>;
+		};
+		conf-sda {
+			pins = "LED_E";
+			drive-strength =  <8>;
+			mediatek,pull-up-adv = <0>;
 		};
 	};
 
