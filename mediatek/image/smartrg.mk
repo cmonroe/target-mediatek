@@ -128,7 +128,9 @@ define Build/SrgDiskSquashfs
 	dd if=/dev/zero bs=128k count=1 >> $(KDIR)/root.squashfs.bin
 	sha256sum  $(KDIR)/root.squashfs.bin  | cut -d ' ' -f 1 | xargs echo -n  >> $(KDIR)/root.squashfs.bin
 	$(CP) $(KDIR)/root.squashfs.bin $(KDIR)/$(BINNAME).bin
-	$(CP) $(KDIR)/$(BINNAME).bin $(BIN_DIR)/
+	$(CP) $(KDIR)/root.squashfs.bin $(BIN_DIR)/
+	ln -sfr $(BIN_DIR)/root.squashfs.bin $(BIN_DIR)/root.squashfs.img
+	ln -sfr $(BIN_DIR)/$(IMG_PREFIX)-polecat-fit-multi.itb $(BIN_DIR)/fit-multi.itb
 endef
 
 define Build/SrgDisk
@@ -181,8 +183,7 @@ define Image/Flash/mkflash_emmc
 	CDT_IPK=`find $(wildcard $(PACKAGE_SUBDIRS)) -type f -name 'cdt-$(1)_*.ipk' -print -quit` ; \
 	OUT_DIR="$(BIN_DIR)/flashprogram_bins"; \
     mkdir -p $$OUT_DIR; \
-	mk_emmc_mfg_image.sh -e $(2) -r $(TARGET_DIR) -R $(BIN_DIR)/$(BINNAME).bin -b $(BIN_DIR) -c $$CDT_IPK -d $$OUT_DIR/$(IMG_PREFIX)-polecat-emmc-mfg-$(2)-$(1).bin ; \
-	cp $(STAGING_DIR_ROOT)/Boot/bin/preloader-emmc.$(2) $$OUT_DIR/$(IMG_PREFIX)-polecat-preloader-emmc-mfg-$(2)-$(1).bin
+	mk_emmc_mfg_image.sh -e $(2) -r $(TARGET_DIR) -R $(BIN_DIR)/$(BINNAME).bin -b $(BIN_DIR) -c $$CDT_IPK -d $$OUT_DIR/$(IMG_PREFIX)-polecat-emmc-mfg-$(2)-$(1).bin 
 endef
 
 flashme:
