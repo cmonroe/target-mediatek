@@ -5,11 +5,11 @@
  */
 
 #include "mt7986a-smartrg-bonanza-peak.dtsi"
-//#include "mt7986a-smartrg-SDG-8632-power-limits-r1-RCM-AU-NZ.dtsi"
-//#include "mt7986a-smartrg-SDG-8632-power-limits-r2-IC-CA.dtsi"
-//#include "mt7986a-smartrg-SDG-8632-power-limits-r3-ETSI-GB.dtsi"
-//#include "mt7986a-smartrg-SDG-8632-power-limits-r4-ETSI.dtsi"
-//#include "mt7986a-smartrg-SDG-8632-power-limits-r5-FCC-US.dtsi"
+#include "mt7986a-smartrg-SDG-8632-power-limits-r1-RCM-AU-NZ.dtsi"
+#include "mt7986a-smartrg-SDG-8632-power-limits-r2-IC-CA.dtsi"
+#include "mt7986a-smartrg-SDG-8632-power-limits-r3-ETSI-GB.dtsi"
+#include "mt7986a-smartrg-SDG-8632-power-limits-r4-ETSI.dtsi"
+#include "mt7986a-smartrg-SDG-8632-power-limits-r5-FCC-US.dtsi"
 
 / {
 	model = "SmartRG SDG-8632";
