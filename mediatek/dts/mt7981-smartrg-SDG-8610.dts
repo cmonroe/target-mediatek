@@ -76,11 +76,45 @@
 			linux,code = <KEY_RESTART>;
 			gpios = <&pio 1 GPIO_ACTIVE_LOW>;
 		};
-		wps {
-			label = "wps";
-			linux,code = <KEY_WPS_BUTTON>;
-			gpios = <&pio 0 GPIO_ACTIVE_HIGH>;
+	};
+
+	leds {
+		compatible = "gpio-leds";
+
+		mux_sel {
+			label = "mux_sel";
+			gpios = <&pio 6 GPIO_ACTIVE_LOW>;
+			default-state = "on";
 		};
+
+		mux_oe {
+			label = "mux_oe";
+			gpios = <&pio 7 GPIO_ACTIVE_LOW>;
+			default-state = "on";
+		};
+
+		sfp_red {
+			label = "sfp_red";
+			gpios = <&pio 5 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+
+		sfp_green {
+			label = "sfp_green";
+			gpios = <&pio 4 GPIO_ACTIVE_HIGH>;
+			default-state = "off";
+		};
+	};
+
+	sfp1: sfp1 {
+		compatible = "sff,sfp";
+		i2c-bus = <&i2c0>;
+		los-gpios = <&pio 11 GPIO_ACTIVE_HIGH>;
+		mod-def0-gpios = <&pio 0 GPIO_ACTIVE_LOW>;
+		rate-select0-gpios = <&pio 12 GPIO_ACTIVE_HIGH>;
+		tx-disable-gpios = <&pio 9 GPIO_ACTIVE_HIGH>;
+		tx-fault-gpios = <&pio 10 GPIO_ACTIVE_HIGH>;
+		maximum-power-milliwatt = <3000>;
 	};
 };
 
@@ -94,8 +128,8 @@
 		compatible = "mediatek,eth-mac";
 		reg = <0>;
 
-		phy-mode = "2500base-x";
-		phy-handle = <&phy5>;
+		phy-mode = "rgmii";
+		phy-handle = <&phy12>;
 	};
 
 	gmac1: mac@1 {
@@ -106,6 +140,30 @@
 		phy-mode = "gmii";
 		phy-handle = <&int_gbe_phy>;
 	};
+
+	mux: mux-bus {
+		mux0: ethernet-mux@0 {
+			compatible = "mediatek,eth-mux";
+			reg = <0>;
+			label = "wan";
+
+			chan-sel-gpios = <&pio 6 GPIO_ACTIVE_HIGH>;
+			mod-def0-gpios = <&pio 0 GPIO_ACTIVE_LOW>;
+
+			channel0: channel@0 {
+				reg = <0>;
+				phy-mode = "rgmii";
+				phy-handle = <&phy12>;
+			};
+
+			channel1: channel@1 {
+				reg = <1>;
+				phy-mode = "1000base-x";
+				sfp = <&sfp1>;
+				managed = "in-band-status";
+			};
+		};
+	};
 };
 
 &mdio_bus {
@@ -113,12 +171,10 @@
 	reset-delay-us = <1500000>;
 	reset-post-delay-us = <1000000>;
 
-	phy5: ethernet-phy@5 {
-		/* GPY211 */
-		compatible = "maxlinear,gpy211", "ethernet-phy-ieee802.3-c45";
-		reg = <5>;
-
-		mxl,led-config = <0x0 0x70 0x80 0x0>;
+	phy12: ethernet-phy@12 {
+		/* PEF7071 */
+		compatible = "intel,phy11g", "ethernet-phy-ieee802.3-c22";
+		reg = <0xC>;
 	};
 };
 
@@ -127,6 +183,13 @@
 };
 
 &pio {
+	i2c0_pins: i2c0-pins {
+		mux {
+			function = "i2c";
+			groups =  "i2c0_1";
+		};
+	};
+
 	mmc0_pins_default: mmc0-pins-default {
 		mux {
 			function = "flash";
@@ -138,6 +201,27 @@
 		mux {
 			function = "flash";
 			groups = "emmc_45";
+		};
+	};
+
+	spi2_flash_pins: spi2-pins {
+		mux {
+			function = "spi";
+			groups = "spi2";
+			/* groups = "spi2", "spi2_wp_hold"; */
+		};
+
+		conf-pu {
+			/* pins = "SPI2_CS", "SPI2_HOLD", "SPI2_WP"; */
+			pins = "SPI2_CS";
+			drive-strength = <8>;
+			bias-pull-up = <103>;
+		};
+
+		conf-pd {
+			pins = "SPI2_CLK", "SPI2_MOSI", "SPI2_MISO";
+			drive-strength = <8>;
+			bias-pull-down = <103>;
 		};
 	};
 };
@@ -154,6 +238,51 @@
 	status = "okay";
 };
 
+&spi2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&spi2_flash_pins>;
+	status = "disabled";
+
+	flash@0 {
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		compatible = "jedec,spi-nor";
+		reg = <0>;
+
+		spi-max-frequency = <25000000>;
+		spi-tx-bus-width = <4>;
+		spi-rx-bus-width = <4>;
+
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			partition@00000 {
+				label = "BL2";
+				reg = <0x00000 0x0040000>;
+			};
+
+			partition@40000 {
+				label = "u-boot-env";
+				reg = <0x40000 0x0010000>;
+			};
+
+			factory: partition@50000 {
+				label = "Factory";
+				reg = <0x50000 0x00B0000>;
+			};
+
+			partition@100000 {
+				label = "FIP";
+				reg = <0x100000 0x0080000>;
+			};
+		};
+	};
+};
+
+
 &xhci {
 	vusb33-supply = <&reg_3p3v>;
 	vbus-supply = <&reg_5v>;
@@ -165,7 +294,39 @@
 };
 
 &usb_phy {
+	status = "disabled";
+};
+
+&i2c0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c0_pins>;
 	status = "okay";
+
+	system-leds {
+		compatible = "srg,sysled";
+		reg = <0x30>;
+
+		system_red {
+			label = "red";
+			reg = <1>;
+		};
+
+		sys_status: system_green {
+			label = "green";
+			reg = <2>;
+			linux,default-trigger = "timer";
+		};
+
+		system_blue {
+			label = "blue";
+			reg = <3>;
+		};
+
+		system_white {
+			label = "white";
+			reg = <4>;
+		};
+	};
 };
 
 &watchdog {
@@ -175,4 +336,5 @@
 &wifi {
 	status = "okay";
 	mediatek,eeprom-file-offset = <0x0>;
+	ieee80211-freq-limit = <2400000 2500000>, <5170000 5835000>;
 };
