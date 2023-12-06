@@ -71,6 +71,9 @@
 
 	gpio-keys {
 		compatible = "gpio-keys";
+		pinctrl-names = "default";
+		pinctrl-0 = <&button_pins>;
+
 		reset {
 			label = "reset";
 			linux,code = <KEY_RESTART>;
@@ -80,12 +83,6 @@
 
 	leds {
 		compatible = "gpio-leds";
-
-		mux_sel {
-			label = "mux_sel";
-			gpios = <&pio 6 GPIO_ACTIVE_LOW>;
-			default-state = "on";
-		};
 
 		mux_oe {
 			label = "mux_oe";
@@ -128,8 +125,8 @@
 		compatible = "mediatek,eth-mac";
 		reg = <0>;
 
-		phy-mode = "rgmii";
-		phy-handle = <&phy12>;
+		phy-mode = "sgmii";
+		phy-handle = <&phy24>;
 	};
 
 	gmac1: mac@1 {
@@ -147,13 +144,13 @@
 			reg = <0>;
 			label = "wan";
 
-			chan-sel-gpios = <&pio 6 GPIO_ACTIVE_HIGH>;
+			chan-sel-gpios = <&pio 6 GPIO_ACTIVE_LOW>;
 			mod-def0-gpios = <&pio 0 GPIO_ACTIVE_LOW>;
 
 			channel0: channel@0 {
 				reg = <0>;
-				phy-mode = "rgmii";
-				phy-handle = <&phy12>;
+				phy-mode = "sgmii";
+				phy-handle = <&phy24>;
 			};
 
 			channel1: channel@1 {
@@ -171,10 +168,10 @@
 	reset-delay-us = <1500000>;
 	reset-post-delay-us = <1000000>;
 
-	phy12: ethernet-phy@12 {
+	phy24: ethernet-phy@24 {
 		/* PEF7071 */
 		compatible = "intel,phy11g", "ethernet-phy-ieee802.3-c22";
-		reg = <0xC>;
+		reg = <0x18>;
 	};
 };
 
@@ -183,6 +180,11 @@
 };
 
 &pio {
+	button_pins: button-pins {
+		pins = "GPIO_RESET";
+		mediatek,pull-down-adv = <0>; /* bias-disable */
+	};
+
 	i2c0_pins: i2c0-pins {
 		mux {
 			function = "i2c";
