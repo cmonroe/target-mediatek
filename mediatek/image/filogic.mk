@@ -105,6 +105,23 @@ define Build/cetron-header
 	rm $@.tmp
 endef
 
+define Device/acelink_ew-7886cax
+  DEVICE_VENDOR := Acelink
+  DEVICE_MODEL := EW-7886CAX
+  DEVICE_DTS := mt7986a-acelink-ew-7886cax
+  DEVICE_DTS_DIR := ../dts
+  DEVICE_PACKAGES := kmod-mt7986-firmware mt7986-wo-firmware
+  UBINIZE_OPTS := -E 5
+  BLOCKSIZE := 128k
+  PAGESIZE := 2048
+  IMAGE_SIZE := 65536k
+  KERNEL_IN_UBI := 1
+  IMAGES += factory.bin
+  IMAGE/factory.bin := append-ubi | check-size $$$$(IMAGE_SIZE)
+  IMAGE/sysupgrade.bin := sysupgrade-tar | append-metadata
+endef
+TARGET_DEVICES += acelink_ew-7886cax
+
 define Device/acer_predator-w6
   DEVICE_VENDOR := Acer
   DEVICE_MODEL := Predator W6
@@ -255,6 +272,22 @@ define Device/cmcc_rax3000m
 endef
 TARGET_DEVICES += cmcc_rax3000m
 
+define Device/confiabits_mt7981
+  DEVICE_VENDOR := Confiabits
+  DEVICE_MODEL := MT7981
+  DEVICE_DTS := mt7981b-confiabits-mt7981
+  DEVICE_DTS_DIR := ../dts
+  SUPPORTED_DEVICES += mediatek,mt7981-spim-snand-2500wan-gmac2-rfb
+  UBINIZE_OPTS := -E 5
+  BLOCKSIZE := 128k
+  PAGESIZE := 2048
+  IMAGE_SIZE := 65536k
+  KERNEL_IN_UBI := 1
+  IMAGE/sysupgrade.bin := sysupgrade-tar | append-metadata
+  DEVICE_PACKAGES := kmod-usb3 kmod-mt7981-firmware
+endef
+TARGET_DEVICES += confiabits_mt7981
+
 define Device/cudy_wr3000-v1
   DEVICE_VENDOR := Cudy
   DEVICE_MODEL := WR3000
@@ -280,14 +313,10 @@ define Device/glinet_gl-mt2500
   DEVICE_DTS := mt7981b-glinet-gl-mt2500
   DEVICE_DTS_DIR := ../dts
   DEVICE_DTS_LOADADDR := 0x47000000
-  DEVICE_PACKAGES := kmod-usb3
+  DEVICE_PACKAGES := -kmod-mt7915e -wpad-basic-mbedtls e2fsprogs f2fsck mkf2fs kmod-usb3
   SUPPORTED_DEVICES += glinet,mt2500-emmc
   IMAGES := sysupgrade.bin
-  KERNEL := kernel-bin | lzma | \
-	fit lzma $$(KDIR)/image-$$(firstword $$(DEVICE_DTS)).dtb with-initrd | pad-to 64k
-  KERNEL_INITRAMFS := kernel-bin | lzma | \
-	fit lzma $$(KDIR)/image-$$(firstword $$(DEVICE_DTS)).dtb with-initrd | pad-to 64k
-  IMAGE/sysupgrade.bin := sysupgrade-tar | append-metadata
+  IMAGE/sysupgrade.bin := sysupgrade-tar | append-gl-metadata
 endef
 TARGET_DEVICES += glinet_gl-mt2500
 
@@ -750,7 +779,7 @@ define Device/zbtlink_zbt-z8102ax
   DEVICE_MODEL := ZBT-Z8102AX
   DEVICE_DTS := mt7981b-zbtlink-zbt-z8102ax
   DEVICE_DTS_DIR := ../dts
-  DEVICE_PACKAGES := kmod-mt7981-firmware mt7981-wo-firmware kmod-usb-net-qmi-wwan kmod-usb-serial-option
+  DEVICE_PACKAGES := kmod-mt7981-firmware mt7981-wo-firmware kmod-usb3 kmod-usb-net-qmi-wwan kmod-usb-serial-option
   KERNEL_IN_UBI := 1
   UBINIZE_OPTS := -E 5
   BLOCKSIZE := 128k
