@@ -84,22 +84,34 @@
 	leds {
 		compatible = "gpio-leds";
 
-		mux_oe {
-			label = "mux_oe";
-			gpios = <&pio 7 GPIO_ACTIVE_LOW>;
-			default-state = "on";
-		};
-
 		sfp_red {
-			label = "sfp_red";
-			gpios = <&pio 5 GPIO_ACTIVE_HIGH>;
-			default-state = "off";
+			color = <LED_COLOR_ID_RED>;
+			function = "sfp";
+			/* function-enumerator = <1>; */
+			gpios = <&pio 5 GPIO_ACTIVE_LOW>;
 		};
 
 		sfp_green {
-			label = "sfp_green";
-			gpios = <&pio 4 GPIO_ACTIVE_HIGH>;
-			default-state = "off";
+			color = <LED_COLOR_ID_GREEN>;
+			function = "sfp";
+			/* function-enumerator = <0>; */
+			gpios = <&pio 4 GPIO_ACTIVE_LOW>;
+		};
+
+		lan_green {
+			color = <LED_COLOR_ID_GREEN>;
+			function = "lan";
+			/* function-enumerator = <0>; */
+			gpios = <&pio 8 GPIO_ACTIVE_LOW>;
+			linux,default-trigger = "mdio-bus:00:1Gbps";
+		};
+
+		lan_amber {
+			color = <LED_COLOR_ID_AMBER>;
+			function = "lan";
+			/* function-enumerator = <1>; */
+			gpios = <&pio 13 GPIO_ACTIVE_LOW>;
+			linux,default-trigger = "mdio-bus:00:100Mbps";
 		};
 	};
 
@@ -206,6 +218,13 @@
 			function = "flash";
 			groups = "emmc_45";
 		};
+	};
+
+	mux_oe: mux-oe-hog {
+		gpio-hog;
+		gpios = <7 GPIO_ACTIVE_LOW>;
+		line-name = "mux-oe";
+		output-high;
 	};
 
 	spi2_flash_pins: spi2-pins {
