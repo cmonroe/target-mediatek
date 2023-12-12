@@ -477,6 +477,8 @@
 		reset-assert-us = <100000>;
 		reset-deassert-us = <221000>;
 		mdi-reversal = /bits/ 16 <1>;
+
+		aqr,led-config = <0xC000 0x60 0xC070>;
 	};
 
 	/* external Aquantia AQR113C */
@@ -487,6 +489,8 @@
 		reset-assert-us = <100000>;
 		reset-deassert-us = <221000>;
 		mdi-reversal = /bits/ 16 <1>;
+
+		aqr,led-config = <0xC000 0x60 0xC070>;
 	};
 };
 
