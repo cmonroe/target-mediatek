@@ -203,7 +203,7 @@
 		rate-select1-gpios = <&pio 33 GPIO_ACTIVE_HIGH>;
 		tx-disable-gpios = <&pio 36 GPIO_ACTIVE_HIGH>;
 		tx-fault-gpios = <&pio 37 GPIO_ACTIVE_HIGH>;
-		maximum-power-milliwatt = <3000>;
+		maximum-power-milliwatt = <4000>;
 	};
 
 	uart1: serial@11000100 {
