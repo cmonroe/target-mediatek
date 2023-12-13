@@ -96,23 +96,36 @@
 		};
 	};
 
-	gpio-leds {
-		compatible = "gpio-leds";
+	gpio-export {
+		compatible = "gpio-export";
 
 		bluetooth_reset {
-			label = "bluetooth_reset";
+			gpio-export,name = "bluetooth_reset";
+			gpio-export,output = <0>;
 			gpios = <&pio 20 GPIO_ACTIVE_HIGH>;
 		};
 
 		bluetooth_txrx_ctl {
-			label = "bluetooth_txrx_ctl";
+			gpio-export,name = "bluetooth_txrx_ctl";
+			gpio-export,output = <0>;
 			gpios = <&pio 74 GPIO_ACTIVE_HIGH>;
 		};
 
 		gps_enable {
-			label = "gps_enable";
+			gpio-export,name = "gps_enable";
+			gpio-export,output = <1>;
 			gpios = <&pio 9 GPIO_ACTIVE_LOW>;
 		};
+
+		usb_enable {
+			gpio-export,name = "usb_enable";
+			gpio-export,output = <1>;
+			gpios = <&pio 63 GPIO_ACTIVE_HIGH>;
+		};
+	};
+
+	gpio-leds {
+		compatible = "gpio-leds";
 
 		lan2_amber {
 			color = <LED_COLOR_ID_AMBER>;
@@ -166,12 +179,6 @@
 			color = <LED_COLOR_ID_RED>;
 			function = "sfp";
 			gpios = <&pio 70 GPIO_ACTIVE_HIGH>;
-		};
-
-		usb_enable {
-			label = "usb_enable";
-			gpios = <&pio 63 GPIO_ACTIVE_HIGH>;
-			default-state = "on";
 		};
 	};
 
