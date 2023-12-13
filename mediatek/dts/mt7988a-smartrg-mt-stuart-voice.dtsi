@@ -6,7 +6,7 @@
 
 / {
 	sound: sound_wm8960 {
-		compatible = "mediatek,mt79xx-wm8960-machine";
+		compatible = "mediatek,mt7986-wm8960-machine";
 		mediatek,platform = <&afe>;
 		mediatek,audio-codec = <&wm8960>;
 		audio-routing =
