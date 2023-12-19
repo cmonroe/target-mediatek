@@ -1,37 +1,53 @@
 --- a/drivers/net/phy/aquantia_main.c
 +++ b/drivers/net/phy/aquantia_main.c
-@@ -88,6 +88,10 @@
+@@ -88,6 +88,13 @@
  #define VEND1_GLOBAL_FW_ID_MAJOR		GENMASK(15, 8)
  #define VEND1_GLOBAL_FW_ID_MINOR		GENMASK(7, 0)
  
 +#define AQR_NUM_LEDS					3 
 +#define VEND1_GLOBAL_LED_PROVISIONING	0xc430
 +#define AQR_LED(x)						(VEND1_GLOBAL_LED_PROVISIONING + x)
++#define VEND1_GLOBAL_LED_DRIVE			0xc438
++#define VEND1_GLOBAL_LED_DRIVE_VDD		BIT(1)
++#define AQR_LED_DRIVE(x)				(VEND1_GLOBAL_LED_DRIVE + x)
 +
  #define VEND1_GLOBAL_GEN_STAT2			0xc831
  #define VEND1_GLOBAL_GEN_STAT2_OP_IN_PROG	BIT(15)
  
-@@ -620,6 +624,28 @@ int aqr107_config_mdi(struct phy_device
+@@ -620,6 +627,41 @@ int aqr107_config_mdi(struct phy_device
  			     PMAPMD_RSVD_VEND_PROV_MDI_CONF, val);
  }
  
 +static int aqr107_config_led(struct phy_device *phydev)
 +{
 +	struct device_node *node = phydev->mdio.dev.of_node;
-+	u32 led_regs[AQR_NUM_LEDS];
++	u32 led_cfg[AQR_NUM_LEDS];
++	u32 led_drive[AQR_NUM_LEDS];
 +	int i, ret;
 +
 +	if (!IS_ENABLED(CONFIG_OF_MDIO))
 +		return 0;
 +
-+	if (of_property_read_u32_array(node, "aqr,led-config", led_regs, AQR_NUM_LEDS))
++	if (!of_property_read_u32_array(node, "aqr,led-config", led_cfg, AQR_NUM_LEDS)) {
++		/* Write LED register values */
++		for (i = 0; i < AQR_NUM_LEDS; i++) {
++			ret = phy_write_mmd(phydev, MDIO_MMD_VEND1, AQR_LED(i), (u16)led_cfg[i]);
++			if (ret < 0)
++				return ret;
++		}
++	}
++
++	if (of_property_read_u32_array(node, "aqr,led-drive-vdd", led_drive, AQR_NUM_LEDS))
 +		return 0;
 +
 +	/* Write LED register values */
 +	for (i = 0; i < AQR_NUM_LEDS; i++) {
-+		ret = phy_write_mmd(phydev, MDIO_MMD_VEND1, AQR_LED(i), (u16)led_regs[i]);
-+		if (ret < 0)
-+			return ret;
++		if (led_drive[i]) {
++			ret = phy_set_bits_mmd(phydev, MDIO_MMD_VEND1, AQR_LED_DRIVE(i),
++					VEND1_GLOBAL_LED_DRIVE_VDD);
++			if (ret < 0)
++				return ret;
++		}
 +	}
 +
 +	return 0;
@@ -40,7 +56,7 @@
  static int aqr107_config_init(struct phy_device *phydev)
  {
  	int ret;
-@@ -646,6 +672,10 @@ static int aqr107_config_init(struct phy
+@@ -646,6 +688,10 @@ static int aqr107_config_init(struct phy
  
  	aqr107_config_mdi(phydev);
  
