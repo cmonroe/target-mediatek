@@ -147,11 +147,17 @@ define Build/srgImageRun
 	mkdir -p $(KDIR)/img/scripts
 	mkdir -p $(KDIR)/img/etc
 	mkdir -p $(KDIR)/img/cdt
+	mkdir -p $(KDIR)/img/allcdts
 	echo "###### metadata_start ######" > $(KDIR)/img/metadata
 	if [ $(1) ]; then \
-		CDT_IPK=`find $(wildcard $(PACKAGE_SUBDIRS)) -type f -name 'cdt-$(1)_*.ipk' -print -quit` ; \
-		cp $$CDT_IPK $(KDIR)/img/cdt ; \
-		echo "CDT=\"$(1)\"" >> $(KDIR)/img/metadata; \
+		if [ "$(1)" = "allcdts" ]; then\
+			find $(wildcard $(PACKAGE_SUBDIRS)) -type f -name 'cdt-*.ipk' -exec cp "{}" $(KDIR)/img/allcdts \; ; \
+			echo "CDT=all" >> $(KDIR)/img/metadata; \
+		else\
+			CDT_IPK=`find $(wildcard $(PACKAGE_SUBDIRS)) -type f -name 'cdt-$(1)_*.ipk' -print -quit` ; \
+			cp $$CDT_IPK $(KDIR)/img/cdt ; \
+			echo "CDT=\"$(1)\"" >> $(KDIR)/img/metadata; \
+		fi\
 	else \
 		echo "CDT= " >> $(KDIR)/img/metadata; \
 	fi
@@ -170,7 +176,7 @@ define Build/srgImageRun
 	$(CP) $(TARGET_DIR)/etc/openwrt_release $(KDIR)/img/etc/
 	$(CP) $(KDIR)/root.squashfs.run.bin $(KDIR)/img/root.squashfs.bin
 	tar czf $(KDIR)/$(BINNAME).runimg.tgz -C $(KDIR) img
-	$(STAGING_DIR_HOST)/bin/makeself.sh --sha256 --ssl-encrypt --ssl-pass-src file:$(TARGET_DIR)/usr/srg/scripts/pfsos $(KDIR)/img $(KDIR)/$(BINNAME).run "SOS self" ./self-upgrade.sh
+	$(STAGING_DIR_HOST)/bin/makeself.sh --lsm $(KDIR)/img/metadata --sha256 --ssl-encrypt --ssl-pass-src file:$(TARGET_DIR)/usr/srg/scripts/pfsos $(KDIR)/img $(KDIR)/$(BINNAME).run "SOS self" ./self-upgrade.sh
 	$(CP) $(KDIR)/$(BINNAME).run $(BIN_DIR)/$(BINNAME)$(if $(1),-$(1),).run
 	$(CP) $(KDIR)/$(BINNAME).runimg.tgz $(BIN_DIR)/$(BINNAME).runimg.tgz
 	@echo "RUNNING BuildPackage alt-os-image"
@@ -199,3 +205,7 @@ mini-cdt-image:
 	@echo "Build Mini CDT image $(CDT)"
 	bash -c "CDT=$(CDT) $(SRGRUN) miniCDT $(BINNAME) $(VERNAME)"
 
+allcdt-image:
+	@echo "Build ALL CDT image"
+	$(call Build/srgImageRun,"allcdts")
+	bash -c "$(SRGRUN) ALLCDT $(BINNAME) $(VERNAME)"
