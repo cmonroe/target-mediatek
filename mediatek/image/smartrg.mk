@@ -175,10 +175,10 @@ define Build/srgImageRun
 	$(CP) $(TARGET_DIR)/usr/srg/scripts/console_manage.sh $(KDIR)/img/scripts/
 	$(CP) $(TARGET_DIR)/etc/openwrt_release $(KDIR)/img/etc/
 	$(CP) $(KDIR)/root.squashfs.run.bin $(KDIR)/img/root.squashfs.bin
-	tar czf $(KDIR)/$(BINNAME).runimg.tgz -C $(KDIR) img
-	$(STAGING_DIR_HOST)/bin/makeself.sh --lsm $(KDIR)/img/metadata --sha256 --ssl-encrypt --ssl-pass-src file:$(TARGET_DIR)/usr/srg/scripts/pfsos $(KDIR)/img $(KDIR)/$(BINNAME).run "SOS self" ./self-upgrade.sh
+	tar cJf $(KDIR)/$(BINNAME).runimg.txz -C $(KDIR) img
+	$(STAGING_DIR_HOST)/bin/makeself.sh --xz --lsm $(KDIR)/img/metadata --sha256 --ssl-encrypt --ssl-pass-src file:$(TARGET_DIR)/usr/srg/scripts/pfsos $(KDIR)/img $(KDIR)/$(BINNAME).run "SOS self" ./self-upgrade.sh
 	$(CP) $(KDIR)/$(BINNAME).run $(BIN_DIR)/$(BINNAME)$(if $(1),-$(1),).run
-	$(CP) $(KDIR)/$(BINNAME).runimg.tgz $(BIN_DIR)/$(BINNAME).runimg.tgz
+	$(CP) $(KDIR)/$(BINNAME).runimg.txz $(BIN_DIR)/$(BINNAME).runimg.txz
 	@echo "RUNNING BuildPackage alt-os-image"
 	mkdir -p $(BIN_DIR)/alt-os-images
 	$(STAGING_DIR_HOST)/bin/alt-os-images/transition.sh -f plumeos -t sos -i $(BIN_DIR)/$(BINNAME)$(if $(1),-$(1),).run -d $(BIN_DIR)/alt-os-images
