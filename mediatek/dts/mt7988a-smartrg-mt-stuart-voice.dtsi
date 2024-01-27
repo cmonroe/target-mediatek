@@ -5,14 +5,14 @@
  */
 
 / {
-	sound: sound_wm8960 {
+	sound_wm8960 {
 		compatible = "mediatek,mt7986-wm8960-sound";
 		audio-routing =
 				"Headphone", "HP_L",
 				"Headphone", "HP_R",
 				"LINPUT1", "AMIC",
 				"RINPUT1", "AMIC";
-		status = "okay";
+		status = "disabled";
 
 		platform {
 			sound-dai = <&afe>;
@@ -22,9 +22,28 @@
 			sound-dai = <&wm8960>;
 		};
 	};
+
+	dummy_codec: dummy_codec {
+		compatible = "d2,slic-dummy-codec";
+	};
+
+	sound_si3218x {
+		compatible = "mediatek,mt7986-si3218x-sound";
+		status = "okay";
+
+		platform {
+			sound-dai = <&afe>;
+		};
+
+		codec {
+			sound-dai = <&dummy_codec>;
+		};
+	};
 };
 
 &afe {
+	compatible = "mediatek,mt7986-afe";
+
 	pinctrl-names = "default";
 	pinctrl-0 = <&pcm_pins>;
 	status = "okay";
@@ -60,7 +79,7 @@
 
 	slic: slic@0 {
 		compatible = "siliconlab,slic";
+		spi-max-frequency = <10000000>;
 		reg = <0>;
-		spi-max-frequency = <2000000>;
 	};
 };

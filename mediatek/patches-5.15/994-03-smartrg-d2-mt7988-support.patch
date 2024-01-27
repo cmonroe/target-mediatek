@@ -1,0 +1,251 @@
+--- a/sound/soc/codecs/Makefile
++++ b/sound/soc/codecs/Makefile
+@@ -538,6 +538,7 @@ obj-$(CONFIG_SND_SOC_SIGMADSP)	+= snd-so
+ obj-$(CONFIG_SND_SOC_SIGMADSP_I2C)	+= snd-soc-sigmadsp-i2c.o
+ obj-$(CONFIG_SND_SOC_SIGMADSP_REGMAP)	+= snd-soc-sigmadsp-regmap.o
+ obj-$(CONFIG_SND_SOC_SI476X)	+= snd-soc-si476x.o
++obj-$(CONFIG_SND_SOC_SLIC_DUMMY)	+= slic-dummy.o
+ obj-$(CONFIG_SND_SOC_SPDIF)	+= snd-soc-spdif-rx.o snd-soc-spdif-tx.o
+ obj-$(CONFIG_SND_SOC_SSM2305)	+= snd-soc-ssm2305.o
+ obj-$(CONFIG_SND_SOC_SSM2518)	+= snd-soc-ssm2518.o
+--- a/sound/soc/codecs/Kconfig
++++ b/sound/soc/codecs/Kconfig
+@@ -1953,4 +1953,7 @@ config SND_SOC_LPASS_TX_MACRO
+ 	select REGMAP_MMIO
+ 	tristate "Qualcomm TX Macro in LPASS(Low Power Audio SubSystem)"
+ 
++config SND_SOC_SLIC_DUMMY
++	tristate "SLIC dummy codec driver"
++
+ endmenu
+--- a/sound/soc/mediatek/mt7986/mt7986-si3218x.c
++++ b/sound/soc/mediatek/mt7986/mt7986-si3218x.c
+@@ -95,8 +95,13 @@ static int mt7986_si3218x_init(struct sn
+ 			   FIELD_PREP(ETDM_BIT_LEN_MASK, 16 - 1));
+ 	regmap_update_bits(afe->regmap, ETDM_IN5_CON0, ETDM_WRD_LEN_MASK,
+ 			   FIELD_PREP(ETDM_WRD_LEN_MASK, 16 - 1));
++#ifdef PCM_16K
++	regmap_update_bits(afe->regmap, ETDM_IN5_CON0, ETDM_CH_NUM_MASK,
++			   FIELD_PREP(ETDM_CH_NUM_MASK, 8));
++#else
+ 	regmap_update_bits(afe->regmap, ETDM_IN5_CON0, ETDM_CH_NUM_MASK,
+ 			   FIELD_PREP(ETDM_CH_NUM_MASK, 4 - 1));
++#endif
+ 	regmap_update_bits(afe->regmap, ETDM_IN5_CON0, RELATCH_SRC_MASK,
+ 			   FIELD_PREP(RELATCH_SRC_MASK, APLL_CLK));
+ 
+@@ -104,6 +109,7 @@ static int mt7986_si3218x_init(struct sn
+ 	regmap_update_bits(afe->regmap, ETDM_IN5_CON2, IN_CLK_SRC_MASK,
+ 			   IN_CLK_SRC(APLL_CLK));
+ 
++#ifdef PCM_16K
+ 	/* set ETDM_IN5_CON3 */
+ 	regmap_update_bits(afe->regmap, ETDM_IN5_CON3, IN_SEL_FS_MASK,
+ 			   IN_SEL_FS(ETDM_FS_16K));
+@@ -113,6 +119,17 @@ static int mt7986_si3218x_init(struct sn
+ 			   IN_CLK_INV);
+ 	regmap_update_bits(afe->regmap, ETDM_IN5_CON4, IN_RELATCH_MASK,
+ 			   IN_RELATCH(AFE_FS_16K));
++#else
++	/* set ETDM_IN5_CON3 */
++	regmap_update_bits(afe->regmap, ETDM_IN5_CON3, IN_SEL_FS_MASK,
++			   IN_SEL_FS(ETDM_FS_8K));
++
++	/* set ETDM_IN5_CON4 */
++	regmap_update_bits(afe->regmap, ETDM_IN5_CON4, IN_CLK_INV_MASK,
++			   IN_CLK_INV);
++	regmap_update_bits(afe->regmap, ETDM_IN5_CON4, IN_RELATCH_MASK,
++			   IN_RELATCH(AFE_FS_8K));
++#endif
+ 
+ 	/* set ETDM_OUT5_CON0 */
+ 	regmap_update_bits(afe->regmap, ETDM_OUT5_CON0, ETDM_FMT_MASK,
+@@ -121,11 +138,17 @@ static int mt7986_si3218x_init(struct sn
+ 			   FIELD_PREP(ETDM_BIT_LEN_MASK, 16 - 1));
+ 	regmap_update_bits(afe->regmap, ETDM_OUT5_CON0, ETDM_WRD_LEN_MASK,
+ 			   FIELD_PREP(ETDM_WRD_LEN_MASK, 16 - 1));
++#ifdef PCM_16K
++	regmap_update_bits(afe->regmap, ETDM_OUT5_CON0, ETDM_CH_NUM_MASK,
++			   FIELD_PREP(ETDM_CH_NUM_MASK, 8));
++#else
+ 	regmap_update_bits(afe->regmap, ETDM_OUT5_CON0, ETDM_CH_NUM_MASK,
+ 			   FIELD_PREP(ETDM_CH_NUM_MASK, 4 - 1));
++#endif
+ 	regmap_update_bits(afe->regmap, ETDM_OUT5_CON0, RELATCH_SRC_MASK,
+ 			   FIELD_PREP(RELATCH_SRC_MASK, APLL_CLK));
+ 
++#ifdef PCM_16K
+ 	/* set ETDM_OUT5_CON4 */
+ 	regmap_update_bits(afe->regmap, ETDM_OUT5_CON4, OUT_SEL_FS_MASK,
+ 			   OUT_SEL_FS(ETDM_FS_16K));
+@@ -133,16 +156,29 @@ static int mt7986_si3218x_init(struct sn
+ 			   OUT_CLK_SRC(APLL_CLK));
+ 	regmap_update_bits(afe->regmap, ETDM_OUT5_CON4, OUT_RELATCH_MASK,
+ 			   OUT_RELATCH(AFE_FS_16K));
++#else
++	/* set ETDM_OUT5_CON4 */
++	regmap_update_bits(afe->regmap, ETDM_OUT5_CON4, OUT_SEL_FS_MASK,
++			   OUT_SEL_FS(ETDM_FS_8K));
++	regmap_update_bits(afe->regmap, ETDM_OUT5_CON4, OUT_CLK_SRC_MASK,
++			   OUT_CLK_SRC(APLL_CLK));
++	regmap_update_bits(afe->regmap, ETDM_OUT5_CON4, OUT_RELATCH_MASK,
++			   OUT_RELATCH(AFE_FS_8K));
++#endif
+ 
+ 	/* set ETDM_OUT5_CON5 */
+ 	regmap_update_bits(afe->regmap, ETDM_OUT5_CON5, OUT_CLK_INV_MASK,
+ 			   OUT_CLK_INV);
++#ifdef PCM_16K
+ 	regmap_update_bits(afe->regmap, ETDM_OUT5_CON5, ETDM_CLK_DIV_MASK,
+ 			   ETDM_CLK_DIV);
++#endif
+ 
++#if 0 // D2 MOD disable external loopback
+ 	/* set external loopback */
+ 	regmap_update_bits(afe->regmap, ETDM_4_7_COWORK_CON0, OUT_SEL_MASK,
+ 			   OUT_SEL(ETDM_IN5));
++#endif
+ 
+ 	/* enable ETDM */
+ 	regmap_update_bits(afe->regmap, ETDM_IN5_CON0, ETDM_EN_MASK,
+@@ -165,7 +201,7 @@ SND_SOC_DAILINK_DEFS(capture,
+ 
+ SND_SOC_DAILINK_DEFS(codec,
+ 	DAILINK_COMP_ARRAY(COMP_CPU("ETDM")),
+-	DAILINK_COMP_ARRAY(COMP_CODEC(NULL, "proslic_spi-aif")),
++	DAILINK_COMP_ARRAY(COMP_CODEC(NULL, "slic-dummy-aif")),
+ 	DAILINK_COMP_ARRAY(COMP_EMPTY()));
+ 
+ static struct snd_soc_dai_link mt7986_si3218x_dai_links[] = {
+@@ -234,6 +270,7 @@ static int mt7986_si3218x_machine_probe(
+ 		return -EINVAL;
+ 	}
+ 
++	printk("%s[%d]\n", __func__, __LINE__);
+ 	for_each_card_prelinks(card, i, dai_link) {
+ 		if (dai_link->platforms->name)
+ 			continue;
+--- a/sound/soc/codecs/slic-dummy.c
++++ b/sound/soc/codecs/slic-dummy.c
+@@ -102,9 +102,9 @@ static struct snd_soc_dai_driver dummy_c
+ 		.formats = STUB_FORMATS,
+ 	},
+ 	/* dai properties */
+-	.symmetric_rates = 1,
++	.symmetric_rate = 1,
+ 	.symmetric_channels = 1,
+-	.symmetric_samplebits = 1,
++	.symmetric_sample_bits = 1,
+ 	/* dai operations */
+ 	.ops = &dummy_component_aif_ops,
+ };
+--- a/sound/soc/mediatek/mt7986/mt7986-afe-common.h
++++ b/sound/soc/mediatek/mt7986/mt7986-afe-common.h
+@@ -16,6 +16,10 @@
+ #include <linux/regmap.h>
+ #include "../common/mtk-base-afe.h"
+ 
++#if 0	// PCM_8K
++#define PCM_16K
++#endif
++
+ enum {
+ 	MT7986_MEMIF_DL1,
+ 	MT7986_MEMIF_VUL12,
+--- a/sound/soc/mediatek/mt7986/mt7986-dai-etdm.c
++++ b/sound/soc/mediatek/mt7986/mt7986-dai-etdm.c
+@@ -187,7 +187,11 @@ static int mtk_dai_etdm_config(struct mt
+ 	mask |= ETDM_FMT_MASK;
+ 	val |= FIELD_PREP(ETDM_FMT_MASK, etdm_data->format);
+ 	mask |= ETDM_CH_NUM_MASK;
++#if 1 // D2 MOD 
++	val |= FIELD_PREP(ETDM_CH_NUM_MASK, 8);;
++#else
+ 	val |= FIELD_PREP(ETDM_CH_NUM_MASK, get_etdm_ch_fixup(channels) - 1);
++#endif
+ 	mask |= RELATCH_SRC_MASK;
+ 	val |= FIELD_PREP(RELATCH_SRC_MASK, APLL_CLK);
+ 
+@@ -204,9 +208,31 @@ static int mtk_dai_etdm_config(struct mt
+ 		regmap_update_bits(afe->regmap, ETDM_OUT5_CON4,
+ 				   OUT_SEL_FS_MASK, OUT_SEL_FS(etdm_rate));
+ 
++#ifdef PCM_16K
+ 		/* set ETDM_OUT5_CON5 */
+ 		regmap_update_bits(afe->regmap, ETDM_OUT5_CON5,
+ 				   ETDM_CLK_DIV_MASK, ETDM_CLK_DIV);
++#endif
++#if 0
++        if (MTK_ETDM_RATE_8K == etdm_rate) {
++            printk("%s %d D2 debug PCM STREAM PLAYBACK set 8K etdm rate \n", __func__, __LINE__);
++        }
++        else if (MTK_ETDM_RATE_16K == etdm_rate) {
++            printk("%s %d D2 debug PCM STREAM PLAYBACK set 16K etdm rate, channel: (%d) %d \n", __func__, __LINE__, channels, get_etdm_ch_fixup(channels));
++        }
++        else {
++            printk("%s %d D2 debug PCM STREAM PLAYBACK set %d (WARNING) etdm rate \n", __func__, __LINE__, etdm_rate);
++        }
++        if (0 == afe_rate) {
++            printk("%s %d D2 debug PCM STREAM PLAYBACK set 8K afe rate \n", __func__, __LINE__);
++        }
++        else if (4 == afe_rate) {
++            printk("%s %d D2 debug PCM STREAM PLAYBACK set 16K afe rate \n", __func__, __LINE__);
++        }
++        else {
++            printk("%s %d D2 debug PCM STREAM PLAYBACK set %d (WARNING) afe rate \n", __func__, __LINE__, afe_rate);
++        }
++#endif
+ 		break;
+ 	case SNDRV_PCM_STREAM_CAPTURE:
+ 		/* set ETDM_IN5_CON0 */
+@@ -225,6 +251,26 @@ static int mtk_dai_etdm_config(struct mt
+ 		/* set ETDM_IN5_CON4 */
+ 		regmap_update_bits(afe->regmap, ETDM_IN5_CON4,
+ 				   IN_RELATCH_MASK, IN_RELATCH(afe_rate));
++#if 0 // D2 MOD 
++        if (MTK_ETDM_RATE_8K == etdm_rate) {
++            printk("%s %d D2 debug PCM STREAM CAPTURE set 8K etdm rate \n", __func__, __LINE__);
++        }
++        else if (MTK_ETDM_RATE_16K == etdm_rate) {
++            printk("%s %d D2 debug PCM STREAM CAPTURE set 16K etdm rate, channels: (%d) %d \n", __func__, __LINE__, channels, get_etdm_ch_fixup(channels));
++        }
++        else {
++            printk("%s %d D2 debug PCM STREAM CAPTURE set %d (WARNING) etdm rate \n", __func__, __LINE__, etdm_rate);
++        }
++        if (0 == afe_rate) {
++            printk("%s %d D2 debug PCM STREAM CAPTURE set 8K afe rate \n", __func__, __LINE__);
++        }
++        else if (4 == afe_rate) {
++            printk("%s %d D2 debug PCM STREAM CAPTURE set 16K afe rate \n", __func__, __LINE__);
++        }
++        else {
++            printk("%s %d D2 debug PCM STREAM CAPTURE set %d (WARNING) afe rate \n", __func__, __LINE__, afe_rate);
++        }
++#endif
+ 		break;
+ 	default:
+ 		break;
+@@ -269,17 +315,23 @@ static int mtk_dai_etdm_trigger(struct s
+ 	switch (cmd) {
+ 	case SNDRV_PCM_TRIGGER_START:
+ 	case SNDRV_PCM_TRIGGER_RESUME:
++        printk("%s %d D2 debug TRIGGER %s\n", __func__, __LINE__, (SNDRV_PCM_TRIGGER_START == cmd) ? "START" : "RESUME" );
++#if 1 // D2 MOD
+ 		regmap_update_bits(afe->regmap, ETDM_IN5_CON0, ETDM_EN_MASK,
+ 				   ETDM_EN);
+ 		regmap_update_bits(afe->regmap, ETDM_OUT5_CON0, ETDM_EN_MASK,
+ 				   ETDM_EN);
++#endif
+ 		break;
+ 	case SNDRV_PCM_TRIGGER_STOP:
+ 	case SNDRV_PCM_TRIGGER_SUSPEND:
++        printk("%s %d D2 debug TRIGGER %s\n", __func__, __LINE__, (SNDRV_PCM_TRIGGER_STOP == cmd) ? "STOP" : "SUSPEND");
++#if 1 // D2 MOD
+ 		regmap_update_bits(afe->regmap, ETDM_IN5_CON0, ETDM_EN_MASK,
+ 				   0);
+ 		regmap_update_bits(afe->regmap, ETDM_OUT5_CON0, ETDM_EN_MASK,
+ 				   0);
++#endif
+ 		break;
+ 	default:
+ 		break;
