@@ -62,24 +62,13 @@
  	pinctrl-0 = <&spic1_pins>;
  	status = "okay";
 +    slic: slic@0 {
-+        compatible = "siliconlab,slic";
++        compatible = "silabs,si3210";
 +        reg = <0>;
 +        spi-max-frequency = <2000000>;
 +    };
  };
  
  &ssusb {
---- a/drivers/spi/spidev.c
-+++ b/drivers/spi/spidev.c
-@@ -708,7 +708,7 @@ static const struct of_device_id spidev_
- 	{ .compatible = "cisco,spi-petra" },
- 	{ .compatible = "micron,spi-authenta" },
- 	{ .compatible = "silabs,em3581" },
--	{ .compatible = "silabs,si3210" },
-+	{ .compatible = "siliconlab,slic" },
- 	{},
- };
- MODULE_DEVICE_TABLE(of, spidev_dt_ids);
 --- a/sound/soc/codecs/wm8960.c
 +++ b/sound/soc/codecs/wm8960.c
 @@ -1428,11 +1428,14 @@ static int wm8960_i2c_probe(struct i2c_c

@@ -78,7 +78,7 @@
 	status = "okay";
 
 	slic: slic@0 {
-		compatible = "siliconlab,slic";
+		compatible = "silabs,si3210";
 		spi-max-frequency = <10000000>;
 		reg = <0>;
 	};
