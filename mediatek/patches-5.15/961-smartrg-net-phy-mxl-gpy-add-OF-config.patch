@@ -20,7 +20,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  
  /* WoL */
  #define VPSPEC2_WOL_CTL		0x0E06
-@@ -112,6 +113,34 @@ static int gpy_led_write(struct phy_devi
+@@ -116,6 +117,34 @@ static int gpy_led_write(struct phy_devi
  	return 0;
  }
  
@@ -55,7 +55,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  static int gpy_config_init(struct phy_device *phydev)
  {
  	int ret;
-@@ -126,7 +155,11 @@ static int gpy_config_init(struct phy_de
+@@ -130,7 +159,11 @@ static int gpy_config_init(struct phy_de
  	if (ret < 0)
  		return ret;
  

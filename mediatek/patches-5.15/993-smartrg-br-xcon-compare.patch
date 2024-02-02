@@ -7,11 +7,9 @@ Subject: [PATCH] OWRT-8586 xcon wan override
  net/bridge/br_switchdev.c | 9 +++++++++
  1 file changed, 9 insertions(+)
 
-diff --git a/net/bridge/br_switchdev.c b/net/bridge/br_switchdev.c
-index 08bef44..43fa342 100644
 --- a/net/bridge/br_switchdev.c
 +++ b/net/bridge/br_switchdev.c
-@@ -65,6 +65,15 @@ bool nbp_switchdev_allowed_egress(const struct net_bridge_port *p,
+@@ -65,6 +65,15 @@ bool nbp_switchdev_allowed_egress(const
  {
  	struct br_input_skb_cb *cb = BR_INPUT_SKB_CB(skb);
  
@@ -27,6 +25,3 @@ index 08bef44..43fa342 100644
  	return !test_bit(p->hwdom, &cb->fwd_hwdoms) &&
  		(!skb->offload_fwd_mark || cb->src_hwdom != p->hwdom);
  }
--- 
-2.30.2
-

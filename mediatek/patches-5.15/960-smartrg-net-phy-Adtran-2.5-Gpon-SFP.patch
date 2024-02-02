@@ -77,9 +77,9 @@ Subject: [PATCH] OWRT-7643 Adtran quirks added
 -		.fixup = sfp_fixup_long_startup,
 +		.fixup = sfp_fixup_gpon_xxx,
  	}, {
- 		.vendor = "HALNy",
- 		.part = "HL-GSFP",
-@@ -381,7 +410,7 @@ static const struct sfp_quirk sfp_quirks
+ 		// Fiberstore GPON-ONU-34-20BI can operate at 2500base-X, but report 1.2GBd
+ 		// NRZ in their EEPROM
+@@ -388,7 +417,7 @@ static const struct sfp_quirk sfp_quirks
  		.vendor = "HUAWEI",
  		.part = "MA5671A",
  		.modes = sfp_quirk_2500basex,
@@ -88,7 +88,7 @@ Subject: [PATCH] OWRT-7643 Adtran quirks added
  	}, {
  		// OEM SFP-GE-T is 1000Base-T module
  		.vendor = "OEM",
-@@ -397,7 +426,37 @@ static const struct sfp_quirk sfp_quirks
+@@ -404,7 +433,37 @@ static const struct sfp_quirk sfp_quirks
  		.vendor = "UBNT",
  		.part = "UF-INSTANT",
  		.modes = sfp_quirk_ubnt_uf_instant,

@@ -1,21 +1,29 @@
---- a/drivers/net/phy/aquantia_main.c
-+++ b/drivers/net/phy/aquantia_main.c
-@@ -88,6 +88,13 @@
- #define VEND1_GLOBAL_FW_ID_MAJOR		GENMASK(15, 8)
- #define VEND1_GLOBAL_FW_ID_MINOR		GENMASK(7, 0)
+--- a/drivers/net/phy/aquantia/aquantia_main.c
++++ b/drivers/net/phy/aquantia/aquantia_main.c
+@@ -12,6 +12,7 @@
+ #include <linux/delay.h>
+ #include <linux/bitfield.h>
+ #include <linux/phy.h>
++#include <linux/of.h>
  
-+#define AQR_NUM_LEDS					3 
+ #include "aquantia.h"
+ 
+@@ -52,6 +53,13 @@
+ #define MDIO_AN_VEND_PROV_DOWNSHIFT_MASK	GENMASK(3, 0)
+ #define MDIO_AN_VEND_PROV_DOWNSHIFT_DFLT	4
+ 
++#define AQR_NUM_LEDS					3
 +#define VEND1_GLOBAL_LED_PROVISIONING	0xc430
 +#define AQR_LED(x)						(VEND1_GLOBAL_LED_PROVISIONING + x)
 +#define VEND1_GLOBAL_LED_DRIVE			0xc438
 +#define VEND1_GLOBAL_LED_DRIVE_VDD		BIT(1)
 +#define AQR_LED_DRIVE(x)				(VEND1_GLOBAL_LED_DRIVE + x)
 +
- #define VEND1_GLOBAL_GEN_STAT2			0xc831
- #define VEND1_GLOBAL_GEN_STAT2_OP_IN_PROG	BIT(15)
- 
-@@ -620,6 +627,41 @@ int aqr107_config_mdi(struct phy_device
- 			     PMAPMD_RSVD_VEND_PROV_MDI_CONF, val);
+ #define MDIO_AN_TX_VEND_STATUS1			0xc800
+ #define MDIO_AN_TX_VEND_STATUS1_RATE_MASK	GENMASK(3, 1)
+ #define MDIO_AN_TX_VEND_STATUS1_10BASET		0
+@@ -628,6 +636,41 @@ static void aqr107_chip_info(struct phy_
+ 		   fw_major, fw_minor, build_id, prov_id);
  }
  
 +static int aqr107_config_led(struct phy_device *phydev)
@@ -56,9 +64,9 @@
  static int aqr107_config_init(struct phy_device *phydev)
  {
  	int ret;
-@@ -646,6 +688,10 @@ static int aqr107_config_init(struct phy
- 
- 	aqr107_config_mdi(phydev);
+@@ -651,6 +694,10 @@ static int aqr107_config_init(struct phy
+ 	if (!ret)
+ 		aqr107_chip_info(phydev);
  
 +	ret = aqr107_config_led(phydev);
 +	if (ret < 0)

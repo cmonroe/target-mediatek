@@ -1,7 +1,5 @@
-Index: linux-5.15.118/net/bridge/br_switchdev.c
-===================================================================
---- linux-5.15.118.orig/net/bridge/br_switchdev.c
-+++ linux-5.15.118/net/bridge/br_switchdev.c
+--- a/net/bridge/br_switchdev.c
++++ b/net/bridge/br_switchdev.c
 @@ -350,3 +350,42 @@ void br_switchdev_port_unoffload(struct
  
  	nbp_switchdev_del(p);
@@ -45,10 +43,8 @@ Index: linux-5.15.118/net/bridge/br_switchdev.c
 +		nbp_switchdev_hwdom_put(p);
 +}
 +
-Index: linux-5.15.118/net/bridge/br_sysfs_if.c
-===================================================================
---- linux-5.15.118.orig/net/bridge/br_sysfs_if.c
-+++ linux-5.15.118/net/bridge/br_sysfs_if.c
+--- a/net/bridge/br_sysfs_if.c
++++ b/net/bridge/br_sysfs_if.c
 @@ -81,6 +81,31 @@ static int store_flag(struct net_bridge_
  	return 0;
  }
@@ -90,10 +86,8 @@ Index: linux-5.15.118/net/bridge/br_sysfs_if.c
  	&brport_attr_path_cost,
  	&brport_attr_priority,
  	&brport_attr_port_id,
-Index: linux-5.15.118/net/dsa/slave.c
-===================================================================
---- linux-5.15.118.orig/net/dsa/slave.c
-+++ linux-5.15.118/net/dsa/slave.c
+--- a/net/dsa/slave.c
++++ b/net/dsa/slave.c
 @@ -2268,6 +2268,11 @@ dsa_slave_prechangeupper_sanity_check(st
  	return NOTIFY_DONE;
  }

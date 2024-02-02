@@ -14,7 +14,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 
 --- a/drivers/net/phy/mxl-gpy.c
 +++ b/drivers/net/phy/mxl-gpy.c
-@@ -334,6 +334,8 @@ static int gpy_config_aneg(struct phy_de
+@@ -338,6 +338,8 @@ static int gpy_config_aneg(struct phy_de
  	if (phydev->state != PHY_UP)
  		return 0;
  
@@ -23,7 +23,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	ret = phy_read_poll_timeout(phydev, MII_BMSR, ret, ret & BMSR_LSTATUS,
  				    20000, 4000000, false);
  	if (ret == -ETIMEDOUT)
-@@ -346,6 +348,35 @@ static int gpy_config_aneg(struct phy_de
+@@ -350,6 +352,35 @@ static int gpy_config_aneg(struct phy_de
  			      VSPEC1_SGMII_CTRL_ANRS, VSPEC1_SGMII_CTRL_ANRS);
  }
  
@@ -59,7 +59,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  static void gpy_update_interface(struct phy_device *phydev)
  {
  	int ret;
-@@ -614,6 +645,7 @@ static struct phy_driver gpy_drivers[] =
+@@ -618,6 +649,7 @@ static struct phy_driver gpy_drivers[] =
  		.set_wol	= gpy_set_wol,
  		.get_wol	= gpy_get_wol,
  		.set_loopback	= gpy_loopback,
@@ -67,7 +67,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	},
  	{
  		.phy_id		= PHY_ID_GPY115B,
-@@ -632,6 +664,7 @@ static struct phy_driver gpy_drivers[] =
+@@ -636,6 +668,7 @@ static struct phy_driver gpy_drivers[] =
  		.set_wol	= gpy_set_wol,
  		.get_wol	= gpy_get_wol,
  		.set_loopback	= gpy115_loopback,
@@ -75,7 +75,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	},
  	{
  		PHY_ID_MATCH_MODEL(PHY_ID_GPY115C),
-@@ -649,6 +682,7 @@ static struct phy_driver gpy_drivers[] =
+@@ -653,6 +686,7 @@ static struct phy_driver gpy_drivers[] =
  		.set_wol	= gpy_set_wol,
  		.get_wol	= gpy_get_wol,
  		.set_loopback	= gpy115_loopback,
@@ -83,7 +83,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	},
  	{
  		.phy_id		= PHY_ID_GPY211B,
-@@ -667,6 +701,7 @@ static struct phy_driver gpy_drivers[] =
+@@ -671,6 +705,7 @@ static struct phy_driver gpy_drivers[] =
  		.set_wol	= gpy_set_wol,
  		.get_wol	= gpy_get_wol,
  		.set_loopback	= gpy_loopback,
@@ -91,7 +91,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	},
  	{
  		PHY_ID_MATCH_MODEL(PHY_ID_GPY211C),
-@@ -684,6 +719,7 @@ static struct phy_driver gpy_drivers[] =
+@@ -688,6 +723,7 @@ static struct phy_driver gpy_drivers[] =
  		.set_wol	= gpy_set_wol,
  		.get_wol	= gpy_get_wol,
  		.set_loopback	= gpy_loopback,
@@ -99,7 +99,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	},
  	{
  		.phy_id		= PHY_ID_GPY212B,
-@@ -702,6 +738,7 @@ static struct phy_driver gpy_drivers[] =
+@@ -706,6 +742,7 @@ static struct phy_driver gpy_drivers[] =
  		.set_wol	= gpy_set_wol,
  		.get_wol	= gpy_get_wol,
  		.set_loopback	= gpy_loopback,
@@ -107,7 +107,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	},
  	{
  		PHY_ID_MATCH_MODEL(PHY_ID_GPY212C),
-@@ -719,6 +756,7 @@ static struct phy_driver gpy_drivers[] =
+@@ -723,6 +760,7 @@ static struct phy_driver gpy_drivers[] =
  		.set_wol	= gpy_set_wol,
  		.get_wol	= gpy_get_wol,
  		.set_loopback	= gpy_loopback,
@@ -115,7 +115,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	},
  	{
  		.phy_id		= PHY_ID_GPY215B,
-@@ -737,6 +775,7 @@ static struct phy_driver gpy_drivers[] =
+@@ -741,6 +779,7 @@ static struct phy_driver gpy_drivers[] =
  		.set_wol	= gpy_set_wol,
  		.get_wol	= gpy_get_wol,
  		.set_loopback	= gpy_loopback,
@@ -123,7 +123,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	},
  	{
  		PHY_ID_MATCH_MODEL(PHY_ID_GPY215C),
-@@ -754,6 +793,7 @@ static struct phy_driver gpy_drivers[] =
+@@ -758,6 +797,7 @@ static struct phy_driver gpy_drivers[] =
  		.set_wol	= gpy_set_wol,
  		.get_wol	= gpy_get_wol,
  		.set_loopback	= gpy_loopback,
@@ -131,7 +131,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	},
  	{
  		PHY_ID_MATCH_MODEL(PHY_ID_GPY241B),
-@@ -771,6 +811,7 @@ static struct phy_driver gpy_drivers[] =
+@@ -775,6 +815,7 @@ static struct phy_driver gpy_drivers[] =
  		.set_wol	= gpy_set_wol,
  		.get_wol	= gpy_get_wol,
  		.set_loopback	= gpy_loopback,
@@ -139,7 +139,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	},
  	{
  		PHY_ID_MATCH_MODEL(PHY_ID_GPY241BM),
-@@ -788,6 +829,7 @@ static struct phy_driver gpy_drivers[] =
+@@ -792,6 +833,7 @@ static struct phy_driver gpy_drivers[] =
  		.set_wol	= gpy_set_wol,
  		.get_wol	= gpy_get_wol,
  		.set_loopback	= gpy_loopback,
@@ -147,7 +147,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	},
  	{
  		PHY_ID_MATCH_MODEL(PHY_ID_GPY245B),
-@@ -805,6 +847,7 @@ static struct phy_driver gpy_drivers[] =
+@@ -809,6 +851,7 @@ static struct phy_driver gpy_drivers[] =
  		.set_wol	= gpy_set_wol,
  		.get_wol	= gpy_get_wol,
  		.set_loopback	= gpy_loopback,

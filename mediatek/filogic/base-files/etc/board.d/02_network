@@ -24,6 +24,7 @@ mediatek_setup_interfaces()
 		ucidef_set_interfaces_lan_wan "lan1 lan2 lan3" wan
 		;;
 	asus,tuf-ax4200|\
+	jdcloud,re-cp-03|\
 	mediatek,mt7981-rfb|\
 	zbtlink,zbt-z8102ax)
 		ucidef_set_interfaces_lan_wan "lan1 lan2 lan3 lan4" eth1
@@ -38,6 +39,9 @@ mediatek_setup_interfaces()
 	h3c,magic-nx30-pro|\
 	zbtlink,zbt-z8103ax)
 		ucidef_set_interfaces_lan_wan "lan1 lan2 lan3" eth1
+		;;
+	comfast,cf-e393ax)
+		ucidef_set_interfaces_lan_wan "lan1" eth1
 		;;
 	glinet,gl-mt2500|\
 	glinet,gl-mt3000)
@@ -75,7 +79,6 @@ mediatek_setup_interfaces()
 		;;
 	xiaomi,mi-router-ax3000t|\
 	xiaomi,mi-router-ax3000t-ubootmod|\
-	xiaomi,mi-router-wr30u-112m-nmbm|\
 	xiaomi,mi-router-wr30u-stock|\
 	xiaomi,mi-router-wr30u-ubootmod|\
 	xiaomi,redmi-router-ax6000-stock|\
@@ -135,6 +138,11 @@ mediatek_setup_macs()
 		lan_mac=$(macaddr_add "$wan_mac" 1)
 		label_mac=$wan_mac
 		;;
+	jdcloud,re-cp-03)
+		wan_mac=$(mmc_get_mac_binary factory 0x2a)
+		lan_mac=$(mmc_get_mac_binary factory 0x24)
+		label_mac=$lan_mac
+		;;
 	mercusys,mr90x-v1)
 		label_mac=$(get_mac_binary "/tmp/tp_data/default-mac" 0)
 		lan_mac=$label_mac
@@ -158,7 +166,6 @@ mediatek_setup_macs()
 		;;
 	xiaomi,mi-router-ax3000t|\
 	xiaomi,mi-router-ax3000t-ubootmod|\
-	xiaomi,mi-router-wr30u-112m-nmbm|\
 	xiaomi,mi-router-wr30u-stock|\
 	xiaomi,mi-router-wr30u-ubootmod|\
 	xiaomi,redmi-router-ax6000-stock|\
