@@ -487,27 +487,27 @@
 };
 
 &mdio_bus {
-	/* external Aquantia AQR113C */
 	phy0: ethernet-phy@0 {
-		reg = <0>;
+		/* AQR113C */
 		compatible = "ethernet-phy-ieee802.3-c45";
-		reset-gpios = <&pio 62 1>;
+		reg = <0>;
+
+		reset-gpios = <&pio 62 GPIO_ACTIVE_LOW>;
 		reset-assert-us = <100000>;
-		reset-deassert-us = <221000>;
-		mdi-reversal = /bits/ 16 <1>;
+		reset-deassert-us = <1000000>;
 
 		aqr,led-config = <0xC000 0x60 0x80>;
 		aqr,led-drive-vdd = <0x0 0x0 0x1>;
 	};
 
-	/* external Aquantia AQR113C */
 	phy8: ethernet-phy@8 {
-		reg = <8>;
+		/* AQR113C */
 		compatible = "ethernet-phy-ieee802.3-c45";
-		reset-gpios = <&pio 71 1>;
+		reg = <8>;
+
+		reset-gpios = <&pio 71 GPIO_ACTIVE_LOW>;
 		reset-assert-us = <100000>;
-		reset-deassert-us = <221000>;
-		mdi-reversal = /bits/ 16 <1>;
+		reset-deassert-us = <1000000>;
 
 		aqr,led-config = <0xC000 0x60 0x80>;
 		aqr,led-drive-vdd = <0x0 0x0 0x1>;
