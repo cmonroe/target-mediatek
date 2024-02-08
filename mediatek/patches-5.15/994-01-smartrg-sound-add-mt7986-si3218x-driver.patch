@@ -17,7 +17,7 @@ Subject: [PATCH] sound add mt7986 si3218x driver
 +config SND_SOC_MT7986_SI3218X
 +	tristate "ASoc Audio driver for MT7986 with SI3218X codec"
 +	depends on SND_SOC_MT7986 && SPI
-+	select SND_SOC_SI3218X_SPI
++	select SND_SOC_SLIC_DUMMY
 +	help
 +	  This adds support for ASoC machine driver for MediaTek MT7986
 +	  boards with the SI3218X codecs.
