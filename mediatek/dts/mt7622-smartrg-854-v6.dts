@@ -57,6 +57,22 @@
 		};
 	};
 
+	gpio-export {
+		compatible = "gpio-export";
+
+		slic_interrupt {
+			gpio-export,name = "slic_interrupt";
+			gpio-export,direction_may_change;
+			gpios = <&pio 19 GPIO_ACTIVE_HIGH>;
+		};
+
+		slic_reset {
+			gpio-export,name = "slic_reset";
+			gpio-export,output = <0>;
+			gpios = <&pio 16 GPIO_ACTIVE_HIGH>;
+		};
+	};
+
 	gpio-leds {
 		compatible = "gpio-leds";
 

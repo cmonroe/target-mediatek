@@ -119,13 +119,14 @@
 
 		slic_interrupt {
 			gpio-export,name = "slic_interrupt";
-			gpios = <&pio 54 GPIO_ACTIVE_LOW>;
+			gpio-export,direction_may_change;
+			gpios = <&pio 54 GPIO_ACTIVE_HIGH>;
 		};
 
 		slic_reset {
 			gpio-export,name = "slic_reset";
 			gpio-export,output = <0>;
-			gpios = <&pio 72 GPIO_ACTIVE_LOW>;
+			gpios = <&pio 72 GPIO_ACTIVE_HIGH>;
 		};
 
 		usb_enable {
