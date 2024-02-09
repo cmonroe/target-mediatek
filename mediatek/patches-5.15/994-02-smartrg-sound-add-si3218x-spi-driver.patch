@@ -37,5 +37,13 @@ Subject: [PATCH] sound add si3218x spi driver
  snd-soc-sigmadsp-regmap-objs := sigmadsp-regmap.o
 +snd-soc-si3218x-spi-objs := si3218x-spi.o
  snd-soc-si476x-objs := si476x.o
+ snd-soc-slic-dummy-objs := slic-dummy.o
  snd-soc-spdif-tx-objs := spdif_transmitter.o
- snd-soc-spdif-rx-objs := spdif_receiver.o
+@@ -537,6 +538,7 @@ obj-$(CONFIG_SND_SOC_SGTL5000)  += snd-s
+ obj-$(CONFIG_SND_SOC_SIGMADSP)	+= snd-soc-sigmadsp.o
+ obj-$(CONFIG_SND_SOC_SIGMADSP_I2C)	+= snd-soc-sigmadsp-i2c.o
+ obj-$(CONFIG_SND_SOC_SIGMADSP_REGMAP)	+= snd-soc-sigmadsp-regmap.o
++obj-$(CONFIG_SND_SOC_SI3218X_SPI) += snd-soc-si3218x-spi.o
+ obj-$(CONFIG_SND_SOC_SI476X)	+= snd-soc-si476x.o
+ obj-$(CONFIG_SND_SOC_SLIC_DUMMY)	+= slic-dummy.o
+ obj-$(CONFIG_SND_SOC_SPDIF)	+= snd-soc-spdif-rx.o snd-soc-spdif-tx.o
