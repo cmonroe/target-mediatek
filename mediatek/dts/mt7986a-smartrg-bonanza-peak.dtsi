@@ -109,6 +109,34 @@
 		status = "okay";
 	};
 
+	gpio-export {
+		compatible = "gpio-export";
+
+		bt_reset {
+			gpio-export,name = "bt_reset";
+			gpio-export,direction_may_change;
+			gpios = <&pio 27 GPIO_ACTIVE_HIGH>;
+		};
+
+		bt_txrx_ctl {
+			gpio-export,name = "bt_txrx_ctl";
+			gpio-export,direction_may_change;
+			gpios = <&pio 46 GPIO_ACTIVE_HIGH>;
+		};
+
+		bt_coex_act {
+			gpio-export,name = "bt_coex_act";
+			gpio-export,direction_may_change;
+			gpios = <&pio 47 GPIO_ACTIVE_HIGH>;
+		};
+
+		bt_coex_pri {
+			gpio-export,name = "bt_coex_pri";
+			gpio-export,direction_may_change;
+			gpios = <&pio 48 GPIO_ACTIVE_HIGH>;
+		};
+	};
+
 	keys {
 		compatible = "gpio-keys";
 		pinctrl-names = "default";
