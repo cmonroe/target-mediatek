@@ -596,6 +596,51 @@ static const struct mtk_pin_field_calc mt7988_pin_r1_range[] = {
 	PIN_FIELD_BASE(83, 83, 1, 0x90, 0x10, 15, 1),
 };
 
+static const unsigned int mt7988_pull_type[] = {
+	MTK_PULL_PUPD_R1R0_TYPE,/*0*/ MTK_PULL_PUPD_R1R0_TYPE,/*1*/
+	MTK_PULL_PUPD_R1R0_TYPE,/*2*/ MTK_PULL_PUPD_R1R0_TYPE,/*3*/
+	MTK_PULL_PUPD_R1R0_TYPE,/*4*/ MTK_PULL_PUPD_R1R0_TYPE,/*5*/
+	MTK_PULL_PUPD_R1R0_TYPE,/*6*/ MTK_PULL_PU_PD_TYPE,    /*7*/
+	MTK_PULL_PU_PD_TYPE,    /*8*/ MTK_PULL_PU_PD_TYPE,    /*9*/
+	MTK_PULL_PU_PD_TYPE,    /*10*/ MTK_PULL_PUPD_R1R0_TYPE,/*11*/
+	MTK_PULL_PUPD_R1R0_TYPE,/*12*/ MTK_PULL_PU_PD_TYPE,    /*13*/
+	MTK_PULL_PU_PD_TYPE,    /*14*/ MTK_PULL_PD_TYPE,       /*15*/
+	MTK_PULL_PD_TYPE,       /*16*/ MTK_PULL_PD_TYPE,       /*17*/
+	MTK_PULL_PD_TYPE,       /*18*/ MTK_PULL_PUPD_R1R0_TYPE,/*19*/
+	MTK_PULL_PUPD_R1R0_TYPE,/*20*/ MTK_PULL_PUPD_R1R0_TYPE,/*21*/
+	MTK_PULL_PUPD_R1R0_TYPE,/*22*/ MTK_PULL_PUPD_R1R0_TYPE,/*23*/
+	MTK_PULL_PUPD_R1R0_TYPE,/*24*/ MTK_PULL_PUPD_R1R0_TYPE,/*25*/
+	MTK_PULL_PUPD_R1R0_TYPE,/*26*/ MTK_PULL_PUPD_R1R0_TYPE,/*27*/
+	MTK_PULL_PUPD_R1R0_TYPE,/*28*/ MTK_PULL_PUPD_R1R0_TYPE,/*29*/
+	MTK_PULL_PUPD_R1R0_TYPE,/*30*/ MTK_PULL_PUPD_R1R0_TYPE,/*31*/
+	MTK_PULL_PUPD_R1R0_TYPE,/*32*/ MTK_PULL_PUPD_R1R0_TYPE,/*33*/
+	MTK_PULL_PUPD_R1R0_TYPE,/*34*/ MTK_PULL_PUPD_R1R0_TYPE,/*35*/
+	MTK_PULL_PUPD_R1R0_TYPE,/*36*/ MTK_PULL_PUPD_R1R0_TYPE,/*37*/
+	MTK_PULL_PUPD_R1R0_TYPE,/*38*/ MTK_PULL_PUPD_R1R0_TYPE,/*39*/
+	MTK_PULL_PUPD_R1R0_TYPE,/*40*/ MTK_PULL_PUPD_R1R0_TYPE,/*41*/
+	MTK_PULL_PUPD_R1R0_TYPE,/*42*/ MTK_PULL_PUPD_R1R0_TYPE,/*43*/
+	MTK_PULL_PUPD_R1R0_TYPE,/*44*/ MTK_PULL_PUPD_R1R0_TYPE,/*45*/
+	MTK_PULL_PUPD_R1R0_TYPE,/*46*/ MTK_PULL_PUPD_R1R0_TYPE,/*47*/
+	MTK_PULL_PUPD_R1R0_TYPE,/*48*/ MTK_PULL_PUPD_R1R0_TYPE,/*49*/
+	MTK_PULL_PUPD_R1R0_TYPE,/*50*/ MTK_PULL_PUPD_R1R0_TYPE,/*51*/
+	MTK_PULL_PUPD_R1R0_TYPE,/*52*/ MTK_PULL_PUPD_R1R0_TYPE,/*53*/
+	MTK_PULL_PUPD_R1R0_TYPE,/*54*/ MTK_PULL_PUPD_R1R0_TYPE,/*55*/
+	MTK_PULL_PUPD_R1R0_TYPE,/*56*/ MTK_PULL_PUPD_R1R0_TYPE,/*57*/
+	MTK_PULL_PUPD_R1R0_TYPE,/*58*/ MTK_PULL_PUPD_R1R0_TYPE,/*59*/
+	MTK_PULL_PUPD_R1R0_TYPE,/*60*/ MTK_PULL_PUPD_R1R0_TYPE,/*61*/
+	MTK_PULL_PUPD_R1R0_TYPE,/*62*/ MTK_PULL_PU_PD_TYPE,    /*63*/
+	MTK_PULL_PUPD_R1R0_TYPE,/*64*/ MTK_PULL_PUPD_R1R0_TYPE,/*65*/
+	MTK_PULL_PUPD_R1R0_TYPE,/*66*/ MTK_PULL_PUPD_R1R0_TYPE,/*67*/
+	MTK_PULL_PUPD_R1R0_TYPE,/*68*/ MTK_PULL_PUPD_R1R0_TYPE,/*69*/
+	MTK_PULL_PUPD_R1R0_TYPE,/*70*/ MTK_PULL_PD_TYPE,       /*71*/
+	MTK_PULL_PD_TYPE,       /*72*/ MTK_PULL_PUPD_R1R0_TYPE,/*73*/
+	MTK_PULL_PUPD_R1R0_TYPE,/*74*/ MTK_PULL_PU_PD_TYPE,    /*75*/
+	MTK_PULL_PU_PD_TYPE,    /*76*/ MTK_PULL_PU_PD_TYPE,    /*77*/
+	MTK_PULL_PU_PD_TYPE,    /*78*/ MTK_PULL_PU_PD_TYPE,    /*79*/
+	MTK_PULL_PUPD_R1R0_TYPE,/*80*/ MTK_PULL_PUPD_R1R0_TYPE,/*81*/
+	MTK_PULL_PUPD_R1R0_TYPE,/*82*/ MTK_PULL_PUPD_R1R0_TYPE,/*83*/
+};
+
 static const struct mtk_pin_reg_calc mt7988_reg_cals[] = {
 	[PINCTRL_PIN_REG_MODE] = MTK_RANGE(mt7988_pin_mode_range),
 	[PINCTRL_PIN_REG_DIR] = MTK_RANGE(mt7988_pin_dir_range),
@@ -992,11 +1037,11 @@ static int mt7988_uart2_3_funcs[] = { 3, 3, 3, 3 };
 static int mt7988_uart1_2_pins[] = { 80, 81, 82, 83 };
 static int mt7988_uart1_2_funcs[] = { 1, 1, 1, 1 };
 
+static int mt7988_uart1_2_lite_pins[] = { 80, 81 };
+static int mt7988_uart1_2_lite_funcs[] = { 1, 1 };
+
 static int mt7988_tops_uart1_2_pins[] = { 80, 81 };
-static int mt7988_tops_uart1_2_funcs[] = {
-	4,
-	4,
-};
+static int mt7988_tops_uart1_2_funcs[] = { 4, 4, };
 
 static int mt7988_net_wo0_uart_txd_1_pins[] = { 80 };
 static int mt7988_net_wo0_uart_txd_1_funcs[] = { 3 };
@@ -1254,6 +1299,8 @@ static const struct group_desc mt7988_groups[] = {
 	PINCTRL_PIN_GROUP("pcie_wake_n2_1", mt7988_pcie_wake_n2_1),
 	/*  @GPIO(80,81,82,83) uart1_2 */
 	PINCTRL_PIN_GROUP("uart1_2", mt7988_uart1_2),
+	/*  @GPIO(80,81) uart1_2_lite */
+	PINCTRL_PIN_GROUP("uart1_2_lite", mt7988_uart1_2_lite),
 	/*  @GPIO(80) pwm2 */
 	PINCTRL_PIN_GROUP("pwm2", mt7988_pwm2),
 	/*  @GPIO(81) pwm3 */
@@ -1281,20 +1328,20 @@ static const struct group_desc mt7988_groups[] = {
 /* Joint those groups owning the same capability in user point of view which
  * allows that people tend to use through the device tree.
  */
-static const char *mt7988_jtag_groups[] = {
+static const char * const mt7988_jtag_groups[] = {
 	"tops_jtag0_0", "wo0_jtag", "wo1_jtag",
 	"wo2_jtag",	"jtag",	    "tops_jtag0_1",
 };
-static const char *mt7988_int_usxgmii_groups[] = {
+static const char * const mt7988_int_usxgmii_groups[] = {
 	"int_usxgmii",
 };
-static const char *mt7988_pwm_groups[] = {
+static const char * const mt7988_pwm_groups[] = {
 	"pwm0", "pwm1", "pwm2", "pwm3", "pwm4",	"pwm5",	"pwm6", "pwm7"
 };
-static const char *mt7988_dfd_groups[] = {
+static const char * const mt7988_dfd_groups[] = {
 	"dfd",
 };
-static const char *mt7988_i2c_groups[] = {
+static const char * const mt7988_i2c_groups[] = {
 	"xfi_phy0_i2c0",
 	"xfi_phy1_i2c0",
 	"xfi_phy_pll_i2c0",
@@ -1319,13 +1366,13 @@ static const char *mt7988_i2c_groups[] = {
 	"i2c2_0",
 	"i2c2_1",
 };
-static const char *mt7988_ethernet_groups[] = {
+static const char * const mt7988_ethernet_groups[] = {
 	"mdc_mdio0",
 	"2p5g_ext_mdio",
 	"gbe_ext_mdio",
 	"mdc_mdio1",
 };
-static const char *mt7988_pcie_groups[] = {
+static const char * const mt7988_pcie_groups[] = {
 	"pcie_wake_n0_0",    "pcie_clk_req_n0_0", "pcie_wake_n3_0",
 	"pcie_clk_req_n3",   "pcie_p0_phy_i2c",	  "pcie_p1_phy_i2c",
 	"pcie_p3_phy_i2c",   "pcie_p2_phy_i2c",	  "ckm_phy_i2c",
@@ -1335,18 +1382,18 @@ static const char *mt7988_pcie_groups[] = {
 	"pcie_wake_n2_0",    "pcie_clk_req_n2_0", "pcie_wake_n2_1",
 	"pcie_clk_req_n0_1"
 };
-static const char *mt7988_pmic_groups[] = {
+static const char * const mt7988_pmic_groups[] = {
 	"pmic",
 };
-static const char *mt7988_wdt_groups[] = {
+static const char * const mt7988_wdt_groups[] = {
 	"watchdog",
 };
-static const char *mt7988_spi_groups[] = {
+static const char * const mt7988_spi_groups[] = {
 	"spi0", "spi0_wp_hold", "spi1", "spi2", "spi2_wp_hold",
 };
-static const char *mt7988_flash_groups[] = { "emmc_45", "sdcard", "snfi",
+static const char * const mt7988_flash_groups[] = { "emmc_45", "sdcard", "snfi",
 						    "emmc_51" };
-static const char *mt7988_uart_groups[] = {
+static const char * const mt7988_uart_groups[] = {
 	"uart2",
 	"tops_uart0_0",
 	"uart2_0",
@@ -1363,23 +1410,24 @@ static const char *mt7988_uart_groups[] = {
 	"uart1_1",
 	"uart2_3",
 	"uart1_2",
+	"uart1_2_lite",
 	"tops_uart1_2",
 	"net_wo0_uart_txd_1",
 	"net_wo1_uart_txd_1",
 	"net_wo2_uart_txd_1",
 };
-static const char *mt7988_udi_groups[] = {
+static const char * const mt7988_udi_groups[] = {
 	"udi",
 };
-static const char *mt7988_audio_groups[] = {
+static const char * const mt7988_audio_groups[] = {
 	"i2s", "pcm",
 };
-static const char *mt7988_led_groups[] = {
+static const char * const mt7988_led_groups[] = {
 	"gbe0_led1", "gbe1_led1", "gbe2_led1", "gbe3_led1", "2p5gbe_led1",
 	"gbe0_led0", "gbe1_led0", "gbe2_led0", "gbe3_led0", "2p5gbe_led0",
 	"wf5g_led0",   "wf5g_led1",
 };
-static const char *mt7988_usb_groups[] = {
+static const char * const mt7988_usb_groups[] = {
 	"drv_vbus",
 	"drv_vbus_p1",
 };
@@ -1411,7 +1459,7 @@ static const struct mtk_eint_hw mt7988_eint_hw = {
 	.db_cnt = 16,
 };
 
-static const char *mt7988_pinctrl_register_base_names[] = {
+static const char * const mt7988_pinctrl_register_base_names[] = {
 	"gpio_base",	 "iocfg_tr_base", "iocfg_br_base",
 	"iocfg_rb_base", "iocfg_lb_base", "iocfg_tl_base",
 };
@@ -1433,6 +1481,9 @@ static struct mtk_pin_soc mt7988_data = {
 	.bias_disable_get = mtk_pinconf_bias_disable_get,
 	.bias_set = mtk_pinconf_bias_set,
 	.bias_get = mtk_pinconf_bias_get,
+	.pull_type = mt7988_pull_type,
+	.bias_set_combo = mtk_pinconf_bias_set_combo,
+	.bias_get_combo = mtk_pinconf_bias_get_combo,
 	.drive_set = mtk_pinconf_drive_set_rev1,
 	.drive_get = mtk_pinconf_drive_get_rev1,
 	.adv_pull_get = mtk_pinconf_adv_pull_get,
