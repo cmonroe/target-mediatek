@@ -357,7 +357,7 @@
  	for (i = 0, q = sfp_quirks; i < ARRAY_SIZE(sfp_quirks); i++, q++)
  		if (sfp_match(q->vendor, id->base.vendor_name, vs) &&
  		    sfp_match(q->part, id->base.vendor_pn, ps))
-@@ -2072,12 +2332,12 @@ static int sfp_sm_mod_probe(struct sfp *
+@@ -2072,12 +2328,12 @@ static int sfp_sm_mod_probe(struct sfp *
  				 "EEPROM base structure checksum failure (0x%02x != 0x%02x)\n",
  				 check, id.base.cc_base);
  		} else {
@@ -372,7 +372,7 @@
  		}
  	}
  
-@@ -2100,12 +2360,12 @@ static int sfp_sm_mod_probe(struct sfp *
+@@ -2100,12 +2356,12 @@ static int sfp_sm_mod_probe(struct sfp *
  				 "EEPROM extended structure checksum failure (0x%02x != 0x%02x)\n",
  				 check, id.ext.cc_ext);
  		} else {
@@ -387,7 +387,7 @@
  		}
  	}
  
-@@ -2149,8 +2409,30 @@ static int sfp_sm_mod_probe(struct sfp *
+@@ -2149,8 +2405,30 @@ static int sfp_sm_mod_probe(struct sfp *
  
  	sfp->tx_fault_ignore = false;
  
