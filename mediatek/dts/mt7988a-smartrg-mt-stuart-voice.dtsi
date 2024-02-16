@@ -77,6 +77,9 @@
 	pinctrl-0 = <&spi1_pins>;
 	status = "okay";
 
+	/* override clock names until this is synced upstream */
+	clock-names = "parent-clk", "sel-clk", "spi-clk", "hclk";
+
 	slic: slic@0 {
 		compatible = "silabs,si3210";
 		spi-max-frequency = <10000000>;
