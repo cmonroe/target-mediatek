@@ -1,0 +1,77 @@
+--- a/drivers/net/phy/aquantia/aquantia_main.c
++++ b/drivers/net/phy/aquantia/aquantia_main.c
+@@ -12,6 +12,7 @@
+ #include <linux/delay.h>
+ #include <linux/bitfield.h>
+ #include <linux/phy.h>
++#include <linux/of.h>
+ 
+ #include "aquantia.h"
+ 
+@@ -52,6 +53,13 @@
+ #define MDIO_AN_VEND_PROV_DOWNSHIFT_MASK	GENMASK(3, 0)
+ #define MDIO_AN_VEND_PROV_DOWNSHIFT_DFLT	4
+ 
++#define AQR_NUM_LEDS					3
++#define VEND1_GLOBAL_LED_PROVISIONING	0xc430
++#define AQR_LED(x)						(VEND1_GLOBAL_LED_PROVISIONING + x)
++#define VEND1_GLOBAL_LED_DRIVE			0xc438
++#define VEND1_GLOBAL_LED_DRIVE_VDD		BIT(1)
++#define AQR_LED_DRIVE(x)				(VEND1_GLOBAL_LED_DRIVE + x)
++
+ #define MDIO_AN_TX_VEND_STATUS1			0xc800
+ #define MDIO_AN_TX_VEND_STATUS1_RATE_MASK	GENMASK(3, 1)
+ #define MDIO_AN_TX_VEND_STATUS1_10BASET		0
+@@ -628,6 +636,41 @@ static void aqr107_chip_info(struct phy_
+ 		   fw_major, fw_minor, build_id, prov_id);
+ }
+ 
++static int aqr107_config_led(struct phy_device *phydev)
++{
++	struct device_node *node = phydev->mdio.dev.of_node;
++	u32 led_cfg[AQR_NUM_LEDS];
++	u32 led_drive[AQR_NUM_LEDS];
++	int i, ret;
++
++	if (!IS_ENABLED(CONFIG_OF_MDIO))
++		return 0;
++
++	if (!of_property_read_u32_array(node, "aqr,led-config", led_cfg, AQR_NUM_LEDS)) {
++		/* Write LED register values */
++		for (i = 0; i < AQR_NUM_LEDS; i++) {
++			ret = phy_write_mmd(phydev, MDIO_MMD_VEND1, AQR_LED(i), (u16)led_cfg[i]);
++			if (ret < 0)
++				return ret;
++		}
++	}
++
++	if (of_property_read_u32_array(node, "aqr,led-drive-vdd", led_drive, AQR_NUM_LEDS))
++		return 0;
++
++	/* Write LED register values */
++	for (i = 0; i < AQR_NUM_LEDS; i++) {
++		if (led_drive[i]) {
++			ret = phy_set_bits_mmd(phydev, MDIO_MMD_VEND1, AQR_LED_DRIVE(i),
++					VEND1_GLOBAL_LED_DRIVE_VDD);
++			if (ret < 0)
++				return ret;
++		}
++	}
++
++	return 0;
++}
++
+ static int aqr107_config_init(struct phy_device *phydev)
+ {
+ 	int ret;
+@@ -651,6 +694,10 @@ static int aqr107_config_init(struct phy
+ 	if (!ret)
+ 		aqr107_chip_info(phydev);
+ 
++	ret = aqr107_config_led(phydev);
++	if (ret < 0)
++		return ret;
++
+ 	return aqr107_set_downshift(phydev, MDIO_AN_VEND_PROV_DOWNSHIFT_DFLT);
+ }
+ 
