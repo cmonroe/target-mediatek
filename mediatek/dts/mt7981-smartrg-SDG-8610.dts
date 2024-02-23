@@ -175,7 +175,7 @@
 
 			channel1: channel@1 {
 				reg = <1>;
-				phy-mode = "1000base-x";
+				phy-mode = "2500base-x";
 				sfp = <&sfp1>;
 				managed = "in-band-status";
 			};
