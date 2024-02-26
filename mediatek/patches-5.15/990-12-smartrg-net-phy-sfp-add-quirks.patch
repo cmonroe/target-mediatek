@@ -1,0 +1,173 @@
+From 05f482dfab1f1437767e74ac1592c0cb917f57bd Mon Sep 17 00:00:00 2001
+From: Tim Hayes <tim.hayes@smartrg.com>
+Date: Tue, 28 Feb 2023 13:11:22 -0800
+Subject: [PATCH] OWRT-7643 Adtran quirks added
+
+---
+ drivers/net/phy/sfp.c | 34 ++++++++++++++++++++++++++++++++--
+ 1 file changed, 32 insertions(+), 2 deletions(-)
+
+--- a/drivers/net/phy/sfp.c
++++ b/drivers/net/phy/sfp.c
+@@ -320,10 +320,12 @@ static const struct of_device_id sfp_of_
+ };
+ MODULE_DEVICE_TABLE(of, sfp_of_match);
+ 
++#if 0
+ static void sfp_fixup_long_startup(struct sfp *sfp)
+ {
+ 	sfp->module_t_start_up = T_START_UP_BAD_GPON;
+ }
++#endif
+ 
+ static void sfp_fixup_ignore_tx_fault(struct sfp *sfp)
+ {
+@@ -339,10 +341,42 @@ static void sfp_fixup_halny_gsfp(struct
+ 	sfp->state_hw_mask &= ~(SFP_F_TX_FAULT | SFP_F_LOS);
+ }
+ 
++static void sfp_fixup_gpon_xxx(struct sfp *sfp)
++{
++	dev_warn(sfp->dev, "%s: applied", __FUNCTION__);
++
++	sfp->module_t_start_up = T_START_UP_BAD_GPON;
++	sfp->tx_fault_ignore = true;
++	sfp->state_hw_mask &= ~(SFP_F_TX_FAULT | SFP_F_LOS);
++}
++
++static void sfp_fixup_copper_xxx(struct sfp *sfp)
++{
++	dev_warn(sfp->dev, "%s: applied", __FUNCTION__);
++
++	sfp->id.base.e1000_base_t=0;
++}
++
+ static void sfp_quirk_2500basex(struct sfp *sfp,
+ 				const struct sfp_eeprom_id *id, unsigned long *modes)
+ {
++	dev_warn(sfp->dev, "%s: entry modes 0x%016lx", __FUNCTION__, *modes);
++
++	linkmode_zero(modes);
+ 	linkmode_set_bit(ETHTOOL_LINK_MODE_2500baseX_Full_BIT, modes);
++
++	dev_warn(sfp->dev, "%s: exit modes 0x%016lx", __FUNCTION__, *modes);
++}
++
++static void sfp_quirk_1000basex(struct sfp *sfp,
++				 const struct sfp_eeprom_id *id, unsigned long *modes)
++{
++	dev_warn(sfp->dev, "%s: entry modes 0x%016lx", __FUNCTION__, *modes);
++
++	linkmode_zero(modes);
++	linkmode_set_bit(ETHTOOL_LINK_MODE_1000baseX_Full_BIT, modes);
++
++	dev_warn(sfp->dev, "%s: exit modes 0x%016lx", __FUNCTION__, *modes);
+ }
+ 
+ static void sfp_quirk_ubnt_uf_instant(struct sfp *sfp,
+@@ -432,16 +466,19 @@ static const struct sfp_quirk sfp_quirks
+ 	{
+ 		// Alcatel Lucent G-010S-P can operate at 2500base-X, but
+ 		// incorrectly report 2500MBd NRZ in their EEPROM
++		// AKA Nokia from James Mouffat
+ 		.vendor = "ALCATELLUCENT",
+ 		.part = "G010SP",
+ 		.modes = sfp_quirk_2500basex,
++		.fixup = sfp_fixup_gpon_xxx,
+ 	}, {
+ 		// Alcatel Lucent G-010S-A can operate at 2500base-X, but
+ 		// report 3.2GBd NRZ in their EEPROM
++		// From Chad for reference
+ 		.vendor = "ALCATELLUCENT",
+ 		.part = "3FE46541AA",
+ 		.modes = sfp_quirk_2500basex,
+-		.fixup = sfp_fixup_long_startup,
++		.fixup = sfp_fixup_gpon_xxx,
+ 	}, {
+ 		// Fiberstore GPON-ONU-34-20BI can operate at 2500base-X, but report 1.2GBd
+ 		// NRZ in their EEPROM
+@@ -463,7 +500,7 @@ static const struct sfp_quirk sfp_quirks
+ 		.vendor = "HUAWEI",
+ 		.part = "MA5671A",
+ 		.modes = sfp_quirk_2500basex,
+-		.fixup = sfp_fixup_ignore_tx_fault,
++		.fixup = sfp_fixup_gpon_xxx,
+ 	}, {
+ 		// OEM SFP-GE-T is 1000Base-T module
+ 		.vendor = "OEM",
+@@ -479,6 +516,75 @@ static const struct sfp_quirk sfp_quirks
+ 		.vendor = "UBNT",
+ 		.part = "UF-INSTANT",
+ 		.modes = sfp_quirk_ubnt_uf_instant,
++	}, {
++		// F2 ADTRAN 1442535F2, ADTRAN SDX610 GPON ONT, 2.5G serdes
++		.vendor = "T&W",
++		.part = "TW2362H-CDEL-ADT",
++		.modes = sfp_quirk_2500basex,
++		.fixup = sfp_fixup_gpon_xxx,
++	}, {
++		// F3 ADTRAN 1442535F3 ADTRAN SDX610 GPON ONT, 1G serdes
++		.vendor = "T&W",
++		.part = "TW2362H-CDEL-AD1",
++		.fixup = sfp_fixup_gpon_xxx,
++	}, {
++		// 1287940F1 SDX630 10G XGS-PON
++		.vendor = "ADTRAN",
++		.part = "1287940F1",
++		.modes = sfp_quirk_phy_mode,
++		.fixup = sfp_fixup_gpon_xxx,
++	}, {
++		// ADTRAN-1442300G1 RJ45 100 m Transmission Distance, 1 Gbps
++		.vendor = "LINKTEL",
++		.part = "LX1801INA-ADT",
++		.modes = sfp_quirk_1000basex,
++		.fixup = sfp_fixup_copper_xxx,
++	}, {
++		// FCLFB8521P2BTL-AR RJ45 1000BASE-T Copper SFP Transceiver Module
++		.vendor = "FINISAR CORP.",
++		.part = "FCLF8521P2BTL-AR",
++		.modes = sfp_quirk_1000basex,
++		.fixup = sfp_fixup_copper_xxx,
++	}, {
++		// Fiberstore SFP 1G-LX-31 BiDi Transceiver operating at 1000base-X
++		.vendor = "FS",
++		.part = "SFP1G-LX-31",
++		.modes = sfp_quirk_1000basex,
++	}, {
++		// Fiberstore SFP 10GLR-31 BiDi Transceiver operating at 2500base-X
++		.vendor = "FS",
++		.part = "SFP-10GLR-31",
++		.modes = sfp_quirk_2500basex,
++	}, {
++		// Cogeco EPON SFP #1
++		.vendor = "CIGE",
++		.part = "XE-99S",
++		.modes = sfp_quirk_phy_mode,
++		.fixup = sfp_fixup_gpon_xxx,
++	}, {
++		// Cogeco EPON SFP #2  (Note This device was giving eeprom checksum error)
++		.vendor = "Sercomm",
++		.part = "XES1010C",
++		.modes = sfp_quirk_phy_mode,
++		.fixup = sfp_fixup_gpon_xxx,
++	}, {
++		// Adtran 1442110G1 SFP BiDi, 1.25G, 10Km (1490nm Tx/1310nm Rx)
++		// claims to support (RX_LOS, TX_FAULT, TX_DIS)
++		.vendor = "WTD",
++		.part = "RTXM182-526S-ADT",
++		.modes = sfp_quirk_1000basex,
++	}, {
++		// Adtran 1442110G2 SFP BiDi, 1.25G, 10Km (1310nm Tx/1490nm Rx)
++		// claims to support (RX_LOS, TX_FAULT, TX_DIS)
++		.vendor = "LINKTEL",
++		.part = "LX2101IDM-ADT",
++		.modes = sfp_quirk_1000basex,
++	}, {
++		// Adtran RTXL185-500-ADT, 10GBase-T Copper 30M, 64B/65B ENC
++		.vendor = "WTD",
++		.part = "RTXL185-500-ADT",
++		.modes = sfp_quirk_phy_mode,
++		.fixup = sfp_fixup_copper_xxx,
+ 	}
+ };
+ 

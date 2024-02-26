@@ -9,7 +9,7 @@ Subject: [PATCH] 999-2730-net-phy-sfp-change-shared-mod-def0
 
 --- a/drivers/net/phy/sfp.c
 +++ b/drivers/net/phy/sfp.c
-@@ -155,7 +155,7 @@ static const char *gpio_of_names[] = {
+@@ -156,7 +156,7 @@ static const char *gpio_of_names[] = {
  };
  
  static const enum gpiod_flags gpio_flags[] = {
@@ -18,7 +18,7 @@ Subject: [PATCH] 999-2730-net-phy-sfp-change-shared-mod-def0
  	GPIOD_IN,
  	GPIOD_IN,
  	GPIOD_ASIS,
-@@ -769,7 +769,7 @@ static unsigned int sfp_gpio_get_state(s
+@@ -635,7 +635,7 @@ static unsigned int sfp_gpio_get_state(s
  	unsigned int i, state, v;
  
  	for (i = state = 0; i < GPIO_MAX; i++) {
@@ -27,7 +27,7 @@ Subject: [PATCH] 999-2730-net-phy-sfp-change-shared-mod-def0
  			continue;
  
  		v = gpiod_get_value_cansleep(sfp->gpio[i]);
-@@ -3083,7 +3083,7 @@ static int sfp_probe(struct platform_dev
+@@ -2944,7 +2944,7 @@ static int sfp_probe(struct platform_dev
  	}
  
  	for (i = 0; i < GPIO_MAX; i++) {

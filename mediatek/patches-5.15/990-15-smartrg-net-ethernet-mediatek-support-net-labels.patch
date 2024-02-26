@@ -14,7 +14,7 @@ Signed-off-by: René van Dorst <opensource@vdorst.com>
 
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
-@@ -4602,6 +4602,7 @@ static const struct net_device_ops mtk_n
+@@ -4748,6 +4748,7 @@ static int mtk_add_mux(struct mtk_eth *e
  
  static int mtk_add_mac(struct mtk_eth *eth, struct device_node *np)
  {
@@ -22,7 +22,7 @@ Signed-off-by: René van Dorst <opensource@vdorst.com>
  	const __be32 *_id = of_get_property(np, "reg", NULL);
  	phy_interface_t phy_mode;
  	struct phylink *phylink;
-@@ -4773,6 +4774,9 @@ static int mtk_add_mac(struct mtk_eth *e
+@@ -4919,6 +4920,9 @@ static int mtk_add_mac(struct mtk_eth *e
  		register_netdevice_notifier(&mac->device_notifier);
  	}
  

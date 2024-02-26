@@ -1,0 +1,167 @@
+--- a/drivers/net/phy/sfp-bus.c
++++ b/drivers/net/phy/sfp-bus.c
+@@ -284,7 +284,7 @@ void sfp_parse_support(struct sfp_bus *b
+ 	}
+ 
+ 	if (bus->sfp_quirk && bus->sfp_quirk->modes)
+-		bus->sfp_quirk->modes(id, modes);
++		bus->sfp_quirk->modes(bus->sfp, id, modes);
+ 
+ 	linkmode_or(support, support, modes);
+ 
+--- a/drivers/net/phy/sfp.h
++++ b/drivers/net/phy/sfp.h
+@@ -9,7 +9,7 @@ struct sfp;
+ struct sfp_quirk {
+ 	const char *vendor;
+ 	const char *part;
+-	void (*modes)(const struct sfp_eeprom_id *id, unsigned long *modes);
++	void (*modes)(struct sfp *sfp, const struct sfp_eeprom_id *id, unsigned long *modes);
+ 	void (*fixup)(struct sfp *sfp);
+ };
+ 
+--- a/drivers/net/phy/sfp.c
++++ b/drivers/net/phy/sfp.c
+@@ -3,6 +3,7 @@
+ #include <linux/ctype.h>
+ #include <linux/debugfs.h>
+ #include <linux/delay.h>
++#include <linux/device.h>
+ #include <linux/gpio/consumer.h>
+ #include <linux/hwmon.h>
+ #include <linux/i2c.h>
+@@ -12,8 +13,10 @@
+ #include <linux/module.h>
+ #include <linux/mutex.h>
+ #include <linux/of.h>
++#include <linux/of_net.h>
+ #include <linux/phy.h>
+ #include <linux/platform_device.h>
++#include <linux/property.h>
+ #include <linux/rtnetlink.h>
+ #include <linux/slab.h>
+ #include <linux/workqueue.h>
+@@ -336,14 +339,14 @@ static void sfp_fixup_halny_gsfp(struct
+ 	sfp->state_hw_mask &= ~(SFP_F_TX_FAULT | SFP_F_LOS);
+ }
+ 
+-static void sfp_quirk_2500basex(const struct sfp_eeprom_id *id,
+-				unsigned long *modes)
++static void sfp_quirk_2500basex(struct sfp *sfp,
++				const struct sfp_eeprom_id *id, unsigned long *modes)
+ {
+ 	linkmode_set_bit(ETHTOOL_LINK_MODE_2500baseX_Full_BIT, modes);
+ }
+ 
+-static void sfp_quirk_ubnt_uf_instant(const struct sfp_eeprom_id *id,
+-				      unsigned long *modes)
++static void sfp_quirk_ubnt_uf_instant(struct sfp *sfp,
++				const struct sfp_eeprom_id *id, unsigned long *modes)
+ {
+ 	/* Ubiquiti U-Fiber Instant module claims that support all transceiver
+ 	 * types including 10G Ethernet which is not truth. So clear all claimed
+@@ -353,6 +356,78 @@ static void sfp_quirk_ubnt_uf_instant(co
+ 	linkmode_set_bit(ETHTOOL_LINK_MODE_1000baseX_Full_BIT, modes);
+ }
+ 
++static void sfp_quirk_phy_mode(struct sfp *sfp,
++				const struct sfp_eeprom_id *id, unsigned long *modes)
++{
++	int speed;
++	struct device_node *mac_np, *sfp_np;
++	phy_interface_t interface = PHY_INTERFACE_MODE_NA;
++
++	dev_warn(sfp->dev, "%s: entry modes 0x%016lx", __FUNCTION__, *modes);
++
++	if (!sfp->dev->of_node) {
++		dev_warn(sfp->dev, "%s: OF node is empty, bailing!", __FUNCTION__);
++		return;
++	}
++
++	/**
++	 * scan thru each node with sfp property and find the
++	 * one which has our current sfp bus bound to it.
++	 */
++	for_each_node_with_property(mac_np, "sfp") {
++		sfp_np = of_parse_phandle(mac_np, "sfp", 0);
++		if (sfp_np && (sfp->dev->of_node == sfp_np)) {
++			if (of_get_phy_mode(mac_np, &interface) == 0) {
++				of_node_put(sfp_np);
++				break;
++			}
++		}
++		of_node_put(sfp_np);
++	}
++
++	if (interface == PHY_INTERFACE_MODE_NA) {
++		dev_warn(sfp->dev, "mac interface mode not found");
++		return;
++	}
++
++	switch (interface) {
++		case PHY_INTERFACE_MODE_2500BASEX:
++			linkmode_zero(modes);
++			//linkmode_set_bit(ETHTOOL_LINK_MODE_1000baseX_Full_BIT, modes);
++			linkmode_set_bit(ETHTOOL_LINK_MODE_2500baseX_Full_BIT, modes);
++			speed = 2500;
++			break;
++		case PHY_INTERFACE_MODE_5GBASER:
++			/* do nothing for now */
++			speed = 5000;
++			break;
++		case PHY_INTERFACE_MODE_USXGMII:
++		case PHY_INTERFACE_MODE_10GBASER:
++		case PHY_INTERFACE_MODE_10GKR:
++			/* do nothing for now */
++			speed = 10000;
++			break;
++		default:
++			linkmode_zero(modes);
++			linkmode_set_bit(ETHTOOL_LINK_MODE_1000baseX_Full_BIT, modes);
++			speed = 1000;
++			break;
++
++	}
++
++	dev_warn(sfp->dev, "%s: set speed: %d based on bus phy-mode: %s",
++			__FUNCTION__, speed, phy_modes(interface));
++	dev_warn(sfp->dev, "%s: exit modes 0x%016lx", __FUNCTION__, *modes);
++}
++
++// default quirk to use when unknown 10G devices are found
++static const struct sfp_quirk sfp_quirk_default_phy_mode = {
++	.vendor = "ADTRAN",
++	.part = "DEFAULT-PHY-MODE",
++	.modes = sfp_quirk_phy_mode,
++	.fixup = NULL,
++};
++
+ static const struct sfp_quirk sfp_quirks[] = {
+ 	{
+ 		// Alcatel Lucent G-010S-P can operate at 2500base-X, but
+@@ -2091,6 +2166,25 @@ static int sfp_sm_mod_probe(struct sfp *
+ 	sfp->tx_fault_ignore = false;
+ 
+ 	sfp->quirk = sfp_lookup_quirk(&id);
++	if (!sfp->quirk) {
++		unsigned int nom_rate = id.base.br_nominal*100;
++
++		/* If no quirk handler found and nominal bit rate > 2.5G + 28%
++		 * Modules supporting 2500BASE-X. Note that some
++		 * modules use 2500Mbaud rather than 3100 or 3200Mbaud for
++		 * 2500BASE-X, so we allow some slack here.
++		 */
++		if (nom_rate > 3200) {
++			dev_info(sfp->dev, "no quirk and br_nom > 3200, setting default based on bus phy-mode");
++			sfp->quirk = &sfp_quirk_default_phy_mode;
++		} else {
++			dev_info(sfp->dev, "no quirk and br_nom <= 3200, no fixups or modes applied");
++		}
++	} else {
++		dev_info(sfp->dev, "found quirk handler for vendor[%s] part[%s] applied",
++			sfp->quirk->vendor, sfp->quirk->part);
++	}
++
+ 	if (sfp->quirk && sfp->quirk->fixup)
+ 		sfp->quirk->fixup(sfp);
+ 

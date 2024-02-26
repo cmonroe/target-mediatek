@@ -1,0 +1,30 @@
+--- a/drivers/net/phy/sfp.c
++++ b/drivers/net/phy/sfp.c
+@@ -2088,12 +2088,11 @@ static int sfp_sm_mod_probe(struct sfp *
+ 				 "EEPROM base structure checksum failure (0x%02x != 0x%02x)\n",
+ 				 check, id.base.cc_base);
+ 		} else {
+-			dev_err(sfp->dev,
++			dev_warn(sfp->dev,
+ 				"EEPROM base structure checksum failure: 0x%02x != 0x%02x\n",
+ 				check, id.base.cc_base);
+ 			print_hex_dump(KERN_ERR, "sfp EE: ", DUMP_PREFIX_OFFSET,
+ 				       16, 1, &id, sizeof(id), true);
+-			return -EINVAL;
+ 		}
+ 	}
+ 
+@@ -2116,12 +2115,11 @@ static int sfp_sm_mod_probe(struct sfp *
+ 				 "EEPROM extended structure checksum failure (0x%02x != 0x%02x)\n",
+ 				 check, id.ext.cc_ext);
+ 		} else {
+-			dev_err(sfp->dev,
++			dev_warn(sfp->dev,
+ 				"EEPROM extended structure checksum failure: 0x%02x != 0x%02x\n",
+ 				check, id.ext.cc_ext);
+ 			print_hex_dump(KERN_ERR, "sfp EE: ", DUMP_PREFIX_OFFSET,
+ 				       16, 1, &id, sizeof(id), true);
+-			memset(&id.ext, 0, sizeof(id.ext));
+ 		}
+ 	}
+ 
