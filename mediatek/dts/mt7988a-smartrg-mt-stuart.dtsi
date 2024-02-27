@@ -136,7 +136,7 @@
 		};
 	};
 
-	gpio-leds {
+	leds: gpio-leds {
 		compatible = "gpio-leds";
 
 		lan2_amber {
@@ -179,18 +179,6 @@
 			function = "lan4";
 			gpios = <&pio 67 GPIO_ACTIVE_LOW>;
 			linux,default-trigger = "mt7530-0:03:1Gbps";
-		};
-
-		sfp_green {
-			color = <LED_COLOR_ID_GREEN>;
-			function = "sfp";
-			gpios = <&pio 69 GPIO_ACTIVE_HIGH>;
-		};
-
-		sfp_red {
-			color = <LED_COLOR_ID_RED>;
-			function = "sfp";
-			gpios = <&pio 70 GPIO_ACTIVE_HIGH>;
 		};
 	};
 

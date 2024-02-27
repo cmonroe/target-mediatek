@@ -12,6 +12,20 @@
 	compatible = "smartrg,sdg-8734v", "mediatek,mt7988a";
 };
 
+&leds {
+	sfp_green {
+		color = <LED_COLOR_ID_GREEN>;
+		function = "sfp";
+		gpios = <&pio 69 GPIO_ACTIVE_HIGH>;
+	};
+
+	sfp_red {
+		color = <LED_COLOR_ID_RED>;
+		function = "sfp";
+		gpios = <&pio 70 GPIO_ACTIVE_HIGH>;
+	};
+};
+
 &gmac1 {
 	sfp = <&sfp1>;
 	managed = "in-band-status";
