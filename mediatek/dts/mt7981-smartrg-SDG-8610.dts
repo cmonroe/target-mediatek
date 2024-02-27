@@ -87,27 +87,24 @@
 		};
 	};
 
-	leds {
+	leds: gpio-leds {
 		compatible = "gpio-leds";
 
 		sfp_red {
 			color = <LED_COLOR_ID_RED>;
 			function = "sfp";
-			/* function-enumerator = <1>; */
 			gpios = <&pio 5 GPIO_ACTIVE_LOW>;
 		};
 
 		sfp_green {
 			color = <LED_COLOR_ID_GREEN>;
 			function = "sfp";
-			/* function-enumerator = <0>; */
 			gpios = <&pio 4 GPIO_ACTIVE_LOW>;
 		};
 
 		lan_green {
 			color = <LED_COLOR_ID_GREEN>;
 			function = "lan";
-			/* function-enumerator = <0>; */
 			gpios = <&pio 8 GPIO_ACTIVE_LOW>;
 			linux,default-trigger = "mdio-bus:00:1Gbps";
 		};
@@ -115,7 +112,6 @@
 		lan_amber {
 			color = <LED_COLOR_ID_AMBER>;
 			function = "lan";
-			/* function-enumerator = <1>; */
 			gpios = <&pio 13 GPIO_ACTIVE_LOW>;
 			linux,default-trigger = "mdio-bus:00:100Mbps";
 		};
