@@ -15,12 +15,6 @@
 	model = "SmartRG SDG-8614";
 	compatible = "smartrg,sdg-8614", "mediatek,mt7986a";
 
-	leds {
-		mux_sel {
-			default-state = "off";
-		};
-	};
-
 	/* SFP1 cage (WAN) */
 	i2c_sfp1: i2c-gpio-0 {
 		compatible = "i2c-gpio";
@@ -42,6 +36,25 @@
 		tx-fault-gpios = <&pio 7 GPIO_ACTIVE_HIGH>;
 		maximum-power-milliwatt = <3000>;
 	};
+};
+
+&leds {
+	sfp_red {
+		color = <LED_COLOR_ID_RED>;
+		function = "sfp";
+		gpios = <&pio 16 GPIO_ACTIVE_HIGH>;
+	};
+
+	sfp_green {
+		color = <LED_COLOR_ID_GREEN>;
+		function = "sfp";
+		gpios = <&pio 19 GPIO_ACTIVE_HIGH>;
+	};
+};
+
+&mux_sel {
+	output-low;
+	/delete-node/ output-high;
 };
 
 &gmac0 {

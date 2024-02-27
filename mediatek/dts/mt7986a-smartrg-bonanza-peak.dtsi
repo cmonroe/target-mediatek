@@ -5,8 +5,9 @@
  */
 
 /dts-v1/;
-#include <dt-bindings/input/input.h>
 #include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/input/input.h>
+#include <dt-bindings/leds/common.h>
 
 #include "mt7986a.dtsi"
 
@@ -149,32 +150,8 @@
 		};
 	};
 
-	leds {
+	leds: gpio-leds {
 		compatible = "gpio-leds";
-
-		mux_sel {
-			label = "mux_sel";
-			gpios = <&pio 23 GPIO_ACTIVE_LOW>;
-			default-state = "on";
-		};
-
-		mux_oe {
-			label = "mux_oe";
-			gpios = <&pio 24 GPIO_ACTIVE_LOW>;
-			default-state = "on";
-		};
-
-		sfp_red {
-			label = "sfp_red";
-			gpios = <&pio 16 GPIO_ACTIVE_HIGH>;
-			default-state = "off";
-		};
-
-		sfp_green {
-			label = "sfp_green";
-			gpios = <&pio 19 GPIO_ACTIVE_HIGH>;
-			default-state = "off";
-		};
 	};
 };
 
@@ -444,6 +421,20 @@
 			       "WF1_TOP_CLK", "WF1_TOP_DATA";
 			drive-strength = <4>;
 		};
+	};
+
+	mux_sel: mux-sel-hog {
+		gpio-hog;
+		gpios = <23 GPIO_ACTIVE_LOW>;
+		line-name = "mux-sel";
+		output-high;
+	};
+
+	mux_oe: mux-oe-hog {
+		gpio-hog;
+		gpios = <24 GPIO_ACTIVE_LOW>;
+		line-name = "mux-oe";
+		output-high;
 	};
 };
 
