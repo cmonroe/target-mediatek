@@ -38,3 +38,15 @@
  	mask |= RELATCH_SRC_MASK;
  	val |= FIELD_PREP(RELATCH_SRC_MASK, APLL_CLK);
  
+@@ -204,9 +212,11 @@ static int mtk_dai_etdm_config(struct mt
+ 		regmap_update_bits(afe->regmap, ETDM_OUT5_CON4,
+ 				   OUT_SEL_FS_MASK, OUT_SEL_FS(etdm_rate));
+ 
++#if 0 /* D2 MOD: Diable the 16kHz wideband PCM, use the default 8kHz narrowband */
+ 		/* set ETDM_OUT5_CON5 */
+ 		regmap_update_bits(afe->regmap, ETDM_OUT5_CON5,
+ 				   ETDM_CLK_DIV_MASK, ETDM_CLK_DIV);
++#endif
+ 		break;
+ 	case SNDRV_PCM_STREAM_CAPTURE:
+ 		/* set ETDM_IN5_CON0 */
