@@ -483,7 +483,7 @@
 
 &pcie0 {
 	pinctrl-names = "default";
-	pinctrl-0 = <&pcie0_pins>;
+	pinctrl-0 = <&pcie0_1_pins>;
 	status = "okay";
 
 	pcie@0,0 {
@@ -515,6 +515,13 @@
 	button_pins: button-pins {
 		pins = "GPIO_RESET", "GPIO_WPS";
 		mediatek,pull-down-adv = <0>; /* bias-disable */
+	};
+
+	pcie0_1_pins: pcie0-pins-g1 {
+		mux {
+			function = "pcie";
+			groups = "pcie_2l_0_pereset", "pcie_clk_req_n0_0";
+		};
 	};
 
 	pwm_pins: pwm-pins {
