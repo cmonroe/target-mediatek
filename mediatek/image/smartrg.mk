@@ -142,46 +142,52 @@ define Build/srgImage
 endef
 
 define Build/srgImageRun
-	rm -rf $(KDIR)/img
-	mkdir -p $(KDIR)/img/check_scripts
-	mkdir -p $(KDIR)/img/scripts
-	mkdir -p $(KDIR)/img/etc
-	mkdir -p $(KDIR)/img/cdt
-	mkdir -p $(KDIR)/img/allcdts
-	echo "###### metadata_start ######" > $(KDIR)/img/metadata
+	rm -rf $(KDIR)/img_stage
+	mkdir -p $(KDIR)/img_stage
+	mkdir -p $(KDIR)/img_stage/cdt
+	mkdir -p $(KDIR)/img_stage/allcdts
+	rm -f $(KDIR)/metadata
+	touch $(KDIR)/metadata
 	if [ $(1) ]; then \
 		if [ "$(1)" = "allcdts" ]; then\
-			find $(wildcard $(PACKAGE_SUBDIRS)) -type f -name 'cdt-*.ipk' -exec cp "{}" $(KDIR)/img/allcdts \; ; \
-			echo "CDT=all" >> $(KDIR)/img/metadata; \
+			find $(wildcard $(PACKAGE_SUBDIRS)) -type f -name 'cdt-*.ipk' -exec cp "{}" $(KDIR)/img_stage/allcdts \; ; \
+			echo "CDT=all" >> $(KDIR)/metadata; \
 		else\
 			CDT_IPK=`find $(wildcard $(PACKAGE_SUBDIRS)) -type f -name 'cdt-$(1)_*.ipk' -print -quit` ; \
-			cp $$CDT_IPK $(KDIR)/img/cdt ; \
-			echo "CDT=\"$(1)\"" >> $(KDIR)/img/metadata; \
+			cp $$CDT_IPK $(KDIR)/img_stage/cdt ; \
+			echo "CDT=\"$(1)\"" >> $(KDIR)/metadata; \
 		fi\
 	else \
-		echo "CDT= " >> $(KDIR)/img/metadata; \
+		echo "CDT= " >> $(KDIR)/metadata; \
 	fi
-	cat $(TARGET_DIR)/etc/openwrt_release | sed "s/'/\"/g" >> $(KDIR)/img/metadata
-	cat $(TARGET_DIR)/../flash-images/files/scripts/arch_platforms.sh | grep PLATFORMS >> $(KDIR)/img/metadata
-	echo "###### metadata_end ######" >> $(KDIR)/img/metadata
-	$(CP) $(TARGET_DIR)/../flash-images/files/scripts/* $(KDIR)/img/check_scripts/
-	$(CP) $(TARGET_DIR)/Boot $(KDIR)/img/
-	$(CP) $(BIN_DIR)/$(IMG_PREFIX)-polecat-fit-multi.itb $(KDIR)/img/Boot/fit-multi.itb
-	$(CP) $(TARGET_DIR)/usr/srg/scripts/self-upgrade.sh $(KDIR)/img/
-	$(CP) $(TARGET_DIR)/usr/srg/scripts/img.sh $(KDIR)/img/scripts/
-	$(CP) $(TARGET_DIR)/usr/srg/scripts/flash-manage.sh $(KDIR)/img/scripts/
-	$(CP) $(TARGET_DIR)/usr/srg/scripts/emmc-manage.sh $(KDIR)/img/scripts/
-	$(CP) $(TARGET_DIR)/usr/srg/scripts/emmc-disk-* $(KDIR)/img/scripts/
-	$(CP) $(TARGET_DIR)/usr/srg/scripts/console_manage.sh $(KDIR)/img/scripts/
-	$(CP) $(TARGET_DIR)/etc/openwrt_release $(KDIR)/img/etc/
-	$(CP) $(KDIR)/root.squashfs.run.bin $(KDIR)/img/root.squashfs.bin
-	tar cJf $(KDIR)/$(BINNAME).runimg.txz -C $(KDIR) img
-	$(STAGING_DIR_HOST)/bin/makeself.sh --xz --lsm $(KDIR)/img/metadata --sha256 --ssl-encrypt --ssl-pass-src file:$(TARGET_DIR)/usr/srg/scripts/pfsos $(KDIR)/img $(KDIR)/$(BINNAME).run "SOS self" ./self-upgrade.sh
+	cat $(TARGET_DIR)/etc/openwrt_release | sed "s/'/\"/g" >> $(KDIR)/metadata
+	cat $(TARGET_DIR)/../flash-images/files/scripts/arch_platforms.sh | grep PLATFORMS >> $(KDIR)/metadata
+	# for debugging add
+		# --keep --verbose
+	$(STAGING_DIR_HOST)/bin/sos_bld_run.py \
+		--lsm $(KDIR)/metadata \
+		--img_type SOS_UPGRADE \
+		--encrypt \
+		--self_install self-upgrade.sh \
+		--add_image_file $(KDIR)/img_stage/ "." \
+		--add_image_file $(TARGET_DIR)/../flash-images/files/scripts/ check_scripts/ \
+		--add_image_file $(TARGET_DIR)/Boot Boot/ \
+		--add_image_file $(BIN_DIR)/$(IMG_PREFIX)-polecat-fit-multi.itb Boot/fit-multi.itb \
+		--add_image_file $(TARGET_DIR)/usr/srg/scripts/img.sh scripts/ \
+		--add_image_file $(TARGET_DIR)/usr/srg/scripts/flash-manage.sh scripts/ \
+		--add_image_file $(TARGET_DIR)/usr/srg/scripts/emmc-manage.sh scripts/ \
+		--add_image_file $(TARGET_DIR)/usr/srg/scripts/emmc-disk-layout-1.sh scripts/ \
+		--add_image_file $(TARGET_DIR)/usr/srg/scripts/emmc-disk-layout-2.sh scripts/ \
+		--add_image_file $(TARGET_DIR)/usr/srg/scripts/emmc-disk-layout-info.sh scripts/ \
+		--add_image_file $(TARGET_DIR)/usr/srg/scripts/console_manage.sh scripts/ \
+		--add_image_file $(TARGET_DIR)/etc/openwrt_release etc/ \
+		--add_image_file $(KDIR)/root.squashfs.run.bin root.squashfs.bin \
+		--out_file $(KDIR)/$(BINNAME).run
 	$(CP) $(KDIR)/$(BINNAME).run $(BIN_DIR)/$(BINNAME)$(if $(1),-$(1),).run
-	$(CP) $(KDIR)/$(BINNAME).runimg.txz $(BIN_DIR)/$(BINNAME).runimg.txz
 	@echo "RUNNING BuildPackage alt-os-image"
 	mkdir -p $(BIN_DIR)/alt-os-images
 	$(STAGING_DIR_HOST)/bin/alt-os-images/transition.sh -f plumeos -t sos -i $(BIN_DIR)/$(BINNAME)$(if $(1),-$(1),).run -d $(BIN_DIR)/alt-os-images
+
 endef
 
 define Image/Flash/mkflash_emmc
