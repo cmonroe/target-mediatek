@@ -169,6 +169,7 @@ define Build/srgImageRun
 		--img_type SOS_UPGRADE \
 		--encrypt \
 		--self_install self-upgrade.sh \
+		--add_image_file $(TARGET_DIR)/usr/srg/scripts/self-upgrade.sh "." \
 		--add_image_file $(KDIR)/img_stage/ "." \
 		--add_image_file $(TARGET_DIR)/../flash-images/files/scripts/ check_scripts/ \
 		--add_image_file $(TARGET_DIR)/Boot Boot/ \
