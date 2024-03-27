@@ -1,21 +1,6 @@
 REQUIRE_IMAGE_METADATA=1
 RAMFS_COPY_BIN='fitblk'
 
-platform_get_bootdev() {
-	local rootdisk="$(cat /sys/firmware/devicetree/base/chosen/rootdisk)"
-	local handle bootdev
-	for handle in /sys/class/block/*/of_node/phandle /sys/class/block/*/device/of_node/phandle; do
-		[ ! -e "$handle" ] && continue
-		if [ "$rootdisk" = "$(cat $handle)" ]; then
-			bootdev="${handle%/of_node/phandle}"
-			bootdev="${bootdev%/device}"
-			bootdev="${bootdev#/sys/class/block/}"
-			echo "$bootdev"
-			break
-		fi
-	done
-}
-
 platform_do_upgrade() {
 	local board=$(board_name)
 	local file_type=$(identify $1)
@@ -25,10 +10,11 @@ platform_do_upgrade() {
 	linksys,e8450-ubi|\
 	ubnt,unifi-6-lr-v1-ubootmod|\
 	ubnt,unifi-6-lr-v2-ubootmod|\
-	ubnt,unifi-6-lr-v3-ubootmod)
+	ubnt,unifi-6-lr-v3-ubootmod|\
+	xiaomi,redmi-router-ax6s)
 		[ -e /dev/fit0 ] && fitblk /dev/fit0
 		[ -e /dev/fitrw ] && fitblk /dev/fitrw
-		bootdev="$(platform_get_bootdev)"
+		bootdev="$(fitblk_get_bootdev)"
 		case "$bootdev" in
 		mmcblk*)
 			EMMC_KERN_DEV="/dev/$bootdev"
@@ -63,8 +49,7 @@ platform_do_upgrade() {
 	elecom,wrc-x3200gst3|\
 	mediatek,mt7622-rfb1-ubi|\
 	netgear,wax206|\
-	totolink,a8000ru|\
-	xiaomi,redmi-router-ax6s)
+	totolink,a8000ru)
 		nand_do_upgrade "$1"
 		;;
 	linksys,e8450)
@@ -99,8 +84,7 @@ platform_check_image() {
 	elecom,wrc-x3200gst3|\
 	mediatek,mt7622-rfb1-ubi|\
 	netgear,wax206|\
-	totolink,a8000ru|\
-	xiaomi,redmi-router-ax6s)
+	totolink,a8000ru)
 		nand_do_platform_check "$board" "$1"
 		return $?
 		;;
@@ -119,7 +103,7 @@ platform_check_image() {
 platform_copy_config() {
 	case "$(board_name)" in
 	bananapi,bpi-r64)
-		if platform_get_bootdev | grep -q mmc; then
+		if fitblk_get_bootdev | grep -q mmc; then
 			emmc_copy_config
 		fi
 		;;

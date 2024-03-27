@@ -22,7 +22,7 @@
  #define MDIO_AN_TX_VEND_STATUS1			0xc800
  #define MDIO_AN_TX_VEND_STATUS1_RATE_MASK	GENMASK(3, 1)
  #define MDIO_AN_TX_VEND_STATUS1_10BASET		0
-@@ -628,6 +636,41 @@ static void aqr107_chip_info(struct phy_
+@@ -585,6 +593,41 @@ static void aqr107_chip_info(struct phy_
  		   fw_major, fw_minor, build_id, prov_id);
  }
  
@@ -64,7 +64,7 @@
  static int aqr107_config_init(struct phy_device *phydev)
  {
  	int ret;
-@@ -651,6 +694,10 @@ static int aqr107_config_init(struct phy
+@@ -608,6 +651,10 @@ static int aqr107_config_init(struct phy
  	if (!ret)
  		aqr107_chip_info(phydev);
  

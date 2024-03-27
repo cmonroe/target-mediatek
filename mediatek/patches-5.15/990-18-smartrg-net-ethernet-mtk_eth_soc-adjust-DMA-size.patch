@@ -1,6 +1,6 @@
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.h
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.h
-@@ -33,7 +33,7 @@
+@@ -32,7 +32,7 @@
  #define MTK_TX_DMA_BUF_LEN	0x3fff
  #define MTK_TX_DMA_BUF_LEN_V2	0xffff
  #define MTK_QDMA_RING_SIZE	2048
