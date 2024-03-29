@@ -189,6 +189,35 @@ define Build/srgImageRun
 	mkdir -p $(BIN_DIR)/alt-os-images
 	$(STAGING_DIR_HOST)/bin/alt-os-images/transition.sh -f plumeos -t sos -i $(BIN_DIR)/$(BINNAME)$(if $(1),-$(1),).run -d $(BIN_DIR)/alt-os-images
 
+	# Create SOS_HOT_FIX version. Will install image on the system without shutdown/reboot. 
+	# Next boot will use the installed image.
+#	@echo "#!/usr/bin/env bash" > $(KDIR)/post_sos_hot_fix.sh
+#	@echo "echo \"Running post_sos_hot_fix.sh\"" >> $(KDIR)/post_sos_hot_fix.sh
+#	@echo "exit 1" >> $(KDIR)/post_sos_hot_fix.sh
+#	
+#	$(STAGING_DIR_HOST)/bin/sos_bld_run.py \
+		--lsm $(KDIR)/metadata \
+		--img_type SOS_HOT_FIX \
+		--encrypt \
+		--self_install self-upgrade.sh \
+		--add_image_file $(KDIR)/post_sos_hot_fix.sh "post_upgrade/" \
+		--add_image_file $(TARGET_DIR)/usr/srg/scripts/self-upgrade.sh "." \
+		--add_image_file $(KDIR)/img_stage/ "." \
+		--add_image_file $(TARGET_DIR)/../flash-images/files/scripts/ check_scripts/ \
+		--add_image_file $(TARGET_DIR)/Boot Boot/ \
+		--add_image_file $(BIN_DIR)/$(IMG_PREFIX)-polecat-fit-multi.itb Boot/fit-multi.itb \
+		--add_image_file $(TARGET_DIR)/usr/srg/scripts/img.sh scripts/ \
+		--add_image_file $(TARGET_DIR)/usr/srg/scripts/flash-manage.sh scripts/ \
+		--add_image_file $(TARGET_DIR)/usr/srg/scripts/emmc-manage.sh scripts/ \
+		--add_image_file $(TARGET_DIR)/usr/srg/scripts/emmc-disk-layout-1.sh scripts/ \
+		--add_image_file $(TARGET_DIR)/usr/srg/scripts/emmc-disk-layout-2.sh scripts/ \
+		--add_image_file $(TARGET_DIR)/usr/srg/scripts/emmc-disk-layout-info.sh scripts/ \
+		--add_image_file $(TARGET_DIR)/usr/srg/scripts/console_manage.sh scripts/ \
+		--add_image_file $(TARGET_DIR)/etc/openwrt_release etc/ \
+		--add_image_file $(KDIR)/root.squashfs.run.bin root.squashfs.bin \
+		--out_file $(KDIR)/$(BINNAME)_HOT_FIX.run
+#	$(CP) $(KDIR)/$(BINNAME)_HOT_FIX.run $(BIN_DIR)/$(BINNAME)$(if $(1),-$(1),)_HOT_FIX.run
+
 endef
 
 define Image/Flash/mkflash_emmc
