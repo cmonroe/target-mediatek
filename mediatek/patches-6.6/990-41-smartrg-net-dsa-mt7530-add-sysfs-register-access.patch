@@ -1,0 +1,133 @@
+From 8069eaee6aac29b67a17a85e44ab46fdd714083e Mon Sep 17 00:00:00 2001
+From: Tim Hayes <tim.hayes@smartrg.com>
+Date: Wed, 16 Nov 2022 12:16:41 -0800
+Subject: [PATCH] OWRT-6281 mtk reg rd wr added
+
+---
+ drivers/net/dsa/mt7530.c | 87 +++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 86 insertions(+), 1 deletion(-)
+
+--- a/drivers/net/dsa/mt7530.c
++++ b/drivers/net/dsa/mt7530.c
+@@ -21,6 +21,7 @@
+ #include <linux/gpio/consumer.h>
+ #include <linux/gpio/driver.h>
+ #include <net/dsa.h>
++#include <linux/debugfs.h>
+ 
+ #include "mt7530.h"
+ 
+@@ -938,6 +939,7 @@ mt7530_mib_fetch_port_stat(struct mt7530
+ 	}
+ }
+ 
++static int mib_work_delay=MT7530_MIB_WORK_DELAY;
+ static void
+ mt7530_mib_work_func(struct work_struct *work)
+ {
+@@ -953,7 +955,7 @@ mt7530_mib_work_func(struct work_struct
+ 	}
+ 
+ 	schedule_delayed_work(&priv->mib_work,
+-			      msecs_to_jiffies(MT7530_MIB_WORK_DELAY));
++			      msecs_to_jiffies(mib_work_delay));
+ }
+ 
+ void mt7530_get_stats64(struct dsa_switch *ds, int port,struct rtnl_link_stats64 *stats)
+@@ -3145,6 +3147,86 @@ static const struct phylink_pcs_ops mt75
+ 	.pcs_an_restart = mt7530_pcs_an_restart,
+ };
+ 
++#define REG_BUF_SIZE 128 
++#define VAL_BUF_SIZE 128 
++static char regbuf[REG_BUF_SIZE]={0}; 
++static char valbuf[VAL_BUF_SIZE]={0}; 
++static char cmd[24]={"NULL"};
++static u32 offset=0;
++static u64 val=0;
++struct mt7530_priv *regdev;
++static u16 done=0;
++static struct dentry *debugfs_dir = NULL;
++/*
++regrd  <reg> 
++regwr  <reg> <val> 
++*/
++
++static ssize_t mtk_common_reg_read(struct file *file, char __user *ubuf, size_t len, loff_t *ppos)
++{
++	if( strcmp(cmd,"regrd")==0 ) {
++		if ((regdev!=NULL) && (done==0)) {
++			done=1;
++			val=0;
++			val=mt7530_read(regdev,offset);
++			
++		}
++	}
++	snprintf(valbuf,VAL_BUF_SIZE, "0x%08x\n",(u32)val);
++	return (simple_read_from_buffer(ubuf, len, ppos, valbuf, strlen(valbuf)));
++}
++
++static ssize_t mtk_common_reg_write(struct file *file, const char __user *ubuf, size_t len, loff_t *ppos)
++{
++	int bytes = 0;
++	int n=0;
++
++	if (len >= REG_BUF_SIZE) {
++		return -ENOMEM;
++	}
++
++	memset(valbuf,0,VAL_BUF_SIZE);
++	memset(regbuf,0,REG_BUF_SIZE);
++	bytes = simple_write_to_buffer(regbuf,sizeof(regbuf) - 1, ppos, ubuf, len);
++	regbuf[sizeof(regbuf) - 1] = '\0';
++
++	n=sscanf(regbuf,"%s",cmd);
++	if (n != 1) {
++		return -EFAULT;
++	}
++	if( strcmp(cmd,"regrd")==0 ) {
++		n=sscanf(regbuf,"%s %x ",cmd,&offset);
++		
++	} else if( strcmp(cmd,"regwr")==0 ) {
++		n=sscanf(regbuf,"%s %x %llx ",cmd,&offset,&val);
++	} else if( strcmp(cmd,"mib_work_delay")==0 ) {
++		n=sscanf(regbuf,"%s %d",cmd,&mib_work_delay);
++		printk("%s:%d DSA mib_work_delay %d \n",__FUNCTION__,__LINE__,mib_work_delay);
++		return (len);
++	} else {
++		return -EFAULT;
++	}
++
++	done=0;
++
++	if( strcmp(cmd,"regwr")==0 ) {
++		if ((regdev!=NULL) && (done==0)) {
++			done=1;
++			mt7530_write(regdev,offset,(u32)val);
++		}
++	}
++
++	return (len);
++}
++
++static const struct file_operations mtk_common_reg_ops = {
++	.owner  = THIS_MODULE,
++	.open   = simple_open,
++	.write  = mtk_common_reg_write,
++	.read   = mtk_common_reg_read,
++	.llseek = default_llseek,
++};
++
+ static int
+ mt753x_setup(struct dsa_switch *ds)
+ {
+@@ -3360,6 +3442,9 @@ mt7530_probe_common(struct mt7530_priv *
+ 
+ 	mutex_init(&priv->mib_lock);
+ 	INIT_DELAYED_WORK(&priv->mib_work, mt7530_mib_work_func);
++	debugfs_dir = debugfs_create_dir("mtkreg", NULL);
++	debugfs_create_file("regrdwr",(S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH), debugfs_dir, NULL, &mtk_common_reg_ops);
++	regdev=priv;
+ 
+ 	return 0;
+ }

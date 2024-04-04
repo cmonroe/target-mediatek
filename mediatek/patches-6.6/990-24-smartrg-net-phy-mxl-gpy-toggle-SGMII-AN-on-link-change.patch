@@ -1,0 +1,157 @@
+From: Chad Monroe <chad@monroe.io>
+Date: Thu, 27 Apr 2023 17:00:17 -0700
+Subject: [PATCH]  net: phy: mxl: toggle SGMII AN on link change 
+
+Sometimes the GPY211 can come up and report all is well but no RX packets
+are received by the MAC. For some reason toggling the SGMII AN bit clears
+this condition. As a very hacky workaround, enable it during physical
+link change and let gpy_update_interface disable it shortly after. 
+
+Signed-off-by: Chad Monroe <chad@monroe.io>
+---
+ drivers/net/phy/mxl-gpy.c |   40 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 40 insertions(+)
+
+--- a/drivers/net/phy/mxl-gpy.c
++++ b/drivers/net/phy/mxl-gpy.c
+@@ -571,6 +571,8 @@ static int gpy_config_aneg(struct phy_de
+ 	if (phydev->state != PHY_UP)
+ 		return 0;
+ 
++//	phydev_info(phydev, "gpy_config_aneg: trigger VSPEC1_SGMII_CTRL_ANRS\n");
++
+ 	ret = phy_read_poll_timeout(phydev, MII_BMSR, ret, ret & BMSR_LSTATUS,
+ 				    20000, 4000000, false);
+ 	if (ret == -ETIMEDOUT)
+@@ -611,6 +613,35 @@ static int gpy_update_mdix(struct phy_de
+ 	return 0;
+ }
+ 
++/**
++ * in some cases the GPY211 will link up but not RX packets
++ * 
++ * setting SGMII AN to enabled then back to disabled clears this
++ * for some reason. enable SGMII AN here and let the update
++ * interface poller clear it shortly after. 
++ */
++static void gpy_link_change_notify(struct phy_device *phydev)
++{
++#ifdef GPY_DEBUG
++	int ret;
++
++	phydev_info(phydev, "gpy_link_change_notify phydev->state=%d\n", phydev->state);
++
++	ret = phy_read_mmd(phydev, MDIO_MMD_VEND1, VSPEC1_SGMII_CTRL);
++	phydev_info(phydev, "gpy_link_change_notify VSPEC1_SGMII_CTRL=%04x set ANEN\n", ret);
++
++	ret = phy_set_bits_mmd(phydev, MDIO_MMD_VEND1, VSPEC1_SGMII_CTRL,
++			     VSPEC1_SGMII_CTRL_ANEN);
++
++	ret = phy_read_mmd(phydev, MDIO_MMD_VEND1, VSPEC1_SGMII_CTRL);
++	phydev_info(phydev, "gpy_link_change_notify VSPEC1_SGMII_CTRL=%04x DONE\n", ret);
++#else
++	phy_set_bits_mmd(phydev, MDIO_MMD_VEND1, VSPEC1_SGMII_CTRL,
++			     VSPEC1_SGMII_CTRL_ANEN);
++#endif
++
++}
++
+ static int gpy_update_interface(struct phy_device *phydev)
+ {
+ 	int ret;
+@@ -925,6 +956,7 @@ static struct phy_driver gpy_drivers[] =
+ 		.set_wol	= gpy_set_wol,
+ 		.get_wol	= gpy_get_wol,
+ 		.set_loopback	= gpy_loopback,
++		.link_change_notify	= gpy_link_change_notify,
+ 	},
+ 	{
+ 		.phy_id		= PHY_ID_GPY115B,
+@@ -943,6 +975,7 @@ static struct phy_driver gpy_drivers[] =
+ 		.set_wol	= gpy_set_wol,
+ 		.get_wol	= gpy_get_wol,
+ 		.set_loopback	= gpy115_loopback,
++		.link_change_notify	= gpy_link_change_notify,
+ 	},
+ 	{
+ 		PHY_ID_MATCH_MODEL(PHY_ID_GPY115C),
+@@ -960,6 +993,7 @@ static struct phy_driver gpy_drivers[] =
+ 		.set_wol	= gpy_set_wol,
+ 		.get_wol	= gpy_get_wol,
+ 		.set_loopback	= gpy115_loopback,
++		.link_change_notify	= gpy_link_change_notify,
+ 	},
+ 	{
+ 		.phy_id		= PHY_ID_GPY211B,
+@@ -978,6 +1012,7 @@ static struct phy_driver gpy_drivers[] =
+ 		.set_wol	= gpy_set_wol,
+ 		.get_wol	= gpy_get_wol,
+ 		.set_loopback	= gpy_loopback,
++		.link_change_notify	= gpy_link_change_notify,
+ 	},
+ 	{
+ 		PHY_ID_MATCH_MODEL(PHY_ID_GPY211C),
+@@ -995,6 +1030,7 @@ static struct phy_driver gpy_drivers[] =
+ 		.set_wol	= gpy_set_wol,
+ 		.get_wol	= gpy_get_wol,
+ 		.set_loopback	= gpy_loopback,
++		.link_change_notify	= gpy_link_change_notify,
+ 	},
+ 	{
+ 		.phy_id		= PHY_ID_GPY212B,
+@@ -1013,6 +1049,7 @@ static struct phy_driver gpy_drivers[] =
+ 		.set_wol	= gpy_set_wol,
+ 		.get_wol	= gpy_get_wol,
+ 		.set_loopback	= gpy_loopback,
++		.link_change_notify	= gpy_link_change_notify,
+ 	},
+ 	{
+ 		PHY_ID_MATCH_MODEL(PHY_ID_GPY212C),
+@@ -1030,6 +1067,7 @@ static struct phy_driver gpy_drivers[] =
+ 		.set_wol	= gpy_set_wol,
+ 		.get_wol	= gpy_get_wol,
+ 		.set_loopback	= gpy_loopback,
++		.link_change_notify	= gpy_link_change_notify,
+ 	},
+ 	{
+ 		.phy_id		= PHY_ID_GPY215B,
+@@ -1048,6 +1086,7 @@ static struct phy_driver gpy_drivers[] =
+ 		.set_wol	= gpy_set_wol,
+ 		.get_wol	= gpy_get_wol,
+ 		.set_loopback	= gpy_loopback,
++		.link_change_notify	= gpy_link_change_notify,
+ 	},
+ 	{
+ 		PHY_ID_MATCH_MODEL(PHY_ID_GPY215C),
+@@ -1065,6 +1104,7 @@ static struct phy_driver gpy_drivers[] =
+ 		.set_wol	= gpy_set_wol,
+ 		.get_wol	= gpy_get_wol,
+ 		.set_loopback	= gpy_loopback,
++		.link_change_notify	= gpy_link_change_notify,
+ 	},
+ 	{
+ 		PHY_ID_MATCH_MODEL(PHY_ID_GPY241B),
+@@ -1082,6 +1122,7 @@ static struct phy_driver gpy_drivers[] =
+ 		.set_wol	= gpy_set_wol,
+ 		.get_wol	= gpy_get_wol,
+ 		.set_loopback	= gpy_loopback,
++		.link_change_notify	= gpy_link_change_notify,
+ 	},
+ 	{
+ 		PHY_ID_MATCH_MODEL(PHY_ID_GPY241BM),
+@@ -1099,6 +1140,7 @@ static struct phy_driver gpy_drivers[] =
+ 		.set_wol	= gpy_set_wol,
+ 		.get_wol	= gpy_get_wol,
+ 		.set_loopback	= gpy_loopback,
++		.link_change_notify	= gpy_link_change_notify,
+ 	},
+ 	{
+ 		PHY_ID_MATCH_MODEL(PHY_ID_GPY245B),
+@@ -1116,6 +1158,7 @@ static struct phy_driver gpy_drivers[] =
+ 		.set_wol	= gpy_set_wol,
+ 		.get_wol	= gpy_get_wol,
+ 		.set_loopback	= gpy_loopback,
++		.link_change_notify	= gpy_link_change_notify,
+ 	},
+ };
+ module_phy_driver(gpy_drivers);

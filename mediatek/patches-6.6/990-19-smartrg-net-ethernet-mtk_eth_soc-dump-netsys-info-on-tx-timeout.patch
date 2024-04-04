@@ -1,0 +1,132 @@
+--- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
++++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
+@@ -50,6 +50,7 @@ static const struct mtk_reg_map mtk_reg_
+ 	.tx_irq_mask		= 0x1a1c,
+ 	.tx_irq_status		= 0x1a18,
+ 	.pdma = {
++		.base_ptr	= 0x0800,
+ 		.rx_ptr		= 0x0900,
+ 		.rx_cnt_cfg	= 0x0904,
+ 		.pcrx_ptr	= 0x0908,
+@@ -98,6 +99,7 @@ static const struct mtk_reg_map mt7628_r
+ 	.tx_irq_mask		= 0x0a28,
+ 	.tx_irq_status		= 0x0a20,
+ 	.pdma = {
++		.base_ptr	= 0x0800,
+ 		.rx_ptr		= 0x0900,
+ 		.rx_cnt_cfg	= 0x0904,
+ 		.pcrx_ptr	= 0x0908,
+@@ -114,6 +116,7 @@ static const struct mtk_reg_map mt7986_r
+ 	.tx_irq_mask		= 0x461c,
+ 	.tx_irq_status		= 0x4618,
+ 	.pdma = {
++		.base_ptr	= 0x4000,
+ 		.rx_ptr		= 0x4100,
+ 		.rx_cnt_cfg	= 0x4104,
+ 		.pcrx_ptr	= 0x4108,
+@@ -162,6 +165,7 @@ static const struct mtk_reg_map mt7988_r
+ 	.tx_irq_mask		= 0x461c,
+ 	.tx_irq_status		= 0x4618,
+ 	.pdma = {
++		.base_ptr	= 0x6800,
+ 		.rx_ptr		= 0x6900,
+ 		.rx_cnt_cfg	= 0x6904,
+ 		.pcrx_ptr	= 0x6908,
+@@ -3325,14 +3329,61 @@ static bool mtk_hw_reset_check(struct mt
+ 	       (val & MTK_FE_INT_TSO_ALIGN) || (val & MTK_FE_INT_TSO_ILLEGAL);
+ }
+ 
++static void mtk_dump_reg(void *_eth, char *name, u32 offset, u32 range)
++{
++	struct mtk_eth *eth = _eth;
++	u32 cur = offset;
++	pr_info("\n============ %s ============\n", name);
++	while(cur < offset + range) {
++		pr_info("0x%x: %08x %08x %08x %08x\n",
++			cur, mtk_r32(eth, cur), mtk_r32(eth, cur + 0x4),
++			mtk_r32(eth, cur + 0x8), mtk_r32(eth, cur + 0xc));
++		cur += 0x10;
++	}
++}
++static void mtk_dump_netsys_info(void *_eth)
++{
++	struct mtk_eth *eth = _eth;
++	const struct mtk_reg_map *reg_map = eth->soc->reg_map;
++	u32 id = 0;
++
++	mtk_dump_reg(eth, "FE", 0x0, 0x500);
++	mtk_dump_reg(eth, "ADMA", reg_map->pdma.base_ptr, 0x300);
++	for (id = 0; id < MTK_QDMA_PAGE_NUM; id++){
++		mtk_w32(eth, id, MTK_QDMA_PAGE(reg_map->qdma.qtx_cfg));
++		pr_info("\nQDMA PAGE:%x ",mtk_r32(eth, MTK_QDMA_PAGE(reg_map->qdma.qtx_cfg)));
++		mtk_dump_reg(eth, "QDMA", reg_map->qdma.qtx_cfg, 0x100);
++		mtk_w32(eth, 0, MTK_QDMA_PAGE(reg_map->qdma.qtx_cfg));
++	}
++	mtk_dump_reg(eth, "QDMA", reg_map->qdma.rx_ptr, 0x300);
++	mtk_dump_reg(eth, "WDMA", reg_map->wdma_base[0], 0x600);
++	mtk_dump_reg(eth, "PPE", 0x2200, 0x200);
++	mtk_dump_reg(eth, "GMAC", 0x10000, 0x300);
++	if (mtk_is_netsys_v3_or_greater(eth)) {
++		mtk_dump_reg(eth, "XGMAC0", 0x12000, 0x300);
++		mtk_dump_reg(eth, "XGMAC1", 0x13000, 0x300);
++		//mtk_dump_usxgmii(eth->usxgmii_pcs[0]->regmap,
++		//	"USXGMII0", 0, 0x1000);
++		//mtk_dump_usxgmii(eth->usxgmii_pcs[1]->regmap,
++		//	"USXGMII1", 0, 0x1000);
++	}
++}
++
+ static void mtk_tx_timeout(struct net_device *dev, unsigned int txqueue)
+ {
++	static int dump = 0;
+ 	struct mtk_mac *mac = netdev_priv(dev);
+ 	struct mtk_eth *eth = mac->hw;
+ 
+ 	if (test_bit(MTK_RESETTING, &eth->state))
+ 		return;
+ 
++	if (dump < 2) {
++		/* only do this twice */
++		mtk_dump_netsys_info(eth);
++		dump++;
++	}
++
+ 	if (!mtk_hw_reset_check(eth))
+ 		return;
+ 
+@@ -5420,6 +5471,7 @@ static int mtk_probe(struct platform_dev
+ 	schedule_delayed_work(&eth->reset.monitor_work,
+ 			      MTK_DMA_MONITOR_TIMEOUT);
+ 
++	//mtk_dump_netsys_info(eth);
+ 	return 0;
+ 
+ err_deinit_ppe:
+--- a/drivers/net/ethernet/mediatek/mtk_eth_soc.h
++++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.h
+@@ -28,6 +28,7 @@
+ 
+ #define MTK_QDMA_NUM_QUEUES	16
+ #define MTK_QDMA_PAGE_SIZE	2048
++#define MTK_QDMA_PAGE_NUM	8
+ #define MTK_MAX_RX_LENGTH	1536
+ #define MTK_MAX_RX_LENGTH_2K	2048
+ #define MTK_TX_DMA_BUF_LEN	0x3fff
+@@ -231,6 +232,9 @@
+ #define MTK_RING_MAX_AGG_CNT_L		((MTK_HW_LRO_MAX_AGG_CNT & 0x3f) << 26)
+ #define MTK_RING_MAX_AGG_CNT_H		((MTK_HW_LRO_MAX_AGG_CNT >> 6) & 0x3)
+ 
++/* QDMA Page Configuration Register */
++#define MTK_QDMA_PAGE(x)	(x + 0x1f0)
++
+ /* QDMA TX Queue Configuration Registers */
+ #define MTK_QTX_OFFSET		0x10
+ #define QDMA_RES_THRES		4
+@@ -1153,6 +1157,7 @@ struct mtk_reg_map {
+ 	u32	tx_irq_mask;
+ 	u32	tx_irq_status;
+ 	struct {
++		u32	base_ptr;	/* base pointer */
+ 		u32	rx_ptr;		/* rx base pointer */
+ 		u32	rx_cnt_cfg;	/* rx max count configuration */
+ 		u32	pcrx_ptr;	/* rx cpu pointer */

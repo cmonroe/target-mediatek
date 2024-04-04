@@ -1,0 +1,127 @@
+--- a/drivers/net/phy/intel-xway.c
++++ b/drivers/net/phy/intel-xway.c
+@@ -229,20 +229,12 @@ static int xway_gphy_rgmii_init(struct p
+ 			  XWAY_MDIO_MIICTRL_TXSKEW_MASK, val);
+ }
+ 
+-static int xway_gphy_config_init(struct phy_device *phydev)
++static int xway_gphy_probe(struct phy_device *phydev)
+ {
+ 	int err;
+ 	u32 ledxh;
+ 	u32 ledxl;
+ 
+-	/* Mask all interrupts */
+-	err = phy_write(phydev, XWAY_MDIO_IMASK, 0);
+-	if (err)
+-		return err;
+-
+-	/* Clear all pending interrupts */
+-	phy_read(phydev, XWAY_MDIO_ISTAT);
+-
+ 	/* Ensure that integrated led function is enabled for all leds */
+ 	err = phy_write(phydev, XWAY_MDIO_LED,
+ 			XWAY_MDIO_LED_LED0_EN |
+@@ -283,6 +275,22 @@ static int xway_gphy_config_init(struct
+ 	return 0;
+ }
+ 
++static int xway_gphy_config_init(struct phy_device *phydev)
++{
++	int err;
++
++	/* Mask all interrupts */
++	err = phy_write(phydev, XWAY_MDIO_IMASK, 0);
++	if (err)
++		return err;
++
++	/* Clear all pending interrupts */
++	phy_read(phydev, XWAY_MDIO_ISTAT);
++
++	return 0;
++}
++
++
+ static int xway_gphy14_config_aneg(struct phy_device *phydev)
+ {
+ 	int reg, err;
+@@ -353,6 +361,7 @@ static struct phy_driver xway_gphy[] = {
+ 		.phy_id_mask	= 0xffffffff,
+ 		.name		= "Intel XWAY PHY11G (PEF 7071/PEF 7072) v1.3",
+ 		/* PHY_GBIT_FEATURES */
++		.probe		= xway_gphy_probe,
+ 		.config_init	= xway_gphy_config_init,
+ 		.config_aneg	= xway_gphy14_config_aneg,
+ 		.handle_interrupt = xway_gphy_handle_interrupt,
+@@ -364,6 +373,7 @@ static struct phy_driver xway_gphy[] = {
+ 		.phy_id_mask	= 0xffffffff,
+ 		.name		= "Intel XWAY PHY22F (PEF 7061) v1.3",
+ 		/* PHY_BASIC_FEATURES */
++		.probe		= xway_gphy_probe,
+ 		.config_init	= xway_gphy_config_init,
+ 		.config_aneg	= xway_gphy14_config_aneg,
+ 		.handle_interrupt = xway_gphy_handle_interrupt,
+@@ -375,6 +385,7 @@ static struct phy_driver xway_gphy[] = {
+ 		.phy_id_mask	= 0xffffffff,
+ 		.name		= "Intel XWAY PHY11G (PEF 7071/PEF 7072) v1.4",
+ 		/* PHY_GBIT_FEATURES */
++		.probe		= xway_gphy_probe,
+ 		.config_init	= xway_gphy_config_init,
+ 		.config_aneg	= xway_gphy14_config_aneg,
+ 		.handle_interrupt = xway_gphy_handle_interrupt,
+@@ -386,6 +397,7 @@ static struct phy_driver xway_gphy[] = {
+ 		.phy_id_mask	= 0xffffffff,
+ 		.name		= "Intel XWAY PHY22F (PEF 7061) v1.4",
+ 		/* PHY_BASIC_FEATURES */
++		.probe		= xway_gphy_probe,
+ 		.config_init	= xway_gphy_config_init,
+ 		.config_aneg	= xway_gphy14_config_aneg,
+ 		.handle_interrupt = xway_gphy_handle_interrupt,
+@@ -397,6 +409,7 @@ static struct phy_driver xway_gphy[] = {
+ 		.phy_id_mask	= 0xffffffff,
+ 		.name		= "Intel XWAY PHY11G (PEF 7071/PEF 7072) v1.5 / v1.6",
+ 		/* PHY_GBIT_FEATURES */
++		.probe		= xway_gphy_probe,
+ 		.config_init	= xway_gphy_config_init,
+ 		.handle_interrupt = xway_gphy_handle_interrupt,
+ 		.config_intr	= xway_gphy_config_intr,
+@@ -407,6 +420,7 @@ static struct phy_driver xway_gphy[] = {
+ 		.phy_id_mask	= 0xffffffff,
+ 		.name		= "Intel XWAY PHY22F (PEF 7061) v1.5 / v1.6",
+ 		/* PHY_BASIC_FEATURES */
++		.probe		= xway_gphy_probe,
+ 		.config_init	= xway_gphy_config_init,
+ 		.handle_interrupt = xway_gphy_handle_interrupt,
+ 		.config_intr	= xway_gphy_config_intr,
+@@ -417,6 +431,7 @@ static struct phy_driver xway_gphy[] = {
+ 		.phy_id_mask	= 0xffffffff,
+ 		.name		= "Intel XWAY PHY11G (xRX v1.1 integrated)",
+ 		/* PHY_GBIT_FEATURES */
++		.probe		= xway_gphy_probe,
+ 		.config_init	= xway_gphy_config_init,
+ 		.handle_interrupt = xway_gphy_handle_interrupt,
+ 		.config_intr	= xway_gphy_config_intr,
+@@ -427,6 +442,7 @@ static struct phy_driver xway_gphy[] = {
+ 		.phy_id_mask	= 0xffffffff,
+ 		.name		= "Intel XWAY PHY22F (xRX v1.1 integrated)",
+ 		/* PHY_BASIC_FEATURES */
++		.probe		= xway_gphy_probe,
+ 		.config_init	= xway_gphy_config_init,
+ 		.handle_interrupt = xway_gphy_handle_interrupt,
+ 		.config_intr	= xway_gphy_config_intr,
+@@ -437,6 +453,7 @@ static struct phy_driver xway_gphy[] = {
+ 		.phy_id_mask	= 0xffffffff,
+ 		.name		= "Intel XWAY PHY11G (xRX v1.2 integrated)",
+ 		/* PHY_GBIT_FEATURES */
++		.probe		= xway_gphy_probe,
+ 		.config_init	= xway_gphy_config_init,
+ 		.handle_interrupt = xway_gphy_handle_interrupt,
+ 		.config_intr	= xway_gphy_config_intr,
+@@ -447,6 +464,7 @@ static struct phy_driver xway_gphy[] = {
+ 		.phy_id_mask	= 0xffffffff,
+ 		.name		= "Intel XWAY PHY22F (xRX v1.2 integrated)",
+ 		/* PHY_BASIC_FEATURES */
++		.probe		= xway_gphy_probe,
+ 		.config_init	= xway_gphy_config_init,
+ 		.handle_interrupt = xway_gphy_handle_interrupt,
+ 		.config_intr	= xway_gphy_config_intr,

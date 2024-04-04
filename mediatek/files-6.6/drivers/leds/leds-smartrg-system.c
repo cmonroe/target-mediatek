@@ -150,7 +150,7 @@ srg_led_init_led(struct device_node *np, struct srg_led *sysled,
 }
 
 static int
-srg_led_probe(struct i2c_client *client, const struct i2c_device_id *id)
+srg_led_probe(struct i2c_client *client)
 {
 	struct device_node *np = client->dev.of_node;
 	struct srg_led *sysled;

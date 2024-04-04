@@ -1,0 +1,38 @@
+From 04195a5de14200d3998f3d6c085791da07e4082b Mon Sep 17 00:00:00 2001
+From: Tim Hayes <tim.hayes@smartrg.com>
+Date: Wed, 8 Mar 2023 07:16:50 -0800
+Subject: [PATCH] OWRT-7979 commented out _mdb_ add and del functions
+
+---
+ drivers/net/dsa/mt7530.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/drivers/net/dsa/mt7530.c
++++ b/drivers/net/dsa/mt7530.c
+@@ -1586,6 +1586,7 @@ err:
+ 	return 0;
+ }
+ 
++#if 0
+ static int
+ mt7530_port_mdb_add(struct dsa_switch *ds, int port,
+ 		    const struct switchdev_obj_port_mdb *mdb,
+@@ -1640,6 +1641,7 @@ mt7530_port_mdb_del(struct dsa_switch *d
+ 
+ 	return ret;
+ }
++#endif
+ 
+ static int
+ mt7530_vlan_cmd(struct mt7530_priv *priv, enum mt7530_vlan_cmd cmd, u16 vid)
+@@ -3334,8 +3336,8 @@ const struct dsa_switch_ops mt7530_switc
+ 	.port_fdb_add		= mt7530_port_fdb_add,
+ 	.port_fdb_del		= mt7530_port_fdb_del,
+ 	.port_fdb_dump		= mt7530_port_fdb_dump,
+-	.port_mdb_add		= mt7530_port_mdb_add,
+-	.port_mdb_del		= mt7530_port_mdb_del,
++	//.port_mdb_add		= mt7530_port_mdb_add,
++	//.port_mdb_del		= mt7530_port_mdb_del,
+ 	.port_vlan_filtering	= mt7530_port_vlan_filtering,
+ 	.port_vlan_add		= mt7530_port_vlan_add,
+ 	.port_vlan_del		= mt7530_port_vlan_del,
