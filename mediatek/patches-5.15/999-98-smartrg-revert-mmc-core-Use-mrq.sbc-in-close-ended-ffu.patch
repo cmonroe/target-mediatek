@@ -8,8 +8,6 @@ This reverts commit 50b8b7a22e90bab9f1949b64a88ff17ab10913ec.
  drivers/mmc/core/block.c | 46 +++-------------------------------------
  1 file changed, 3 insertions(+), 43 deletions(-)
 
-diff --git a/drivers/mmc/core/block.c b/drivers/mmc/core/block.c
-index c3202e2e99e8..1fb6b6d99066 100644
 --- a/drivers/mmc/core/block.c
 +++ b/drivers/mmc/core/block.c
 @@ -399,10 +399,6 @@ struct mmc_blk_ioc_data {
@@ -23,7 +21,7 @@ index c3202e2e99e8..1fb6b6d99066 100644
  	struct mmc_rpmb_data *rpmb;
  };
  
-@@ -468,7 +464,7 @@ static int mmc_blk_ioctl_copy_to_user(struct mmc_ioc_cmd __user *ic_ptr,
+@@ -468,7 +464,7 @@ static int mmc_blk_ioctl_copy_to_user(st
  }
  
  static int __mmc_blk_ioctl_cmd(struct mmc_card *card, struct mmc_blk_data *md,
@@ -32,7 +30,7 @@ index c3202e2e99e8..1fb6b6d99066 100644
  {
  	struct mmc_command cmd = {}, sbc = {};
  	struct mmc_data data = {};
-@@ -476,18 +472,10 @@ static int __mmc_blk_ioctl_cmd(struct mmc_card *card, struct mmc_blk_data *md,
+@@ -476,18 +472,10 @@ static int __mmc_blk_ioctl_cmd(struct mm
  	struct scatterlist sg;
  	int err;
  	unsigned int target_part;
@@ -51,7 +49,7 @@ index c3202e2e99e8..1fb6b6d99066 100644
  	/*
  	 * The RPMB accesses comes in from the character device, so we
  	 * need to target these explicitly. Else we just target the
-@@ -554,7 +542,7 @@ static int __mmc_blk_ioctl_cmd(struct mmc_card *card, struct mmc_blk_data *md,
+@@ -554,7 +542,7 @@ static int __mmc_blk_ioctl_cmd(struct mm
  			return err;
  	}
  
@@ -60,7 +58,7 @@ index c3202e2e99e8..1fb6b6d99066 100644
  		sbc.opcode = MMC_SET_BLOCK_COUNT;
  		/*
  		 * We don't do any blockcount validation because the max size
-@@ -562,8 +550,6 @@ static int __mmc_blk_ioctl_cmd(struct mmc_card *card, struct mmc_blk_data *md,
+@@ -562,8 +550,6 @@ static int __mmc_blk_ioctl_cmd(struct mm
  		 * 'Reliable Write' bit here.
  		 */
  		sbc.arg = data.blocks | (idata->ic.write_flag & BIT(31));
@@ -69,7 +67,7 @@ index c3202e2e99e8..1fb6b6d99066 100644
  		sbc.flags = MMC_RSP_R1 | MMC_CMD_AC;
  		mrq.sbc = &sbc;
  	}
-@@ -575,15 +561,6 @@ static int __mmc_blk_ioctl_cmd(struct mmc_card *card, struct mmc_blk_data *md,
+@@ -575,15 +561,6 @@ static int __mmc_blk_ioctl_cmd(struct mm
  	mmc_wait_for_req(card->host, &mrq);
  	memcpy(&idata->ic.response, cmd.resp, sizeof(cmd.resp));
  
@@ -85,7 +83,7 @@ index c3202e2e99e8..1fb6b6d99066 100644
  	if (cmd.error) {
  		dev_err(mmc_dev(card->host), "%s: cmd error %d\n",
  						__func__, cmd.error);
-@@ -1053,20 +1030,6 @@ static inline void mmc_blk_reset_success(struct mmc_blk_data *md, int type)
+@@ -1053,20 +1030,6 @@ static inline void mmc_blk_reset_success
  	md->reset_done &= ~type;
  }
  
@@ -106,7 +104,7 @@ index c3202e2e99e8..1fb6b6d99066 100644
  /*
   * The non-block commands come back from the block layer after it queued it and
   * processed it with all other requests and then they get issued in this
-@@ -1094,14 +1057,11 @@ static void mmc_blk_issue_drv_op(struct mmc_queue *mq, struct request *req)
+@@ -1094,14 +1057,11 @@ static void mmc_blk_issue_drv_op(struct
  			if (ret)
  				break;
  		}
@@ -122,6 +120,3 @@ index c3202e2e99e8..1fb6b6d99066 100644
  			if (ret)
  				break;
  		}
--- 
-2.39.2
-
