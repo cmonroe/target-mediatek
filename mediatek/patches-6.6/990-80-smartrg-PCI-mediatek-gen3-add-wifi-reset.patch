@@ -44,52 +44,40 @@ Reviewed-on: https://gerrit.mediatek.inc/c/openwrt/feeds/mtk_openwrt_feeds/+/822
  	int irq;
  	u32 saved_irq_state;
  	raw_spinlock_t irq_lock;
-@@ -361,6 +367,12 @@ static int mtk_pcie_startup_port(struct
+@@ -361,6 +367,14 @@ static int mtk_pcie_startup_port(struct
  	val |= PCIE_DISABLE_DVFSRC_VLT_REQ;
  	writel_relaxed(val, pcie->base + PCIE_MISC_CTRL_REG);
  
-+	if (port->wifi_reset) {
-+		gpiod_set_value_cansleep(port->wifi_reset, 0);
-+		msleep(port->wifi_reset_delay_ms);
-+		gpiod_set_value_cansleep(port->wifi_reset, 1);
++	if (pcie->wifi_reset) {
++		dev_info(pcie->dev, "set wifi-reset pin LOW");
++		gpiod_set_value_cansleep(pcie->wifi_reset, 0);
++		msleep(pcie->wifi_reset_delay_ms);
++		dev_info(pcie->dev, "set wifi-reset pin HIGH");
++		gpiod_set_value_cansleep(pcie->wifi_reset, 1);
 +	}
 +
  	/* Assert all reset signals */
  	val = readl_relaxed(pcie->base + PCIE_RST_CTRL_REG);
  	val |= PCIE_MAC_RSTB | PCIE_PHY_RSTB | PCIE_BRG_RSTB | PCIE_PE_RSTB;
-@@ -784,6 +796,8 @@ static int mtk_pcie_parse_port(struct mt
- 	struct device *dev = pcie->dev;
- 	struct platform_device *pdev = to_platform_device(dev);
- 	struct resource *regs;
-+	enum of_gpio_flags flags;
-+	enum gpiod_flags wifi_reset_init_flags;
- 	int ret;
- 
- 	regs = platform_get_resource_byname(pdev, IORESOURCE_MEM, "pcie-mac");
-@@ -830,6 +844,28 @@ static int mtk_pcie_parse_port(struct mt
+@@ -830,6 +844,23 @@ static int mtk_pcie_parse_port(struct mt
  		return pcie->num_clks;
  	}
  
-+	ret = of_get_named_gpio_flags(dev->of_node, "wifi-reset-gpios", 0,
-+				      &flags);
-+	if (ret >= 0) {
-+		if (flags & OF_GPIO_ACTIVE_LOW)
-+			wifi_reset_init_flags = GPIOD_OUT_HIGH;
-+		else
-+			wifi_reset_init_flags = GPIOD_OUT_LOW;
-+		port->wifi_reset = devm_gpiod_get_optional(dev, "wifi-reset",
-+							   wifi_reset_init_flags);
-+		if (IS_ERR(port->wifi_reset)) {
-+			ret = PTR_ERR(port->wifi_reset);
-+			if (ret != -EPROBE_DEFER)
-+				dev_err(dev,
-+					"failed to request WIFI reset gpio\n");
++	pcie->wifi_reset = devm_gpiod_get_optional(dev, "wifi-reset",
++						GPIOD_OUT_HIGH);
++	ret = PTR_ERR_OR_ZERO(pcie->wifi_reset);
++	if (ret) {
++		dev_err(dev, "failed to request reset gpio: %d\n", ret);
++		return ret;
++	} else {
++		ret = gpiod_set_consumer_name(pcie->wifi_reset, "pcie_reset");
++		if (ret) {
++			dev_err(dev, "failed to set reset gpio name: %d\n", ret);
 +			return ret;
 +		}
++
 +		of_property_read_u32(dev->of_node, "wifi-reset-msleep",
-+				     &port->wifi_reset_delay_ms);
-+	} else if (ret == -EPROBE_DEFER) {
-+		return ret;
++					 &pcie->wifi_reset_delay_ms);
 +	}
 +
  	return 0;
