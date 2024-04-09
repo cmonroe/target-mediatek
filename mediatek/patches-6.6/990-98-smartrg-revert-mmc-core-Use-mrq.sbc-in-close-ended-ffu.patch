@@ -43,7 +43,7 @@ This reverts commit 50b8b7a22e90bab9f1949b64a88ff17ab10913ec.
 -	if (idata->flags & MMC_BLK_IOC_DROP)
 -		return 0;
 -
--	if (idata->flags & MMC_BLK_IOC_SBC)
+-	if (idata->flags & MMC_BLK_IOC_SBC && i > 0)
 -		prev_idata = idatas[i - 1];
 -
  	/*
@@ -83,7 +83,7 @@ This reverts commit 50b8b7a22e90bab9f1949b64a88ff17ab10913ec.
  	if (cmd.error) {
  		dev_err(mmc_dev(card->host), "%s: cmd error %d\n",
  						__func__, cmd.error);
-@@ -1057,20 +1034,6 @@ static inline void mmc_blk_reset_success
+@@ -1059,20 +1036,6 @@ static inline void mmc_blk_reset_success
  	md->reset_done &= ~type;
  }
  
@@ -104,7 +104,7 @@ This reverts commit 50b8b7a22e90bab9f1949b64a88ff17ab10913ec.
  /*
   * The non-block commands come back from the block layer after it queued it and
   * processed it with all other requests and then they get issued in this
-@@ -1098,14 +1061,11 @@ static void mmc_blk_issue_drv_op(struct
+@@ -1100,14 +1063,11 @@ static void mmc_blk_issue_drv_op(struct
  			if (ret)
  				break;
  		}
