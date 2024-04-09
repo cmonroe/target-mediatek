@@ -1,0 +1,76 @@
+From a87430c329be6482a355171ff995d845d1199811 Mon Sep 17 00:00:00 2001
+From: Chad Monroe <chad@monroe.io>
+Date: Tue, 9 Apr 2024 12:35:46 -0700
+Subject: [PATCH 2/2] Revert "net: dsa: mt7530: fix link-local frames that
+ ingress vlan filtering ports"
+
+This reverts commit cb302aa9948d44cb712880ba8ba23f7bd835a8d1.
+---
+ drivers/net/dsa/mt7530.c | 23 ++++++++---------------
+ drivers/net/dsa/mt7530.h |  9 +--------
+ 2 files changed, 9 insertions(+), 23 deletions(-)
+
+--- a/drivers/net/dsa/mt7530.c
++++ b/drivers/net/dsa/mt7530.c
+@@ -1203,23 +1203,16 @@ unlock_exit:
+ static void
+ mt753x_trap_frames(struct mt7530_priv *priv)
+ {
+-	/* Trap 802.1X PAE frames and BPDUs to the CPU port(s) and egress them
+-	 * VLAN-untagged.
+-	 */
+-	mt7530_rmw(priv, MT753X_BPC, MT753X_PAE_EG_TAG_MASK |
+-		   MT753X_PAE_PORT_FW_MASK | MT753X_BPDU_EG_TAG_MASK |
+-		   MT753X_BPDU_PORT_FW_MASK,
+-		   MT753X_PAE_EG_TAG(MT7530_VLAN_EG_UNTAGGED) |
+-		   MT753X_PAE_PORT_FW(MT753X_BPDU_CPU_ONLY) |
+-		   MT753X_BPDU_EG_TAG(MT7530_VLAN_EG_UNTAGGED) |
++	/* Trap BPDUs to the CPU port(s) */
++	mt7530_rmw(priv, MT753X_BPC, MT753X_BPDU_PORT_FW_MASK,
+ 		   MT753X_BPDU_CPU_ONLY);
+ 
+-	/* Trap LLDP frames with :0E MAC DA to the CPU port(s) and egress them
+-	 * VLAN-untagged.
+-	 */
+-	mt7530_rmw(priv, MT753X_RGAC2, MT753X_R0E_EG_TAG_MASK |
+-		   MT753X_R0E_PORT_FW_MASK,
+-		   MT753X_R0E_EG_TAG(MT7530_VLAN_EG_UNTAGGED) |
++	/* Trap 802.1X PAE frames to the CPU port(s) */
++	mt7530_rmw(priv, MT753X_BPC, MT753X_PAE_PORT_FW_MASK,
++		   MT753X_PAE_PORT_FW(MT753X_BPDU_CPU_ONLY));
++
++	/* Trap LLDP frames with :0E MAC DA to the CPU port(s) */
++	mt7530_rmw(priv, MT753X_RGAC2, MT753X_R0E_PORT_FW_MASK,
+ 		   MT753X_R0E_PORT_FW(MT753X_BPDU_CPU_ONLY));
+ }
+ 
+--- a/drivers/net/dsa/mt7530.h
++++ b/drivers/net/dsa/mt7530.h
+@@ -64,18 +64,12 @@ enum mt753x_id {
+ 
+ /* Registers for BPDU and PAE frame control*/
+ #define MT753X_BPC			0x24
+-#define  MT753X_PAE_EG_TAG_MASK		GENMASK(24, 22)
+-#define  MT753X_PAE_EG_TAG(x)		FIELD_PREP(MT753X_PAE_EG_TAG_MASK, x)
++#define  MT753X_BPDU_PORT_FW_MASK	GENMASK(2, 0)
+ #define  MT753X_PAE_PORT_FW_MASK	GENMASK(18, 16)
+ #define  MT753X_PAE_PORT_FW(x)		FIELD_PREP(MT753X_PAE_PORT_FW_MASK, x)
+-#define  MT753X_BPDU_EG_TAG_MASK	GENMASK(8, 6)
+-#define  MT753X_BPDU_EG_TAG(x)		FIELD_PREP(MT753X_BPDU_EG_TAG_MASK, x)
+-#define  MT753X_BPDU_PORT_FW_MASK	GENMASK(2, 0)
+ 
+ /* Register for :03 and :0E MAC DA frame control */
+ #define MT753X_RGAC2			0x2c
+-#define  MT753X_R0E_EG_TAG_MASK		GENMASK(24, 22)
+-#define  MT753X_R0E_EG_TAG(x)		FIELD_PREP(MT753X_R0E_EG_TAG_MASK, x)
+ #define  MT753X_R0E_PORT_FW_MASK	GENMASK(18, 16)
+ #define  MT753X_R0E_PORT_FW(x)		FIELD_PREP(MT753X_R0E_PORT_FW_MASK, x)
+ 
+@@ -258,7 +252,6 @@ enum mt7530_port_mode {
+ enum mt7530_vlan_port_eg_tag {
+ 	MT7530_VLAN_EG_DISABLED = 0,
+ 	MT7530_VLAN_EG_CONSISTENT = 1,
+-	MT7530_VLAN_EG_UNTAGGED = 4,
+ };
+ 
+ enum mt7530_vlan_port_attr {
