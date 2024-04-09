@@ -17,7 +17,7 @@
  
  	memory@40000000 {
  		reg = <0 0x40000000 0 0x40000000>;
-@@ -83,6 +84,19 @@
+@@ -84,6 +85,19 @@
  		regulator-boot-on;
  		regulator-always-on;
  	};
@@ -37,7 +37,7 @@
  };
  
  &bch {
-@@ -172,6 +186,10 @@
+@@ -173,6 +187,10 @@
  	pinctrl-names = "default";
  	pinctrl-0 = <&i2c1_pins>;
  	status = "okay";
@@ -48,7 +48,7 @@
  };
  
  &i2c2 {
-@@ -460,7 +478,7 @@
+@@ -461,7 +479,7 @@
  	spic1_pins: spic1-pins {
  		mux {
  			function = "spi";
@@ -57,7 +57,7 @@
  		};
  	};
  
-@@ -603,6 +621,11 @@
+@@ -604,6 +622,11 @@
  	pinctrl-names = "default";
  	pinctrl-0 = <&spic1_pins>;
  	status = "okay";
