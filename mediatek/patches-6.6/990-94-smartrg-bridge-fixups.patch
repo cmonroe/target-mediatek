@@ -1,0 +1,64 @@
+From: Chad Monroe <chad@monroe.io>
+Date: Tue, 09 Apr 2024 15:02:01 -0700
+Subject: [PATCH] net: bridge: fixups/hacks for kernel 6.6 
+
+SmartOS still uses multiple bridges rather than a single bridge
+instance with bridge-vlans.
+
+1. adjust BR_PORT_FLAGS_HW_OFFLOAD to not attempt multicast
+   to unicast offloading. the only DSA driver we currently use
+   is mt7530 and it does not support it. reduce log spam.
+2. disable WARN_ON if vlan_list is empty.
+3. since all interfaces end up in hwdom 1 we don't care about
+   mixed VLAN-aware vs unaware states.
+
+This patch should be dropped when SmartOS moves to bridge-vlans.
+
+Signed-off-by: Chad Monroe <chad@monroe.io>
+---
+ net/bridge/br_switchdev.c |    3 +--
+ net/bridge/br_vlan.c      |    2 +-
+ net/dsa/slave.c           |    3 +++
+ 3 files changed, 5 insertions(+), 3 deletions(-)
+
+--- a/net/bridge/br_switchdev.c
++++ b/net/bridge/br_switchdev.c
+@@ -81,8 +81,7 @@ bool nbp_switchdev_allowed_egress(const
+ 
+ /* Flags that can be offloaded to hardware */
+ #define BR_PORT_FLAGS_HW_OFFLOAD (BR_LEARNING | BR_FLOOD | BR_PORT_MAB | \
+-				  BR_MCAST_FLOOD | BR_BCAST_FLOOD | BR_PORT_LOCKED | \
+-				  BR_HAIRPIN_MODE | BR_ISOLATED | BR_MULTICAST_TO_UNICAST)
++				  BR_MCAST_FLOOD | BR_BCAST_FLOOD | BR_PORT_LOCKED) 
+ 
+ int br_switchdev_set_port_flag(struct net_bridge_port *p,
+ 			       unsigned long flags,
+--- a/net/bridge/br_vlan.c
++++ b/net/bridge/br_vlan.c
+@@ -430,7 +430,7 @@ out:
+ 
+ static void __vlan_group_free(struct net_bridge_vlan_group *vg)
+ {
+-	WARN_ON(!list_empty(&vg->vlan_list));
++	//WARN_ON(!list_empty(&vg->vlan_list));
+ 	rhashtable_destroy(&vg->vlan_hash);
+ 	vlan_tunnel_deinit(vg);
+ 	kfree(vg);
+--- a/net/dsa/slave.c
++++ b/net/dsa/slave.c
+@@ -2981,12 +2981,15 @@ dsa_prevent_bridging_8021q_upper(struct
+ 		return NOTIFY_DONE;
+ 
+ 	/* Deny enslaving a VLAN device into a VLAN-aware bridge */
++#if 0
++	/* HACK: since all VLANs get put in hwdom 1 skip this */
+ 	if (br_vlan_enabled(br) &&
+ 	    netif_is_bridge_master(info->upper_dev) && info->linking) {
+ 		NL_SET_ERR_MSG_MOD(ext_ack,
+ 				   "Cannot enslave VLAN device into VLAN aware bridge");
+ 		return notifier_from_errno(-EINVAL);
+ 	}
++#endif
+ 
+ 	return NOTIFY_DONE;
+ }
