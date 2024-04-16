@@ -18,7 +18,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 
 --- a/drivers/net/dsa/mt7530.c
 +++ b/drivers/net/dsa/mt7530.c
-@@ -863,6 +863,92 @@ mt7530_get_ethtool_stats(struct dsa_swit
+@@ -824,6 +824,92 @@ mt7530_get_ethtool_stats(struct dsa_swit
  }
  
  static void
@@ -111,12 +111,12 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  mt7530_mib_fetch_port_stat(struct mt7530_priv *priv, int port)
  {
  	u32 reg, i;
-@@ -937,6 +1023,10 @@ mt7530_mib_fetch_port_stat(struct mt7530
+@@ -898,6 +984,10 @@ mt7530_mib_fetch_port_stat(struct mt7530
  				break;
  		}
  	}
 +
-+	if ((port == 5) && mt7531_dual_sgmii_supported(priv)) {
++	if ((port == 5) && priv->p5_sgmii) {
 +		mt7531_mxl_gpy_check(priv, storage);
 +	}
  }
