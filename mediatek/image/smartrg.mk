@@ -158,7 +158,7 @@ define Build/srgImageRun
 			echo "CDT=\"$(1)\"" >> $(KDIR)/metadata; \
 		fi\
 	else \
-		echo "CDT= " >> $(KDIR)/metadata; \
+		echo "CDT=" >> $(KDIR)/metadata; \
 	fi
 	cat $(TARGET_DIR)/etc/openwrt_release | sed "s/'/\"/g" >> $(KDIR)/metadata
 	cat $(TARGET_DIR)/../flash-images/files/scripts/arch_platforms.sh | grep PLATFORMS >> $(KDIR)/metadata
