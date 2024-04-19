@@ -150,7 +150,7 @@
 };
 
 &btif {
-	status = "okay";
+	status = "disabled";
 };
 
 &eth {
