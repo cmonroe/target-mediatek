@@ -22,7 +22,7 @@ Subject: [PATCH] OWRT-7643 Adtran quirks added
  
  static void sfp_fixup_ignore_tx_fault(struct sfp *sfp)
  {
-@@ -399,13 +401,46 @@ static void sfp_fixup_rollball_cc(struct
+@@ -399,13 +401,47 @@ static void sfp_fixup_rollball_cc(struct
  	sfp->id.base.extended_cc = SFF8024_ECC_10GBASE_T_SFI;
  }
  
@@ -64,12 +64,13 @@ Subject: [PATCH] OWRT-7643 Adtran quirks added
 +
 +	linkmode_zero(modes);
 +	linkmode_set_bit(ETHTOOL_LINK_MODE_1000baseX_Full_BIT, modes);
++	__set_bit(PHY_INTERFACE_MODE_1000BASEX, interfaces);
 +
 +	dev_warn(sfp->dev, "%s: exit modes 0x%016lx", __FUNCTION__, *modes);
  }
  
  static void sfp_quirk_disable_autoneg(struct sfp *sfp,
-@@ -413,7 +448,11 @@ static void sfp_quirk_disable_autoneg(st
+@@ -413,7 +449,11 @@ static void sfp_quirk_disable_autoneg(st
  				      unsigned long *modes,
  				      unsigned long *interfaces)
  {
@@ -81,13 +82,14 @@ Subject: [PATCH] OWRT-7643 Adtran quirks added
  }
  
  static void sfp_quirk_oem_2_5g(struct sfp *sfp,
-@@ -421,10 +460,14 @@ static void sfp_quirk_oem_2_5g(struct sf
+@@ -421,10 +461,15 @@ static void sfp_quirk_oem_2_5g(struct sf
  			       unsigned long *modes,
  			       unsigned long *interfaces)
  {
 +	dev_warn(sfp->dev, "%s: entry modes 0x%016lx", __FUNCTION__, *modes);
 +
  	/* Copper 2.5G SFP */
++	linkmode_set_bit(ETHTOOL_LINK_MODE_2500baseX_Full_BIT, modes);
  	linkmode_set_bit(ETHTOOL_LINK_MODE_2500baseT_Full_BIT, modes);
  	__set_bit(PHY_INTERFACE_MODE_2500BASEX, interfaces);
  	sfp_quirk_disable_autoneg(sfp, id, modes, interfaces);
@@ -96,7 +98,7 @@ Subject: [PATCH] OWRT-7643 Adtran quirks added
  }
  
  static void sfp_quirk_ubnt_uf_instant(struct sfp *sfp,
-@@ -446,7 +489,9 @@ static void sfp_quirk_ubnt_uf_instant(st
+@@ -446,7 +491,9 @@ static void sfp_quirk_ubnt_uf_instant(st
  #define SFP_QUIRK_F(_v, _p, _f) SFP_QUIRK(_v, _p, NULL, _f)
  
  static void sfp_quirk_phy_mode(struct sfp *sfp,
@@ -107,7 +109,25 @@ Subject: [PATCH] OWRT-7643 Adtran quirks added
  {
  	int speed;
  	struct device_node *mac_np, *sfp_np;
-@@ -520,12 +565,15 @@ static const struct sfp_quirk sfp_quirk_
+@@ -483,7 +530,9 @@ static void sfp_quirk_phy_mode(struct sf
+ 		case PHY_INTERFACE_MODE_2500BASEX:
+ 			linkmode_zero(modes);
+ 			//linkmode_set_bit(ETHTOOL_LINK_MODE_1000baseX_Full_BIT, modes);
++			//__set_bit(PHY_INTERFACE_MODE_1000BASEX, interfaces);
+ 			linkmode_set_bit(ETHTOOL_LINK_MODE_2500baseX_Full_BIT, modes);
++			__set_bit(PHY_INTERFACE_MODE_2500BASEX, interfaces);
+ 			speed = 2500;
+ 			break;
+ 		case PHY_INTERFACE_MODE_5GBASER:
+@@ -499,6 +548,7 @@ static void sfp_quirk_phy_mode(struct sf
+ 		default:
+ 			linkmode_zero(modes);
+ 			linkmode_set_bit(ETHTOOL_LINK_MODE_1000baseX_Full_BIT, modes);
++			__set_bit(PHY_INTERFACE_MODE_1000BASEX, interfaces);
+ 			speed = 1000;
+ 			break;
+ 
+@@ -520,12 +570,15 @@ static const struct sfp_quirk sfp_quirk_
  static const struct sfp_quirk sfp_quirks[] = {
  	// Alcatel Lucent G-010S-P can operate at 2500base-X, but incorrectly
  	// report 2500MBd NRZ in their EEPROM
@@ -125,7 +145,7 @@ Subject: [PATCH] OWRT-7643 Adtran quirks added
  
  	// Fiberstore SFP-10G-T doesn't identify as copper, and uses the
  	// Rollball protocol to talk to the PHY.
-@@ -545,7 +593,7 @@ static const struct sfp_quirk sfp_quirks
+@@ -545,7 +598,7 @@ static const struct sfp_quirk sfp_quirks
  	// Huawei MA5671A can operate at 2500base-X, but report 1.2GBd NRZ in
  	// their EEPROM
  	SFP_QUIRK("HUAWEI", "MA5671A", sfp_quirk_2500basex,
@@ -134,7 +154,7 @@ Subject: [PATCH] OWRT-7643 Adtran quirks added
  
  	// FS 2.5G Base-T
  	SFP_QUIRK_M("FS", "SFP-2.5G-T", sfp_quirk_oem_2_5g),
-@@ -570,6 +618,40 @@ static const struct sfp_quirk sfp_quirks
+@@ -570,6 +623,40 @@ static const struct sfp_quirk sfp_quirks
  	SFP_QUIRK_F("OEM", "RTSFP-10G", sfp_fixup_rollball_cc),
  	SFP_QUIRK_F("Turris", "RTSFP-10", sfp_fixup_rollball),
  	SFP_QUIRK_F("Turris", "RTSFP-10G", sfp_fixup_rollball),
