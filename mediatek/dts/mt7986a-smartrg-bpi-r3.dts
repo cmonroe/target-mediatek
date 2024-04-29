@@ -225,9 +225,9 @@
 };
 
 &mdio {
-	switch: switch@31 {
+	switch: switch@1f {
 		compatible = "mediatek,mt7531";
-		reg = <31>;
+		reg = <0x1f>;
 		interrupt-controller;
 		#interrupt-cells = <1>;
 		interrupt-parent = <&pio>;
