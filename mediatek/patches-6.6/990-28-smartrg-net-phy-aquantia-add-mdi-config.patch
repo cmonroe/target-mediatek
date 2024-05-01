@@ -1,0 +1,43 @@
+--- a/drivers/net/phy/aquantia/aquantia_main.c
++++ b/drivers/net/phy/aquantia/aquantia_main.c
+@@ -79,6 +79,9 @@
+ #define MDIO_AN_TX_VEND_INT_MASK2		0xd401
+ #define MDIO_AN_TX_VEND_INT_MASK2_LINK		BIT(0)
+ 
++#define PMAPMD_RSVD_VEND_PROV			0xe400
++#define PMAPMD_RSVD_VEND_PROV_MDI_CONF		BIT(0)
++
+ #define MDIO_AN_RX_LP_STAT1			0xe820
+ #define MDIO_AN_RX_LP_STAT1_1000BASET_FULL	BIT(15)
+ #define MDIO_AN_RX_LP_STAT1_1000BASET_HALF	BIT(14)
+@@ -628,6 +631,21 @@ static int aqr107_config_led(struct phy_
+ 	return 0;
+ }
+ 
++int aqr107_config_mdi(struct phy_device *phydev)
++{
++	struct device_node *np = phydev->mdio.dev.of_node;
++	u16 val;
++
++	if (of_property_read_u16(np, "mdi-reversal", &val))
++		return -ENOENT;
++
++	if (!FIELD_FIT(PMAPMD_RSVD_VEND_PROV_MDI_CONF, val))
++		return -E2BIG;
++
++	return phy_modify_mmd(phydev, MDIO_MMD_PMAPMD, PMAPMD_RSVD_VEND_PROV,
++			     PMAPMD_RSVD_VEND_PROV_MDI_CONF, val);
++}
++
+ static int aqr107_config_init(struct phy_device *phydev)
+ {
+ 	int ret;
+@@ -655,6 +673,8 @@ static int aqr107_config_init(struct phy
+ 	if (ret < 0)
+ 		return ret;
+ 
++	aqr107_config_mdi(phydev);
++
+ 	return aqr107_set_downshift(phydev, MDIO_AN_VEND_PROV_DOWNSHIFT_DFLT);
+ }
+ 
