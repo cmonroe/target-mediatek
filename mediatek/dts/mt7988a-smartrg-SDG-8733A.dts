@@ -62,10 +62,6 @@
 	interrupts = <57 IRQ_TYPE_EDGE_FALLING>;
 };
 
-&gmac0 {
-	status = "disabled";
-};
-
 &gmac1 {
 	label = "lan";
 	phy-mode = "internal";
@@ -78,6 +74,30 @@
 	phy-mode = "usxgmii";
 	phy-connection-type = "usxgmii";
 	phy = <&phy8>;
+};
+
+&gsw_phy1 {
+	status = "disabled";
+};
+
+&gsw_phy2 {
+	status = "disabled";
+};
+
+&gsw_phy3 {
+	status = "disabled";
+};
+
+&gsw_port1 {
+	status = "disabled";
+};
+
+&gsw_port2 {
+	status = "disabled";
+};
+
+&gsw_port3 {
+	status = "disabled";
 };
 
 &int_2p5g_phy {
@@ -98,9 +118,11 @@
 	};
 };
 
+/*
 &pcie0 {
 	wifi-reset-gpios = <&pio 9 GPIO_ACTIVE_HIGH>;
 };
+*/
 
 &pcie1 {
 	status = "disabled";
@@ -122,10 +144,6 @@
 };
 
 &ssusb1 {
-	status = "disabled";
-};
-
-&switch {
 	status = "disabled";
 };
 
