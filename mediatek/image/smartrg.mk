@@ -122,6 +122,7 @@ define Build/SrgDiskSquashfs
 	sha256sum  $(KDIR)/root.squashfs.run.bin  | cut -d ' ' -f 1 | xargs echo -n  >> $(KDIR)/root.squashfs.run.bin
 	$(CP) $(KDIR)/root.squashfs.run.bin $(KDIR)/$(BINNAME).run.bin
 
+	sha256sum  $(BIN_DIR)/$(IMG_PREFIX)-polecat-fit-multi.itb | cut -d ' ' -f 1 | xargs echo -n  >> $(BIN_DIR)/$(IMG_PREFIX)-polecat-fit-multi.itb
 	$(CP) $(BIN_DIR)/$(IMG_PREFIX)-polecat-fit-multi.itb $(TARGET_DIR)/Boot/fit-multi.itb
 	$(STAGING_DIR_HOST)/bin/mksquashfs4 $(TARGET_DIR) $(KDIR)/root.squashfs \
 		-nopad -noappend -root-owned \
