@@ -17,7 +17,7 @@ Subject: [PATCH] OWRT-6281 mtk reg rd wr added
  
  #include "mt7530.h"
  
-@@ -899,6 +900,7 @@ mt7530_mib_fetch_port_stat(struct mt7530
+@@ -886,6 +887,7 @@ mt7530_mib_fetch_port_stat(struct mt7530
  	}
  }
  
@@ -25,7 +25,7 @@ Subject: [PATCH] OWRT-6281 mtk reg rd wr added
  static void
  mt7530_mib_work_func(struct work_struct *work)
  {
-@@ -914,7 +916,7 @@ mt7530_mib_work_func(struct work_struct
+@@ -901,7 +903,7 @@ mt7530_mib_work_func(struct work_struct
  	}
  
  	schedule_delayed_work(&priv->mib_work,
@@ -34,7 +34,7 @@ Subject: [PATCH] OWRT-6281 mtk reg rd wr added
  }
  
  void mt7530_get_stats64(struct dsa_switch *ds, int port,struct rtnl_link_stats64 *stats)
-@@ -3128,6 +3130,86 @@ static const struct phylink_pcs_ops mt75
+@@ -3129,6 +3131,86 @@ static const struct phylink_pcs_ops mt75
  	.pcs_an_restart = mt7530_pcs_an_restart,
  };
  
@@ -121,7 +121,7 @@ Subject: [PATCH] OWRT-6281 mtk reg rd wr added
  static int
  mt753x_setup(struct dsa_switch *ds)
  {
-@@ -3360,6 +3442,9 @@ mt7530_probe_common(struct mt7530_priv *
+@@ -3362,6 +3444,9 @@ mt7530_probe_common(struct mt7530_priv *
  
  	mutex_init(&priv->mib_lock);
  	INIT_DELAYED_WORK(&priv->mib_work, mt7530_mib_work_func);

@@ -9,7 +9,7 @@ Subject: [PATCH] OWRT-7979 commented out _mdb_ add and del functions
 
 --- a/drivers/net/dsa/mt7530.c
 +++ b/drivers/net/dsa/mt7530.c
-@@ -1718,6 +1718,7 @@ err:
+@@ -1706,6 +1706,7 @@ err:
  	return 0;
  }
  
@@ -17,7 +17,7 @@ Subject: [PATCH] OWRT-7979 commented out _mdb_ add and del functions
  static int
  mt7530_port_mdb_add(struct dsa_switch *ds, int port,
  		    const struct switchdev_obj_port_mdb *mdb,
-@@ -1772,6 +1773,7 @@ mt7530_port_mdb_del(struct dsa_switch *d
+@@ -1760,6 +1761,7 @@ mt7530_port_mdb_del(struct dsa_switch *d
  
  	return ret;
  }
@@ -25,7 +25,7 @@ Subject: [PATCH] OWRT-7979 commented out _mdb_ add and del functions
  
  static int
  mt7530_vlan_cmd(struct mt7530_priv *priv, enum mt7530_vlan_cmd cmd, u16 vid)
-@@ -3342,8 +3344,8 @@ const struct dsa_switch_ops mt7530_switc
+@@ -3347,8 +3349,8 @@ const struct dsa_switch_ops mt7530_switc
  	.port_fdb_add		= mt7530_port_fdb_add,
  	.port_fdb_del		= mt7530_port_fdb_del,
  	.port_fdb_dump		= mt7530_port_fdb_dump,

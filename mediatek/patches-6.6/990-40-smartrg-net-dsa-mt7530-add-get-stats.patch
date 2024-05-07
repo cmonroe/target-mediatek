@@ -98,8 +98,8 @@ Subject: [PATCH] OWRT-5535 get_dev_stats added
 +	MIB_DESC(1, 0xb8,MRXD, "RxArlDrop"),
  };
  
- /* Since phy_device has not yet been created and
-@@ -822,6 +822,121 @@ mt7530_get_ethtool_stats(struct dsa_swit
+ static void
+@@ -809,6 +809,121 @@ mt7530_get_ethtool_stats(struct dsa_swit
  	}
  }
  
@@ -221,7 +221,7 @@ Subject: [PATCH] OWRT-5535 get_dev_stats added
  static int
  mt7530_get_sset_count(struct dsa_switch *ds, int port, int sset)
  {
-@@ -3130,6 +3245,7 @@ const struct dsa_switch_ops mt7530_switc
+@@ -3135,6 +3250,7 @@ const struct dsa_switch_ops mt7530_switc
  	.preferred_default_local_cpu_port = mt753x_preferred_default_local_cpu_port,
  	.get_strings		= mt7530_get_strings,
  	.get_ethtool_stats	= mt7530_get_ethtool_stats,
@@ -229,7 +229,7 @@ Subject: [PATCH] OWRT-5535 get_dev_stats added
  	.get_sset_count		= mt7530_get_sset_count,
  	.set_ageing_time	= mt7530_set_ageing_time,
  	.port_enable		= mt7530_port_enable,
-@@ -3242,6 +3358,9 @@ mt7530_probe_common(struct mt7530_priv *
+@@ -3244,6 +3360,9 @@ mt7530_probe_common(struct mt7530_priv *
  	mutex_init(&priv->reg_mutex);
  	dev_set_drvdata(dev, priv);
  
@@ -239,7 +239,7 @@ Subject: [PATCH] OWRT-5535 get_dev_stats added
  	return 0;
  }
  EXPORT_SYMBOL_GPL(mt7530_probe_common);
-@@ -3249,6 +3368,8 @@ EXPORT_SYMBOL_GPL(mt7530_probe_common);
+@@ -3251,6 +3370,8 @@ EXPORT_SYMBOL_GPL(mt7530_probe_common);
  void
  mt7530_remove_common(struct mt7530_priv *priv)
  {
@@ -250,7 +250,7 @@ Subject: [PATCH] OWRT-5535 get_dev_stats added
  
 --- a/drivers/net/dsa/mt7530.h
 +++ b/drivers/net/dsa/mt7530.h
-@@ -662,19 +662,51 @@ enum mt7531_clk_skew {
+@@ -690,19 +690,51 @@ enum mt7531_xtal_fsel {
  #define  REG_GSWCK_EN			BIT(0)
  #define  REG_TRGMIICK_EN		BIT(1)
  
@@ -303,10 +303,10 @@ Subject: [PATCH] OWRT-5535 get_dev_stats added
  struct mt7530_fdb {
  	u16 vid;
  	u8 port_mask;
-@@ -800,6 +832,9 @@ struct mt7530_priv {
- 	u32 irq_enable;
+@@ -825,6 +857,9 @@ struct mt7530_priv {
  	int (*create_sgmii)(struct mt7530_priv *priv);
  	u8 active_cpu_ports;
+ 	struct mdio_device *mdiodev;
 +	struct mutex mib_lock;
 +	struct delayed_work mib_work;
 +	struct rtnl_link_stats64 stats[MT7530_NUM_PORTS];

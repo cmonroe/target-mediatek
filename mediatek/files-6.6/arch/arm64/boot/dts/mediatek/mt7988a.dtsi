@@ -23,7 +23,7 @@
 #define MT7988_TOPRGU_XFI_PLL_GRST		16
 
 / {
-	compatible = "mediatek,mt7988";
+	compatible = "mediatek,mt7988a";
 	interrupt-parent = <&gic>;
 	#address-cells = <2>;
 	#size-cells = <2>;
@@ -159,7 +159,7 @@
 	pmu {
 		compatible = "arm,cortex-a73-pmu";
 		interrupt-parent = <&gic>;
-		interrupt = <GIC_PPI 7 IRQ_TYPE_LEVEL_LOW>;
+		interrupts = <GIC_PPI 7 IRQ_TYPE_LEVEL_LOW>;
 	};
 
 	psci {
