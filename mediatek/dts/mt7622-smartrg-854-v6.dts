@@ -362,6 +362,8 @@
 	wm8960: wm8960@1a {
 		compatible = "wlf,wm8960";
 		reg = <0x1a>;
+		clocks = <&topckgen CLK_TOP_I2S1_MCK_DIV_PD>;
+		clock-names = "mclk";
 	};
 
 	system-leds {
