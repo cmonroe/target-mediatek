@@ -36,22 +36,25 @@
 	leds: gpio-leds {
 		compatible = "gpio-leds";
 
-		lan_amber {
-			color = <LED_COLOR_ID_GREEN>;
-			function = "lan";
-			gpios = <&pio 59 GPIO_ACTIVE_HIGH>;
-		};
-
-		lan_green {
-			color = <LED_COLOR_ID_AMBER>;
-			function = "lan";
-			gpios = <&pio 60 GPIO_ACTIVE_HIGH>;
-		};
-
 		lan_white {
 			color = <LED_COLOR_ID_WHITE>;
 			function = "lan";
+			gpios = <&pio 59 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "mdio-bus:0f:2.5Gbps";
+		};
+
+		lan_amber {
+			color = <LED_COLOR_ID_AMBER>;
+			function = "lan";
+			gpios = <&pio 60 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "mdio-bus:0f:100Mbps";
+		};
+
+		lan_green {
+			color = <LED_COLOR_ID_GREEN>;
+			function = "lan";
 			gpios = <&pio 68 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "mdio-bus:0f:1Gbps";
 		};
 	};
 };
