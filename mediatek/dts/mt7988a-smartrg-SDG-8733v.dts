@@ -6,6 +6,11 @@
 
 #include "mt7988a-smartrg-mt-stuart.dtsi"
 #include "mt7988a-smartrg-mt-stuart-voice.dtsi"
+#include "mt7988a-smartrg-mt-stuart-power-limits-r1-RCM-AU-NZ.dtsi"
+#include "mt7988a-smartrg-mt-stuart-power-limits-r2-IC-CA.dtsi"
+#include "mt7988a-smartrg-mt-stuart-power-limits-r3-ETSI-GB.dtsi"
+#include "mt7988a-smartrg-mt-stuart-power-limits-r4-ETSI.dtsi"
+//#include "mt7988a-smartrg-mt-stuart-power-limits-r5-FCC-US.dtsi"
 
 / {
 	model = "SmartRG SDG-8733v";
