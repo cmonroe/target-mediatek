@@ -44,6 +44,7 @@ define Device/polecat
   IMAGE/root.squashfs := SrgDisk
   IMAGE/img := srgImage
   IMAGE/img.run := srgImageRun
+  export DEVICE_DTS
 endef
 TARGET_DEVICES := polecat 
 #TARGET_DEVICES += elecom_wrc-2533gent
@@ -51,6 +52,9 @@ TARGET_DEVICES := polecat
 #TARGET_DEVICES += mediatek_mt7622-rfb1
 
 define Build/SrgFit
+
+	# lzma compress the dtb files
+	$(eval $(foreach S,$(DEVICE_DTS),$(shell $(STAGING_DIR_HOST)/bin/lzma e -lc1 -lp2 -pb2 $(KDIR)/image-$(S).dtb $(KDIR)/image-$(S).dtb.lzma)))
 
 	srg-mkits.sh -o $@.its -A $(LINUX_KARCH)  -v $(LINUX_VERSION) \
 	   	-i "k1" -k $@ -a $(KERNEL_LOADADDR) -e $(if $(KERNEL_ENTRY),$(KERNEL_ENTRY),$(KERNEL_LOADADDR)) -C lzma -h "crc32" -h "sha1" \
@@ -65,16 +69,16 @@ define Build/SrgFit
 		-i "854-6" -d $(KDIR)/image-mt7622-smartrg-854-6.dtb -h "crc32" -h "sha1" \
 		-i "854-6-SFP" -d $(KDIR)/image-mt7622-smartrg-854-6-sfp.dtb -h "crc32" -h "sha1" \
 		-i "srbpi-r3" -d $(KDIR)/image-mt7986a-smartrg-bpi-r3.dtb -h "crc32" -h "sha1" \
-		-i "SDG-8612" -d $(KDIR)/image-mt7986a-smartrg-SDG-8612.dtb -h "crc32" -h "sha1" \
-		-i "SDG-8614" -d $(KDIR)/image-mt7986a-smartrg-SDG-8614.dtb -h "crc32" -h "sha1" \
-		-i "SDG-8622" -d $(KDIR)/image-mt7986a-smartrg-SDG-8622.dtb -h "crc32" -h "sha1" \
-		-i "SDG-8632" -d $(KDIR)/image-mt7986a-smartrg-SDG-8632.dtb -h "crc32" -h "sha1" \
-		-i "SDG-8610" -d $(KDIR)/image-mt7981-smartrg-SDG-8610.dtb -h "crc32" -h "sha1" \
-		-i "SDG-8733" -d $(KDIR)/image-mt7988a-smartrg-SDG-8733.dtb -h "crc32" -h "sha1" \
-		-i "SDG-8733v" -d $(KDIR)/image-mt7988a-smartrg-SDG-8733v.dtb -h "crc32" -h "sha1" \
-		-i "SDG-8734" -d $(KDIR)/image-mt7988a-smartrg-SDG-8734.dtb -h "crc32" -h "sha1" \
-		-i "SDG-8734v" -d $(KDIR)/image-mt7988a-smartrg-SDG-8734v.dtb -h "crc32" -h "sha1" \
-		-i "SDG-8733A" -d $(KDIR)/image-mt7988a-smartrg-SDG-8733A.dtb -h "crc32" -h "sha1" \
+		-i "SDG-8612" -d $(KDIR)/image-mt7986a-smartrg-SDG-8612.dtb.lzma -C lzma -h "crc32" -h "sha1" \
+		-i "SDG-8614" -d $(KDIR)/image-mt7986a-smartrg-SDG-8614.dtb.lzma -C lzma -h "crc32" -h "sha1" \
+		-i "SDG-8622" -d $(KDIR)/image-mt7986a-smartrg-SDG-8622.dtb.lzma -C lzma -h "crc32" -h "sha1" \
+		-i "SDG-8632" -d $(KDIR)/image-mt7986a-smartrg-SDG-8632.dtb.lzma -C lzma -h "crc32" -h "sha1" \
+		-i "SDG-8610" -d $(KDIR)/image-mt7981-smartrg-SDG-8610.dtb.lzma -C lzma -h "crc32" -h "sha1" \
+		-i "SDG-8733" -d $(KDIR)/image-mt7988a-smartrg-SDG-8733.dtb.lzma -C lzma -h "crc32" -h "sha1" \
+		-i "SDG-8733v" -d $(KDIR)/image-mt7988a-smartrg-SDG-8733v.dtb.lzma -C lzma -h "crc32" -h "sha1" \
+		-i "SDG-8734" -d $(KDIR)/image-mt7988a-smartrg-SDG-8734.dtb.lzma -C lzma -h "crc32" -h "sha1" \
+		-i "SDG-8734v" -d $(KDIR)/image-mt7988a-smartrg-SDG-8734v.dtb.lzma -C lzma -h "crc32" -h "sha1" \
+		-i "SDG-8733A" -d $(KDIR)/image-mt7988a-smartrg-SDG-8733A.dtb.lzma -C lzma -h "crc32" -h "sha1" \
 		-c "300" -K k1 -R rdisk -D "srbpi" \
 		-c "402" -K k1 -R rdisk -D "834-5" \
 		-c "403" -K k1 -R rdisk -D "834-5" \
@@ -90,16 +94,16 @@ define Build/SrgFit
 		-c "416" -K k1 -R rdisk -D "854-6" \
 		-c "416-SFP" -K k1 -R rdisk -D "854-6-SFP" \
 		-c "302" -K k1 -R rdisk -D "srbpi-r3" \
-		-c "420" -K k1 -R rdisk -D "SDG-8612" \
-		-c "421" -K k1 -R rdisk -D "SDG-8614" \
-		-c "422" -K k1 -R rdisk -D "SDG-8622" \
-		-c "423" -K k1 -R rdisk -D "SDG-8632" \
-		-c "424" -K k1 -R rdisk -D "SDG-8610" \
-		-c "430" -K k1 -R rdisk -D "SDG-8733" \
-		-c "431" -K k1 -R rdisk -D "SDG-8733v" \
-		-c "432" -K k1 -R rdisk -D "SDG-8734" \
-		-c "433" -K k1 -R rdisk -D "SDG-8734v" \
-		-c "434" -K k1 -R rdisk -D "SDG-8733A"
+		-c "420" -K k1 -R rdisk -D "SDG-8612" -T "smartrg,sdg-8612" \
+		-c "421" -K k1 -R rdisk -D "SDG-8614" -T "smartrg,sdg-8614" \
+		-c "422" -K k1 -R rdisk -D "SDG-8622" -T "smartrg,sdg-8622" \
+		-c "423" -K k1 -R rdisk -D "SDG-8632" -T "smartrg,sdg-8632" \
+		-c "424" -K k1 -R rdisk -D "SDG-8610" -T "smartrg,sdg-8610" \
+		-c "430" -K k1 -R rdisk -D "SDG-8733" -T "smartrg,sdg-8733" \
+		-c "431" -K k1 -R rdisk -D "SDG-8733v" -T "smartrg,sdg-8733v" \
+		-c "432" -K k1 -R rdisk -D "SDG-8734" -T "smartrg,sdg-8734" \
+		-c "433" -K k1 -R rdisk -D "SDG-8734v" -T "smartrg,sdg-8734v" \
+		-c "434" -K k1 -R rdisk -D "SDG-8733A" -T "smartrg,sdg-8733a"
 
 	PATH=$(LINUX_DIR)/scripts/dtc:$(PATH) mkimage -f $@.its $@.new
 	@mv -f $@.new $@
