@@ -1,7 +1,7 @@
 --- a/drivers/net/phy/sfp-bus.c
 +++ b/drivers/net/phy/sfp-bus.c
 @@ -340,7 +340,7 @@ void sfp_parse_support(struct sfp_bus *b
- 	}
+ 	phylink_set(modes, Asym_Pause);
  
  	if (bus->sfp_quirk && bus->sfp_quirk->modes)
 -		bus->sfp_quirk->modes(id, modes, interfaces);

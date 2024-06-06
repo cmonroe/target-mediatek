@@ -32,7 +32,7 @@ Signed-off-by: Frank Wunderlich <frank-w@public-files.de>
  
  	if (MTK_HAS_CAPS(eth->soc->caps, MTK_SRAM))
  		eth->scratch_ring = eth->sram_base;
-@@ -1288,34 +1288,42 @@ static int mtk_init_fq_dma(struct mtk_et
+@@ -1288,37 +1288,43 @@ static int mtk_init_fq_dma(struct mtk_et
  	if (unlikely(!eth->scratch_ring))
  		return -ENOMEM;
  
@@ -55,38 +55,44 @@ Signed-off-by: Frank Wunderlich <frank-w@public-files.de>
 +			return -ENOMEM;
  
 -	for (i = 0; i < cnt; i++) {
+-		dma_addr_t addr = dma_addr + i * MTK_QDMA_PAGE_SIZE;
 -		struct mtk_tx_dma_v2 *txd;
-+		dma_addr = dma_map_single(eth->dma_dev,
-+					  eth->scratch_head[j], len * MTK_QDMA_PAGE_SIZE,
-+					  DMA_FROM_DEVICE);
- 
+-
 -		txd = eth->scratch_ring + i * soc->tx.desc_size;
--		txd->txd1 = dma_addr + i * MTK_QDMA_PAGE_SIZE;
+-		txd->txd1 = addr;
 -		if (i < cnt - 1)
 -			txd->txd2 = eth->phy_scratch_ring +
 -				    (i + 1) * soc->tx.desc_size;
-+		if (unlikely(dma_mapping_error(eth->dma_dev, dma_addr)))
-+			return -ENOMEM;
- 
+-
 -		txd->txd3 = TX_DMA_PLEN0(MTK_QDMA_PAGE_SIZE);
+-		if (MTK_HAS_CAPS(soc->caps, MTK_36BIT_DMA))
+-			txd->txd3 |= TX_DMA_PREP_ADDR64(addr);
 -		txd->txd4 = 0;
 -		if (mtk_is_netsys_v2_or_greater(eth)) {
 -			txd->txd5 = 0;
 -			txd->txd6 = 0;
 -			txd->txd7 = 0;
 -			txd->txd8 = 0;
++		dma_addr = dma_map_single(eth->dma_dev,
++					  eth->scratch_head[j], len * MTK_QDMA_PAGE_SIZE,
++					  DMA_FROM_DEVICE);
++
++		if (unlikely(dma_mapping_error(eth->dma_dev, dma_addr)))
++			return -ENOMEM;
++
 +		for (i = 0; i < cnt; i++) {
++			dma_addr_t addr = dma_addr + i * MTK_QDMA_PAGE_SIZE;
 +			struct mtk_tx_dma_v2 *txd;
 +
 +			txd = eth->scratch_ring + (j * MTK_FQ_DMA_LENGTH + i) * soc->tx.desc_size;
-+			txd->txd1 = dma_addr + i * MTK_QDMA_PAGE_SIZE;
++			txd->txd1 = addr;
 +			if (j * MTK_FQ_DMA_LENGTH + i < cnt)
 +				txd->txd2 = eth->phy_scratch_ring +
 +					    (j * MTK_FQ_DMA_LENGTH + i + 1) * soc->tx.desc_size;
 +
 +			txd->txd3 = TX_DMA_PLEN0(MTK_QDMA_PAGE_SIZE);
 +			if (MTK_HAS_CAPS(soc->caps, MTK_36BIT_DMA))
-+				txd->txd3 |= TX_DMA_PREP_ADDR64(dma_addr + i * MTK_QDMA_PAGE_SIZE);
++				txd->txd3 |= TX_DMA_PREP_ADDR64(addr);
 +
 +			txd->txd4 = 0;
 +			if (mtk_is_netsys_v2_or_greater(eth)) {
@@ -98,7 +104,7 @@ Signed-off-by: Frank Wunderlich <frank-w@public-files.de>
  		}
  	}
  
-@@ -2631,7 +2639,7 @@ static int mtk_tx_alloc(struct mtk_eth *
+@@ -2634,7 +2640,7 @@ static int mtk_tx_alloc(struct mtk_eth *
  	if (MTK_HAS_CAPS(soc->caps, MTK_QDMA))
  		ring_size = MTK_QDMA_RING_SIZE;
  	else
@@ -107,7 +113,7 @@ Signed-off-by: Frank Wunderlich <frank-w@public-files.de>
  
  	ring->buf = kcalloc(ring_size, sizeof(*ring->buf),
  			       GFP_KERNEL);
-@@ -2639,8 +2647,8 @@ static int mtk_tx_alloc(struct mtk_eth *
+@@ -2642,8 +2648,8 @@ static int mtk_tx_alloc(struct mtk_eth *
  		goto no_tx_mem;
  
  	if (MTK_HAS_CAPS(soc->caps, MTK_SRAM)) {
@@ -118,7 +124,7 @@ Signed-off-by: Frank Wunderlich <frank-w@public-files.de>
  	} else {
  		ring->dma = dma_alloc_coherent(eth->dma_dev, ring_size * sz,
  					       &ring->phys, GFP_KERNEL);
-@@ -2762,6 +2770,7 @@ static void mtk_tx_clean(struct mtk_eth
+@@ -2765,6 +2771,7 @@ static void mtk_tx_clean(struct mtk_eth
  static int mtk_rx_alloc(struct mtk_eth *eth, int ring_no, int rx_flag)
  {
  	const struct mtk_reg_map *reg_map = eth->soc->reg_map;
@@ -126,7 +132,7 @@ Signed-off-by: Frank Wunderlich <frank-w@public-files.de>
  	struct mtk_rx_ring *ring;
  	int rx_data_len, rx_dma_size, tx_ring_size;
  	int i;
-@@ -2769,7 +2778,7 @@ static int mtk_rx_alloc(struct mtk_eth *
+@@ -2772,7 +2779,7 @@ static int mtk_rx_alloc(struct mtk_eth *
  	if (MTK_HAS_CAPS(eth->soc->caps, MTK_QDMA))
  		tx_ring_size = MTK_QDMA_RING_SIZE;
  	else
@@ -135,7 +141,7 @@ Signed-off-by: Frank Wunderlich <frank-w@public-files.de>
  
  	if (rx_flag == MTK_RX_FLAGS_QDMA) {
  		if (ring_no)
-@@ -2784,7 +2793,7 @@ static int mtk_rx_alloc(struct mtk_eth *
+@@ -2787,7 +2794,7 @@ static int mtk_rx_alloc(struct mtk_eth *
  		rx_dma_size = MTK_HW_LRO_DMA_SIZE;
  	} else {
  		rx_data_len = ETH_DATA_LEN;
@@ -144,7 +150,7 @@ Signed-off-by: Frank Wunderlich <frank-w@public-files.de>
  	}
  
  	ring->frag_size = mtk_max_frag_size(rx_data_len);
-@@ -3313,7 +3322,10 @@ static void mtk_dma_free(struct mtk_eth
+@@ -3316,7 +3323,10 @@ static void mtk_dma_free(struct mtk_eth
  			mtk_rx_clean(eth, &eth->rx_ring[i], false);
  	}
  
@@ -156,7 +162,7 @@ Signed-off-by: Frank Wunderlich <frank-w@public-files.de>
  }
  
  static bool mtk_hw_reset_check(struct mtk_eth *eth)
-@@ -5479,11 +5491,14 @@ static const struct mtk_soc_data mt2701_
+@@ -5482,11 +5492,14 @@ static const struct mtk_soc_data mt2701_
  		.desc_size = sizeof(struct mtk_tx_dma),
  		.dma_max_len = MTK_TX_DMA_BUF_LEN,
  		.dma_len_offset = 16,
@@ -171,7 +177,7 @@ Signed-off-by: Frank Wunderlich <frank-w@public-files.de>
  		.dma_max_len = MTK_TX_DMA_BUF_LEN,
  		.dma_len_offset = 16,
  	},
-@@ -5503,11 +5518,14 @@ static const struct mtk_soc_data mt7621_
+@@ -5506,11 +5519,14 @@ static const struct mtk_soc_data mt7621_
  		.desc_size = sizeof(struct mtk_tx_dma),
  		.dma_max_len = MTK_TX_DMA_BUF_LEN,
  		.dma_len_offset = 16,
@@ -186,7 +192,7 @@ Signed-off-by: Frank Wunderlich <frank-w@public-files.de>
  		.dma_max_len = MTK_TX_DMA_BUF_LEN,
  		.dma_len_offset = 16,
  	},
-@@ -5529,11 +5547,14 @@ static const struct mtk_soc_data mt7622_
+@@ -5532,11 +5548,14 @@ static const struct mtk_soc_data mt7622_
  		.desc_size = sizeof(struct mtk_tx_dma),
  		.dma_max_len = MTK_TX_DMA_BUF_LEN,
  		.dma_len_offset = 16,
@@ -201,7 +207,7 @@ Signed-off-by: Frank Wunderlich <frank-w@public-files.de>
  		.dma_max_len = MTK_TX_DMA_BUF_LEN,
  		.dma_len_offset = 16,
  	},
-@@ -5554,11 +5575,14 @@ static const struct mtk_soc_data mt7623_
+@@ -5557,11 +5576,14 @@ static const struct mtk_soc_data mt7623_
  		.desc_size = sizeof(struct mtk_tx_dma),
  		.dma_max_len = MTK_TX_DMA_BUF_LEN,
  		.dma_len_offset = 16,
@@ -216,7 +222,7 @@ Signed-off-by: Frank Wunderlich <frank-w@public-files.de>
  		.dma_max_len = MTK_TX_DMA_BUF_LEN,
  		.dma_len_offset = 16,
  	},
-@@ -5577,11 +5601,14 @@ static const struct mtk_soc_data mt7629_
+@@ -5580,11 +5602,14 @@ static const struct mtk_soc_data mt7629_
  		.desc_size = sizeof(struct mtk_tx_dma),
  		.dma_max_len = MTK_TX_DMA_BUF_LEN,
  		.dma_len_offset = 16,
@@ -231,7 +237,7 @@ Signed-off-by: Frank Wunderlich <frank-w@public-files.de>
  		.dma_max_len = MTK_TX_DMA_BUF_LEN,
  		.dma_len_offset = 16,
  	},
-@@ -5603,6 +5630,8 @@ static const struct mtk_soc_data mt7981_
+@@ -5606,6 +5631,8 @@ static const struct mtk_soc_data mt7981_
  		.desc_size = sizeof(struct mtk_tx_dma_v2),
  		.dma_max_len = MTK_TX_DMA_BUF_LEN_V2,
  		.dma_len_offset = 8,
@@ -240,7 +246,7 @@ Signed-off-by: Frank Wunderlich <frank-w@public-files.de>
  	},
  	.rx = {
  		.desc_size = sizeof(struct mtk_rx_dma),
-@@ -5610,6 +5639,7 @@ static const struct mtk_soc_data mt7981_
+@@ -5613,6 +5640,7 @@ static const struct mtk_soc_data mt7981_
  		.dma_l4_valid = RX_DMA_L4_VALID_V2,
  		.dma_max_len = MTK_TX_DMA_BUF_LEN,
  		.dma_len_offset = 16,
@@ -248,7 +254,7 @@ Signed-off-by: Frank Wunderlich <frank-w@public-files.de>
  	},
  };
  
-@@ -5629,6 +5659,8 @@ static const struct mtk_soc_data mt7986_
+@@ -5632,6 +5660,8 @@ static const struct mtk_soc_data mt7986_
  		.desc_size = sizeof(struct mtk_tx_dma_v2),
  		.dma_max_len = MTK_TX_DMA_BUF_LEN_V2,
  		.dma_len_offset = 8,
@@ -257,7 +263,7 @@ Signed-off-by: Frank Wunderlich <frank-w@public-files.de>
  	},
  	.rx = {
  		.desc_size = sizeof(struct mtk_rx_dma),
-@@ -5636,6 +5668,7 @@ static const struct mtk_soc_data mt7986_
+@@ -5639,6 +5669,7 @@ static const struct mtk_soc_data mt7986_
  		.dma_l4_valid = RX_DMA_L4_VALID_V2,
  		.dma_max_len = MTK_TX_DMA_BUF_LEN,
  		.dma_len_offset = 16,
@@ -265,7 +271,7 @@ Signed-off-by: Frank Wunderlich <frank-w@public-files.de>
  	},
  };
  
-@@ -5655,6 +5688,8 @@ static const struct mtk_soc_data mt7988_
+@@ -5658,6 +5689,8 @@ static const struct mtk_soc_data mt7988_
  		.desc_size = sizeof(struct mtk_tx_dma_v2),
  		.dma_max_len = MTK_TX_DMA_BUF_LEN_V2,
  		.dma_len_offset = 8,
@@ -274,7 +280,7 @@ Signed-off-by: Frank Wunderlich <frank-w@public-files.de>
  	},
  	.rx = {
  		.desc_size = sizeof(struct mtk_rx_dma_v2),
-@@ -5662,6 +5697,7 @@ static const struct mtk_soc_data mt7988_
+@@ -5665,6 +5698,7 @@ static const struct mtk_soc_data mt7988_
  		.dma_l4_valid = RX_DMA_L4_VALID_V2,
  		.dma_max_len = MTK_TX_DMA_BUF_LEN_V2,
  		.dma_len_offset = 8,
@@ -282,7 +288,7 @@ Signed-off-by: Frank Wunderlich <frank-w@public-files.de>
  	},
  };
  
-@@ -5676,6 +5712,8 @@ static const struct mtk_soc_data rt5350_
+@@ -5679,6 +5713,8 @@ static const struct mtk_soc_data rt5350_
  		.desc_size = sizeof(struct mtk_tx_dma),
  		.dma_max_len = MTK_TX_DMA_BUF_LEN,
  		.dma_len_offset = 16,
@@ -291,7 +297,7 @@ Signed-off-by: Frank Wunderlich <frank-w@public-files.de>
  	},
  	.rx = {
  		.desc_size = sizeof(struct mtk_rx_dma),
-@@ -5683,6 +5721,7 @@ static const struct mtk_soc_data rt5350_
+@@ -5686,6 +5722,7 @@ static const struct mtk_soc_data rt5350_
  		.dma_l4_valid = RX_DMA_L4_VALID_PDMA,
  		.dma_max_len = MTK_TX_DMA_BUF_LEN,
  		.dma_len_offset = 16,

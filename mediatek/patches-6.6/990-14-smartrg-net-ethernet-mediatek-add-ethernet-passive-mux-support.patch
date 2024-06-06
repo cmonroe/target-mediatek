@@ -70,7 +70,7 @@ Reviewed-on: https://gerrit.mediatek.inc/c/openwrt/feeds/mtk_openwrt_feeds/+/797
  #include <net/dsa.h>
  #include <net/dst_metadata.h>
  #include <net/gso.h>
-@@ -4660,6 +4661,151 @@ static const struct net_device_ops mtk_n
+@@ -4663,6 +4664,151 @@ static const struct net_device_ops mtk_n
  	.ndo_select_queue	= mtk_select_queue,
  };
  
@@ -222,7 +222,7 @@ Reviewed-on: https://gerrit.mediatek.inc/c/openwrt/feeds/mtk_openwrt_feeds/+/797
  static int mtk_add_mac(struct mtk_eth *eth, struct device_node *np)
  {
  	const __be32 *_id = of_get_property(np, "reg", NULL);
-@@ -4964,7 +5110,7 @@ static int mtk_sgmii_init(struct mtk_eth
+@@ -4967,7 +5113,7 @@ static int mtk_sgmii_init(struct mtk_eth
  static int mtk_probe(struct platform_device *pdev)
  {
  	struct resource *res = NULL, *res_sram;
@@ -231,7 +231,7 @@ Reviewed-on: https://gerrit.mediatek.inc/c/openwrt/feeds/mtk_openwrt_feeds/+/797
  	struct mtk_eth *eth;
  	int err, i;
  
-@@ -5178,6 +5324,26 @@ static int mtk_probe(struct platform_dev
+@@ -5181,6 +5327,26 @@ static int mtk_probe(struct platform_dev
  			goto err_deinit_hw;
  	}
  
