@@ -192,17 +192,15 @@
 		tx-fault-gpio  = <&pio 87 GPIO_ACTIVE_HIGH>;
 	};
 
+	dummy_codec:dummy_codec {
+		compatible = "d2,slic-dummy-codec";
+	};
+
+
 	sound: sound {
 		compatible = "mediatek,mt2701-wm8960-machine";
-		pinctrl-names = "default";
-		pinctrl-0 = <&i2s1_pins>;
 		mediatek,platform = <&afe>;
-		mediatek,audio-codec = <&wm8960>;
-		audio-routing =
-			"Headphone", "HP_L",
-			"Headphone", "HP_R",
-			"LINPUT2", "AMIC",
-			"RINPUT2", "AMIC";
+		mediatek,audio-codec = <&dummy_codec>;
 	};
 };
 
@@ -358,13 +356,6 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c0_pins>;
 	status = "okay";
-
-	wm8960: wm8960@1a {
-		compatible = "wlf,wm8960";
-		reg = <0x1a>;
-		clocks = <&topckgen CLK_TOP_I2S1_MCK_DIV_PD>;
-		clock-names = "mclk";
-	};
 
 	system-leds {
 		compatible = "srg,sysled";
