@@ -1,0 +1,57 @@
+--- a/arch/arm64/boot/dts/mediatek/mt7622-rfb1.dts
++++ b/arch/arm64/boot/dts/mediatek/mt7622-rfb1.dts
+@@ -37,7 +37,7 @@
+ 			sram-supply = <&mt6380_vm_reg>;
+ 		};
+ 	};
+-
++    /*
+ 	gpio-keys {
+ 		compatible = "gpio-keys";
+ 
+@@ -53,6 +53,7 @@
+ 			gpios = <&pio 102 GPIO_ACTIVE_LOW>;
+ 		};
+ 	};
++    */
+ 
+ 	memory@40000000 {
+ 		reg = <0 0x40000000 0 0x40000000>;
+@@ -111,6 +112,16 @@
+ 		regulator-boot-on;
+ 		regulator-always-on;
+ 	};
++
++	dummy_codec:dummy_codec {
++		compatible = "d2,slic-dummy-codec";
++	};
++
++	sound: sound {
++		compatible = "mediatek,mt2701-wm8960-machine";
++		mediatek,platform = <&afe>;
++		mediatek,audio-codec = <&dummy_codec>;
++	};
+ };
+ 
+ &bch {
+@@ -517,7 +528,7 @@
+ 	spic1_pins: spic1-pins {
+ 		mux {
+ 			function = "spi";
+-			groups = "spic1_0";
++			groups = "spic1_1";
+ 		};
+ 	};
+ 
+@@ -665,6 +676,11 @@
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&spic1_pins>;
+ 	status = "okay";
++    slic: slic@0 {
++        compatible = "silabs,si3210";
++        reg = <0>;
++        spi-max-frequency = <2000000>;
++    };
+ };
+ 
+ &ssusb {

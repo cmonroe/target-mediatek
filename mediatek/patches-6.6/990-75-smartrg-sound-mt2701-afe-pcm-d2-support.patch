@@ -1,0 +1,30 @@
+--- a/sound/soc/mediatek/mt2701/mt2701-afe-pcm.c
++++ b/sound/soc/mediatek/mt2701/mt2701-afe-pcm.c
+@@ -26,11 +26,11 @@ static const struct snd_pcm_hardware mt2
+ 		| SNDRV_PCM_INFO_RESUME | SNDRV_PCM_INFO_MMAP_VALID,
+ 	.formats = SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S24_LE
+ 		   | SNDRV_PCM_FMTBIT_S32_LE,
+-	.period_bytes_min = 1024,
+-	.period_bytes_max = 1024 * 256,
+-	.periods_min = 4,
++	.period_bytes_min = 320,
++	.period_bytes_max = 320 * 256,
++	.periods_min = 2,
+ 	.periods_max = 1024,
+-	.buffer_bytes_max = 1024 * 1024,
++	.buffer_bytes_max = 320 * 1024,
+ 	.fifo_size = 0,
+ };
+ 
+@@ -242,8 +242,10 @@ static int mt2701_afe_i2s_prepare(struct
+ 
+ 	i2s_path = &afe_priv->i2s_path[i2s_num];
+ 
++#if 1 /* D2 MOD, do not return -EBUSY even if the sream is occupied, or snd_pcm_recover() will failed. */
+ 	if (i2s_path->occupied[substream->stream])
+-		return -EBUSY;
++		return 0;
++#endif
+ 
+ 	ret = mt2701_mclk_configuration(afe, mode ? 1 : i2s_num);
+ 	if (ret)

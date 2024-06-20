@@ -1,6 +1,6 @@
 --- a/sound/soc/mediatek/Kconfig
 +++ b/sound/soc/mediatek/Kconfig
-@@ -27,7 +27,7 @@
+@@ -27,7 +27,7 @@ config SND_SOC_MT2701_CS42448
  config SND_SOC_MT2701_WM8960
  	tristate "ASoc Audio driver for MT2701 with WM8960 codec"
  	depends on SND_SOC_MT2701 && I2C
@@ -11,7 +11,7 @@
  	  with the WM8960 codecs.
 --- a/sound/soc/mediatek/mt2701/mt2701-wm8960.c
 +++ b/sound/soc/mediatek/mt2701/mt2701-wm8960.c
-@@ -56,7 +56,7 @@
+@@ -56,7 +56,7 @@ SND_SOC_DAILINK_DEFS(capture,
  
  SND_SOC_DAILINK_DEFS(codec,
  	DAILINK_COMP_ARRAY(COMP_CPU("I2S0")),
@@ -20,7 +20,7 @@
  	DAILINK_COMP_ARRAY(COMP_EMPTY()));
  
  static struct snd_soc_dai_link mt2701_wm8960_dai_links[] = {
-@@ -138,19 +138,22 @@
+@@ -138,19 +138,22 @@ static int mt2701_wm8960_machine_probe(s
  		dai_link->codecs->of_node = codec_node;
  	}
  
