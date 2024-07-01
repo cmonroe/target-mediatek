@@ -9,7 +9,7 @@
 #include "mt7988a-smartrg-mt-stuart-power-limits-r2-IC-CA.dtsi"
 #include "mt7988a-smartrg-mt-stuart-power-limits-r3-ETSI-GB.dtsi"
 #include "mt7988a-smartrg-mt-stuart-power-limits-r4-ETSI.dtsi"
-//#include "mt7988a-smartrg-mt-stuart-power-limits-r5-FCC-US.dtsi"
+#include "mt7988a-smartrg-mt-stuart-power-limits-r5-FCC-US.dtsi"
 
 / {
 	model = "SmartRG SDG-8733";
