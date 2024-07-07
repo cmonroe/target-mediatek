@@ -10,7 +10,7 @@
  #define MDIO_AN_RX_LP_STAT1			0xe820
  #define MDIO_AN_RX_LP_STAT1_1000BASET_FULL	BIT(15)
  #define MDIO_AN_RX_LP_STAT1_1000BASET_HALF	BIT(14)
-@@ -629,6 +632,21 @@ static int aqr107_config_led(struct phy_
+@@ -592,6 +595,21 @@ static int aqr107_config_led(struct phy_
  	return 0;
  }
  
@@ -31,13 +31,13 @@
 +
  static int aqr107_config_init(struct phy_device *phydev)
  {
- 	int ret;
-@@ -656,6 +674,8 @@ static int aqr107_config_init(struct phy
+ 	struct aqr107_priv *priv = phydev->priv;
+@@ -621,6 +639,8 @@ static int aqr107_config_init(struct phy
  	if (ret < 0)
  		return ret;
  
 +	aqr107_config_mdi(phydev);
 +
- 	return aqr107_set_downshift(phydev, MDIO_AN_VEND_PROV_DOWNSHIFT_DFLT);
- }
- 
+ 	ret = aqr107_set_downshift(phydev, MDIO_AN_VEND_PROV_DOWNSHIFT_DFLT);
+ 	if (ret)
+ 		return ret;

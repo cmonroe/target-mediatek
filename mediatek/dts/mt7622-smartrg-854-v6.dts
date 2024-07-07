@@ -185,10 +185,10 @@
 	sfp_wan: sfp-wan{
 		compatible = "sff,sfp";
 		i2c-bus = <&i2c0>;
-		los-gpio = <&pio 22 GPIO_ACTIVE_HIGH>;
-		mod-def0-gpio = <&pio 77 GPIO_ACTIVE_LOW>;
+		los-gpios = <&pio 22 GPIO_ACTIVE_HIGH>;
+		mod-def0-gpios = <&pio 77 GPIO_ACTIVE_LOW>;
 		rate-select0-gpios = <&pio 21 GPIO_ACTIVE_HIGH>;
-		tx-disable-gpio = <&pio 20 GPIO_ACTIVE_HIGH>;
+		tx-disable-gpios = <&pio 20 GPIO_ACTIVE_HIGH>;
 		tx-fault-gpio  = <&pio 87 GPIO_ACTIVE_HIGH>;
 	};
 

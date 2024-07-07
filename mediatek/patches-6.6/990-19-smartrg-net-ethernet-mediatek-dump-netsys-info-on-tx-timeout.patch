@@ -8,7 +8,7 @@
  		.rx_ptr		= 0x0900,
  		.rx_cnt_cfg	= 0x0904,
  		.pcrx_ptr	= 0x0908,
-@@ -98,6 +99,7 @@ static const struct mtk_reg_map mt7628_r
+@@ -100,6 +101,7 @@ static const struct mtk_reg_map mt7628_r
  	.tx_irq_mask		= 0x0a28,
  	.tx_irq_status		= 0x0a20,
  	.pdma = {
@@ -16,7 +16,7 @@
  		.rx_ptr		= 0x0900,
  		.rx_cnt_cfg	= 0x0904,
  		.pcrx_ptr	= 0x0908,
-@@ -114,6 +116,7 @@ static const struct mtk_reg_map mt7986_r
+@@ -116,6 +118,7 @@ static const struct mtk_reg_map mt7986_r
  	.tx_irq_mask		= 0x461c,
  	.tx_irq_status		= 0x4618,
  	.pdma = {
@@ -24,7 +24,7 @@
  		.rx_ptr		= 0x4100,
  		.rx_cnt_cfg	= 0x4104,
  		.pcrx_ptr	= 0x4108,
-@@ -162,6 +165,7 @@ static const struct mtk_reg_map mt7988_r
+@@ -167,6 +170,7 @@ static const struct mtk_reg_map mt7988_r
  	.tx_irq_mask		= 0x461c,
  	.tx_irq_status		= 0x4618,
  	.pdma = {
@@ -32,7 +32,7 @@
  		.rx_ptr		= 0x6900,
  		.rx_cnt_cfg	= 0x6904,
  		.pcrx_ptr	= 0x6908,
-@@ -3338,14 +3342,61 @@ static bool mtk_hw_reset_check(struct mt
+@@ -3349,14 +3353,61 @@ static bool mtk_hw_reset_check(struct mt
  	       (val & MTK_FE_INT_TSO_ALIGN) || (val & MTK_FE_INT_TSO_ILLEGAL);
  }
  
@@ -94,7 +94,7 @@
  	if (!mtk_hw_reset_check(eth))
  		return;
  
-@@ -5433,6 +5484,7 @@ static int mtk_probe(struct platform_dev
+@@ -5475,6 +5526,7 @@ static int mtk_probe(struct platform_dev
  	schedule_delayed_work(&eth->reset.monitor_work,
  			      MTK_DMA_MONITOR_TIMEOUT);
  

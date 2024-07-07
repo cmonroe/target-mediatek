@@ -165,7 +165,7 @@
 	sound: sound {
 		compatible = "mediatek,mt2701-wm8960-machine";
 		mediatek,platform = <&afe>;
-		mediatek,audio-codec = <&dummy_codec>;                
+		mediatek,audio-codec = <&dummy_codec>;
 	};
 };
 

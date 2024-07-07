@@ -12,7 +12,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 
 --- a/drivers/net/phy/mxl-gpy.c
 +++ b/drivers/net/phy/mxl-gpy.c
-@@ -325,6 +325,21 @@ static int gpy_of_init(struct phy_device
+@@ -306,6 +306,21 @@ static int gpy_led_write(struct phy_devi
  	return 0;
  }
  
@@ -33,8 +33,8 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 +
  static int gpy_config_init(struct phy_device *phydev)
  {
- 	int ret;
-@@ -352,12 +367,19 @@ static int gpy_probe(struct phy_device *
+ 	/* Nothing to configure. Configuration Requirement Placeholder */
+@@ -318,12 +333,19 @@ static int gpy_probe(struct phy_device *
  	struct gpy_priv *priv;
  	int fw_version;
  	int ret;
