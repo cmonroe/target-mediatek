@@ -154,10 +154,14 @@ Subject: [PATCH] OWRT-7643 Adtran quirks added
  
  	// FS 2.5G Base-T
  	SFP_QUIRK_M("FS", "SFP-2.5G-T", sfp_quirk_oem_2_5g),
-@@ -573,6 +626,40 @@ static const struct sfp_quirk sfp_quirks
+@@ -573,6 +626,44 @@ static const struct sfp_quirk sfp_quirks
  	SFP_QUIRK_F("OEM", "RTSFP-10G", sfp_fixup_rollball_cc),
  	SFP_QUIRK_F("Turris", "RTSFP-10", sfp_fixup_rollball),
  	SFP_QUIRK_F("Turris", "RTSFP-10G", sfp_fixup_rollball),
++
++	// FiberMall XGSPON-ONU-STICK (WAS-110)
++	SFP_QUIRK("FiberMall", "XGSPON-ONU-STICK", sfp_quirk_phy_mode,
++		  sfp_fixup_gpon_xxx),
 +
 +	// F2 ADTRAN 1442535F2, ADTRAN SDX610 GPON ONT, 2.5G serdes
 +	SFP_QUIRK("T&W", "TW2362H-CDEL-ADT", sfp_quirk_2500basex,
