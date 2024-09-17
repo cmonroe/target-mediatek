@@ -94,7 +94,7 @@
  	if (!mtk_hw_reset_check(eth))
  		return;
  
-@@ -5475,6 +5526,7 @@ static int mtk_probe(struct platform_dev
+@@ -5477,6 +5528,7 @@ static int mtk_probe(struct platform_dev
  	schedule_delayed_work(&eth->reset.monitor_work,
  			      MTK_DMA_MONITOR_TIMEOUT);
  
@@ -122,7 +122,7 @@
  /* QDMA TX Queue Configuration Registers */
  #define MTK_QTX_OFFSET		0x10
  #define QDMA_RES_THRES		4
-@@ -1155,6 +1159,7 @@ struct mtk_reg_map {
+@@ -1156,6 +1160,7 @@ struct mtk_reg_map {
  	u32	tx_irq_mask;
  	u32	tx_irq_status;
  	struct {
