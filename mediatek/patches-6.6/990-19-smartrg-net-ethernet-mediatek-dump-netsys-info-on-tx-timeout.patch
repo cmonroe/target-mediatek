@@ -32,7 +32,7 @@
  		.rx_ptr		= 0x6900,
  		.rx_cnt_cfg	= 0x6904,
  		.pcrx_ptr	= 0x6908,
-@@ -3349,14 +3353,61 @@ static bool mtk_hw_reset_check(struct mt
+@@ -3349,14 +3353,62 @@ static bool mtk_hw_reset_check(struct mt
  	       (val & MTK_FE_INT_TSO_ALIGN) || (val & MTK_FE_INT_TSO_ILLEGAL);
  }
  
@@ -54,7 +54,8 @@
 +	const struct mtk_reg_map *reg_map = eth->soc->reg_map;
 +	u32 id = 0;
 +
-+	mtk_dump_reg(eth, "FE", 0x0, 0x500);
++	mtk_dump_reg(eth, "FE", 0x0, 0x600);
++	mtk_dump_reg(eth, "FE", 0x1400, 0x300);
 +	mtk_dump_reg(eth, "ADMA", reg_map->pdma.base_ptr, 0x300);
 +	for (id = 0; id < MTK_QDMA_PAGE_NUM; id++){
 +		mtk_w32(eth, id, MTK_QDMA_PAGE(reg_map->qdma.qtx_cfg));
@@ -94,7 +95,7 @@
  	if (!mtk_hw_reset_check(eth))
  		return;
  
-@@ -5477,6 +5528,7 @@ static int mtk_probe(struct platform_dev
+@@ -5477,6 +5529,7 @@ static int mtk_probe(struct platform_dev
  	schedule_delayed_work(&eth->reset.monitor_work,
  			      MTK_DMA_MONITOR_TIMEOUT);
  
