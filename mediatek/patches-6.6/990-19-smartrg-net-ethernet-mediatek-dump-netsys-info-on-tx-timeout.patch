@@ -32,7 +32,7 @@
  		.rx_ptr		= 0x6900,
  		.rx_cnt_cfg	= 0x6904,
  		.pcrx_ptr	= 0x6908,
-@@ -3349,14 +3353,62 @@ static bool mtk_hw_reset_check(struct mt
+@@ -3360,14 +3364,62 @@ static bool mtk_hw_reset_check(struct mt
  	       (val & MTK_FE_INT_TSO_ALIGN) || (val & MTK_FE_INT_TSO_ILLEGAL);
  }
  
@@ -95,7 +95,7 @@
  	if (!mtk_hw_reset_check(eth))
  		return;
  
-@@ -5477,6 +5529,7 @@ static int mtk_probe(struct platform_dev
+@@ -5488,6 +5540,7 @@ static int mtk_probe(struct platform_dev
  	schedule_delayed_work(&eth->reset.monitor_work,
  			      MTK_DMA_MONITOR_TIMEOUT);
  
