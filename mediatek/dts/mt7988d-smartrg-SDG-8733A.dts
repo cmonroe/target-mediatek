@@ -8,7 +8,7 @@
 
 / {
 	model = "SmartRG SDG-8733A";
-	compatible = "smartrg,sdg-8733a", "mediatek,mt7988a";
+	compatible = "smartrg,sdg-8733a", "mediatek,mt7988d";
 
 	cpus {
 		/delete-node/ cpu@3;
@@ -79,30 +79,6 @@
 	phy = <&phy8>;
 };
 
-&gsw_phy1 {
-	status = "disabled";
-};
-
-&gsw_phy2 {
-	status = "disabled";
-};
-
-&gsw_phy3 {
-	status = "disabled";
-};
-
-&gsw_port1 {
-	status = "disabled";
-};
-
-&gsw_port2 {
-	status = "disabled";
-};
-
-&gsw_port3 {
-	status = "disabled";
-};
-
 &int_2p5g_phy {
 	pinctrl-names = "i2p5gbe-led";
 	pinctrl-0 = <&gbe1_led0_pins>;
@@ -139,7 +115,19 @@
 
 &phy8 {
 	reset-gpios = <&pio 62 GPIO_ACTIVE_LOW>;
-	mdi-reversal = /bits/ 16 <0>;
+	marvell,mdi-cfg-order = <0>;
+};
+
+&aqr_green_led {
+	function = LED_FUNCTION_WAN;
+};
+
+&aqr_orange_led {
+	function = LED_FUNCTION_WAN;
+};
+
+&aqr_white_led {
+	function = LED_FUNCTION_WAN;
 };
 
 &ssusb0 {
@@ -147,6 +135,10 @@
 };
 
 &ssusb1 {
+	status = "disabled";
+};
+
+&switch {
 	status = "disabled";
 };
 

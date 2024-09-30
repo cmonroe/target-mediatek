@@ -34,7 +34,7 @@ define Device/polecat
   DEVICE_DTS += mt7988a-smartrg-SDG-8733v
   DEVICE_DTS += mt7988a-smartrg-SDG-8734
   DEVICE_DTS += mt7988a-smartrg-SDG-8734v
-  DEVICE_DTS += mt7988a-smartrg-SDG-8733A
+  DEVICE_DTS += mt7988d-smartrg-SDG-8733A
   DEVICE_DTS += mt7988a-smartrg-SDG-9732i
   DEVICE_DTS += mt7988a-smartrg-SDG-9712o
   DEVICE_DTS_DIR := ../dts
@@ -80,7 +80,7 @@ define Build/SrgFit
 		-i "SDG-8733v" -d $(KDIR)/image-mt7988a-smartrg-SDG-8733v.dtb.lzma -C lzma -h "crc32" -h "sha1" \
 		-i "SDG-8734" -d $(KDIR)/image-mt7988a-smartrg-SDG-8734.dtb.lzma -C lzma -h "crc32" -h "sha1" \
 		-i "SDG-8734v" -d $(KDIR)/image-mt7988a-smartrg-SDG-8734v.dtb.lzma -C lzma -h "crc32" -h "sha1" \
-		-i "SDG-8733A" -d $(KDIR)/image-mt7988a-smartrg-SDG-8733A.dtb.lzma -C lzma -h "crc32" -h "sha1" \
+		-i "SDG-8733A" -d $(KDIR)/image-mt7988d-smartrg-SDG-8733A.dtb.lzma -C lzma -h "crc32" -h "sha1" \
 		-i "SDG-9732i" -d $(KDIR)/image-mt7988a-smartrg-SDG-9732i.dtb.lzma -C lzma -h "crc32" -h "sha1" \
 		-i "SDG-9712o" -d $(KDIR)/image-mt7988a-smartrg-SDG-9712o.dtb.lzma -C lzma -h "crc32" -h "sha1" \
 		-c "300" -K k1 -R rdisk -D "srbpi" \

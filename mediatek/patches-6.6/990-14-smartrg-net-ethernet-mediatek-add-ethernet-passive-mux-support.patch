@@ -70,7 +70,7 @@ Reviewed-on: https://gerrit.mediatek.inc/c/openwrt/feeds/mtk_openwrt_feeds/+/797
  #include <net/dsa.h>
  #include <net/dst_metadata.h>
  #include <net/gso.h>
-@@ -4714,6 +4715,151 @@ static const struct net_device_ops mtk_n
+@@ -4724,6 +4725,151 @@ static const struct net_device_ops mtk_n
  	.ndo_select_queue	= mtk_select_queue,
  };
  
@@ -222,7 +222,7 @@ Reviewed-on: https://gerrit.mediatek.inc/c/openwrt/feeds/mtk_openwrt_feeds/+/797
  static int mtk_add_mac(struct mtk_eth *eth, struct device_node *np)
  {
  	const __be32 *_id = of_get_property(np, "reg", NULL);
-@@ -5018,7 +5164,7 @@ static int mtk_sgmii_init(struct mtk_eth
+@@ -5028,7 +5174,7 @@ static int mtk_sgmii_init(struct mtk_eth
  static int mtk_probe(struct platform_device *pdev)
  {
  	struct resource *res = NULL, *res_sram;
@@ -231,7 +231,7 @@ Reviewed-on: https://gerrit.mediatek.inc/c/openwrt/feeds/mtk_openwrt_feeds/+/797
  	struct mtk_eth *eth;
  	int err, i;
  
-@@ -5232,6 +5378,26 @@ static int mtk_probe(struct platform_dev
+@@ -5242,6 +5388,26 @@ static int mtk_probe(struct platform_dev
  			goto err_deinit_hw;
  	}
  
@@ -260,7 +260,7 @@ Reviewed-on: https://gerrit.mediatek.inc/c/openwrt/feeds/mtk_openwrt_feeds/+/797
  				       mtk_handle_irq, 0,
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.h
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.h
-@@ -669,6 +669,7 @@ struct mtk_tx_dma_v2 {
+@@ -670,6 +670,7 @@ struct mtk_tx_dma_v2 {
  
  struct mtk_eth;
  struct mtk_mac;
@@ -268,7 +268,7 @@ Reviewed-on: https://gerrit.mediatek.inc/c/openwrt/feeds/mtk_openwrt_feeds/+/797
  
  struct mtk_xdp_stats {
  	u64 rx_xdp_redirect;
-@@ -1310,6 +1311,7 @@ struct mtk_eth {
+@@ -1311,6 +1312,7 @@ struct mtk_eth {
  	struct net_device		dummy_dev;
  	struct net_device		*netdev[MTK_MAX_DEVS];
  	struct mtk_mac			*mac[MTK_MAX_DEVS];
@@ -276,7 +276,7 @@ Reviewed-on: https://gerrit.mediatek.inc/c/openwrt/feeds/mtk_openwrt_feeds/+/797
  	int				irq[3];
  	u32				msg_enable;
  	unsigned long			sysclk;
-@@ -1392,6 +1394,25 @@ struct mtk_mac {
+@@ -1393,6 +1395,25 @@ struct mtk_mac {
  	struct notifier_block		device_notifier;
  };
  

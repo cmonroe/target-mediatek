@@ -1,58 +1,31 @@
 --- a/drivers/net/phy/aquantia/aquantia_main.c
 +++ b/drivers/net/phy/aquantia/aquantia_main.c
-@@ -12,6 +12,7 @@
- #include <linux/delay.h>
+@@ -13,6 +13,7 @@
  #include <linux/bitfield.h>
+ #include <linux/of.h>
  #include <linux/phy.h>
 +#include <linux/of.h>
  
  #include "aquantia.h"
  
-@@ -53,6 +54,13 @@
- #define MDIO_AN_VEND_PROV_DOWNSHIFT_MASK	GENMASK(3, 0)
- #define MDIO_AN_VEND_PROV_DOWNSHIFT_DFLT	4
- 
-+#define AQR_NUM_LEDS					3
-+#define VEND1_GLOBAL_LED_PROVISIONING	0xc430
-+#define AQR_LED(x)						(VEND1_GLOBAL_LED_PROVISIONING + x)
-+#define VEND1_GLOBAL_LED_DRIVE			0xc438
-+#define VEND1_GLOBAL_LED_DRIVE_VDD		BIT(1)
-+#define AQR_LED_DRIVE(x)				(VEND1_GLOBAL_LED_DRIVE + x)
-+
- #define MDIO_AN_TX_VEND_STATUS1			0xc800
- #define MDIO_AN_TX_VEND_STATUS1_RATE_MASK	GENMASK(3, 1)
- #define MDIO_AN_TX_VEND_STATUS1_10BASET		0
-@@ -573,6 +581,41 @@ static int aqr107_wait_processor_intensi
- 	return 0;
+@@ -602,6 +603,28 @@ static int aqr107_config_mdi(struct phy_
+ 			      mdi_conf | PMAPMD_RSVD_VEND_PROV_MDI_FORCE);
  }
  
 +static int aqr107_config_led(struct phy_device *phydev)
 +{
 +	struct device_node *node = phydev->mdio.dev.of_node;
-+	u32 led_cfg[AQR_NUM_LEDS];
-+	u32 led_drive[AQR_NUM_LEDS];
++	u32 led_cfg[AQR_MAX_LEDS];
++	u32 led_drive[AQR_MAX_LEDS];
 +	int i, ret;
 +
 +	if (!IS_ENABLED(CONFIG_OF_MDIO))
 +		return 0;
 +
-+	if (!of_property_read_u32_array(node, "aqr,led-config", led_cfg, AQR_NUM_LEDS)) {
++	if (!of_property_read_u32_array(node, "aqr,led-config", led_cfg, AQR_MAX_LEDS)) {
 +		/* Write LED register values */
-+		for (i = 0; i < AQR_NUM_LEDS; i++) {
-+			ret = phy_write_mmd(phydev, MDIO_MMD_VEND1, AQR_LED(i), (u16)led_cfg[i]);
-+			if (ret < 0)
-+				return ret;
-+		}
-+	}
-+
-+	if (of_property_read_u32_array(node, "aqr,led-drive-vdd", led_drive, AQR_NUM_LEDS))
-+		return 0;
-+
-+	/* Write LED register values */
-+	for (i = 0; i < AQR_NUM_LEDS; i++) {
-+		if (led_drive[i]) {
-+			ret = phy_set_bits_mmd(phydev, MDIO_MMD_VEND1, AQR_LED_DRIVE(i),
-+					VEND1_GLOBAL_LED_DRIVE_VDD);
++		for (i = 0; i < AQR_MAX_LEDS; i++) {
++			ret = phy_write_mmd(phydev, MDIO_MMD_VEND1, AQR_LED_PROV(i), (u16)led_cfg[i]);
 +			if (ret < 0)
 +				return ret;
 +		}
@@ -64,7 +37,7 @@
  static int aqr107_config_init(struct phy_device *phydev)
  {
  	struct aqr107_priv *priv = phydev->priv;
-@@ -607,6 +650,10 @@ static int aqr107_config_init(struct phy
+@@ -644,6 +667,10 @@ static int aqr107_config_init(struct phy
  	if (ret)
  		return ret;
  
@@ -72,6 +45,21 @@
 +	if (ret < 0)
 +		return ret;
 +
- 	ret = aqr107_set_downshift(phydev, MDIO_AN_VEND_PROV_DOWNSHIFT_DFLT);
- 	if (ret)
- 		return ret;
+ 	/* Restore LED polarity state after reset */
+ 	for_each_set_bit(led_active_low, &priv->leds_active_low, AQR_MAX_LEDS) {
+ 		ret = aqr_phy_led_active_low_set(phydev, led_active_low, true);
+@@ -1003,10 +1030,10 @@ static struct phy_driver aqr_driver[] =
+ 	.get_strings    = aqr107_get_strings,
+ 	.get_stats      = aqr107_get_stats,
+ 	.link_change_notify = aqr107_link_change_notify,
+-	.led_brightness_set = aqr_phy_led_brightness_set,
+-	.led_hw_is_supported = aqr_phy_led_hw_is_supported,
+-	.led_hw_control_set = aqr_phy_led_hw_control_set,
+-	.led_hw_control_get = aqr_phy_led_hw_control_get,
++	//.led_brightness_set = aqr_phy_led_brightness_set,
++	//.led_hw_is_supported = aqr_phy_led_hw_is_supported,
++	//.led_hw_control_set = aqr_phy_led_hw_control_set,
++	//.led_hw_control_get = aqr_phy_led_hw_control_get,
+ 	.led_polarity_set = aqr_phy_led_polarity_set,
+ },
+ {
