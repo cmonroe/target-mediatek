@@ -45,7 +45,6 @@ define Device/polecat
   IMAGES := root.squashfs img img.run
   IMAGE/root.squashfs := SrgDisk
   IMAGE/img := srgImage
-  IMAGE/img.run := srgImageRun
   export DEVICE_DTS
 endef
 TARGET_DEVICES := polecat 
@@ -152,7 +151,9 @@ define Build/SrgDisk
 endef
 
 define Build/srgImage
-	bash -c "$(SRGRUN) SRGImages $(BINNAME).bin $(VERNAME)" 
+	@echo "Build generic image and .run image"
+	bash -c "$(SRGRUN) SRGImages $(BINNAME).bin $(VERNAME)"  
+	bash -c "CDT= $(SRGRUN) RUNIMG $(BINNAME) $(VERNAME) $(IMG_PREFIX)"  
 endef
 
 define Build/srgImageRun
@@ -170,6 +171,7 @@ define Build/srgImageRun
 			CDT_IPK=`find $(wildcard $(PACKAGE_SUBDIRS)) -type f -name 'cdt-$(1)_*.ipk' -print -quit` ; \
 			cp $$CDT_IPK $(KDIR)/img_stage/cdt ; \
 			echo "CDT=\"$(1)\"" >> $(KDIR)/metadata; \
+			echo "CDT_VERSION=\"$(CDT_VERSION)\"" >> $(KDIR)/metadata; \
 		fi\
 	else \
 		echo "CDT=" >> $(KDIR)/metadata; \
@@ -198,10 +200,10 @@ define Build/srgImageRun
 		--add_image_file $(TARGET_DIR)/etc/openwrt_release etc/ \
 		--add_image_file $(KDIR)/root.squashfs.run.bin root.squashfs.bin \
 		--out_file $(KDIR)/$(BINNAME).run
-	$(CP) $(KDIR)/$(BINNAME).run $(BIN_DIR)/$(BINNAME)$(if $(1),-$(1),).run
+	$(CP) $(KDIR)/$(BINNAME).run $(BIN_DIR)/$(BINNAME)$(if $(1),-$(1)-$(CDT_VERSION),).run
 	@echo "RUNNING BuildPackage alt-os-image"
 	mkdir -p $(BIN_DIR)/alt-os-images
-	$(STAGING_DIR_HOST)/bin/alt-os-images/transition.sh -f plumeos -t sos -i $(BIN_DIR)/$(BINNAME)$(if $(1),-$(1),).run -d $(BIN_DIR)/alt-os-images
+	$(STAGING_DIR_HOST)/bin/alt-os-images/transition.sh -f plumeos -t sos -i $(BIN_DIR)/$(BINNAME)$(if $(1),-$(1)-$(CDT_VERSION),).run -d $(BIN_DIR)/alt-os-images
 
 	# Create SOS_HOT_FIX version. Will install image on the system without shutdown/reboot. 
 	# Next boot will use the installed image.
@@ -238,7 +240,7 @@ define Image/Flash/mkflash_emmc
 	@echo "BUILD FLASH image CDT : $(1)"
 	CDT_IPK=`find $(wildcard $(PACKAGE_SUBDIRS)) -type f -name 'cdt-$(1)_*.ipk' -print -quit` ; \
 	OUT_DIR="$(BIN_DIR)/flashprogram_bins"; \
-    mkdir -p $$OUT_DIR; \
+	mkdir -p $$OUT_DIR; \
 	if [ $(3) ]; then \
 		IMGFLAG="-i $(3)"; \
 	else \
@@ -247,14 +249,21 @@ define Image/Flash/mkflash_emmc
 	mk_emmc_mfg_image.sh $${IMGFLAG} -e $(2) -r $(TARGET_DIR) -R $(BIN_DIR)/root.squashfs.bin -b $(BIN_DIR) -c $$CDT_IPK -d $$OUT_DIR/$(IMG_PREFIX)-polecat-emmc-mfg-$(2)-$(1).bin
 endef
 
+#
+# The following targets are called from the flash-images package Makefile
+#  Each calls back to the flash-images SRGRUN=srg-image.sh
+#  BINNAME and VERNAME are computed here locally.
+#  CDT [ENUM] [IMGFLAG] are env variables passed on the cmdline.
+#
+
 flashme:
 	@echo "Creating FLASH image"
 	$(call Image/Flash/mkflash_emmc,$(CDT),$(ENUM),$(IMGFLAG))
 
 cdt-image:
 	@echo "Build CDT image $(CDT)"
-	$(call Build/srgImageRun,$(CDT))
 	bash -c "CDT=$(CDT) $(SRGRUN) CDT $(BINNAME) $(VERNAME)"
+	bash -c "CDT=$(CDT) $(SRGRUN) RUNIMG $(BINNAME) $(VERNAME)"
 
 mini-cdt-image:
 	@echo "Build Mini CDT image $(CDT)"
@@ -262,5 +271,11 @@ mini-cdt-image:
 
 allcdt-image:
 	@echo "Build ALL CDT image"
-	$(call Build/srgImageRun,"allcdts")
-	bash -c "$(SRGRUN) ALLCDT $(BINNAME) $(VERNAME)"
+	bash -c "CDT=allcdts $(SRGRUN) ALLCDT $(BINNAME) $(VERNAME)"
+	bash -c "CDT=allcdts $(SRGRUN) RUNIMG $(BINNAME) $(VERNAME) $(IMG_PREFIX)"
+
+trans-image:
+	@echo "Build SOS to PLOS transition image"
+	bash -c "CDT=$(CDT) $(SRGRUN) TRANSIMG $(BINNAME) $(VERNAME) $(IMG_PREFIX)"
+
+
