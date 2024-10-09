@@ -154,6 +154,7 @@ define Build/srgImage
 	@echo "Build generic image and .run image"
 	bash -c "$(SRGRUN) SRGImages $(BINNAME).bin $(VERNAME)"  
 	bash -c "CDT= $(SRGRUN) RUNIMG $(BINNAME) $(VERNAME) $(IMG_PREFIX)"  
+	bash -c "CDT=factory $(SRGRUN) RUNIMG $(BINNAME) $(VERNAME) $(IMG_PREFIX)"  
 endef
 
 define Build/srgImageRun
