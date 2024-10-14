@@ -88,7 +88,7 @@
  	&brport_attr_port_id,
 --- a/net/dsa/slave.c
 +++ b/net/dsa/slave.c
-@@ -3319,6 +3319,11 @@ static int dsa_master_changeupper(struct
+@@ -3322,6 +3322,11 @@ static int dsa_master_changeupper(struct
  	return err;
  }
  
@@ -100,7 +100,7 @@
  static int dsa_slave_netdevice_event(struct notifier_block *nb,
  				     unsigned long event, void *ptr)
  {
-@@ -3353,6 +3358,31 @@ static int dsa_slave_netdevice_event(str
+@@ -3356,6 +3361,31 @@ static int dsa_slave_netdevice_event(str
  		if (notifier_to_errno(err))
  			return err;
  

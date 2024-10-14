@@ -46,7 +46,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	kfree(vg);
 --- a/net/dsa/slave.c
 +++ b/net/dsa/slave.c
-@@ -2981,12 +2981,15 @@ dsa_prevent_bridging_8021q_upper(struct
+@@ -2984,12 +2984,15 @@ dsa_prevent_bridging_8021q_upper(struct
  		return NOTIFY_DONE;
  
  	/* Deny enslaving a VLAN device into a VLAN-aware bridge */
