@@ -415,8 +415,9 @@
 		touchscreen-size-x = <240>;
 		touchscreen-size-y = <240>;
 	};
+*/
 
-	exp0: tca9535@20 {
+	swled_gpio0: tca9535@32{
 		compatible = "ti,tca9535";
 		reg = <0x20>;
 		#gpio-cells = <2>;
@@ -424,14 +425,13 @@
 		interrupts = <54 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	exp1: tca9535@22 {
+	swled_gpio1: tca9535@34 {
 		compatible = "ti,tca9535";
 		reg = <0x22>;
 		#gpio-cells = <2>;
 		interrupt-parent = <&pio>;
 		interrupts = <32 IRQ_TYPE_LEVEL_LOW>;
 	};
-*/
 
 	system-leds {
 		compatible = "srg,sysled";
