@@ -2,59 +2,15 @@ From: Chad Monroe <chad@monroe.io>
 Date: Fri, 11 Oct 2024 16:32:55 -0700
 Subject: [PATCH] net: dsa: mxl862xx: add some hacks for testing
 
-1. adjust API for older firmware until EVT2 boards arrive
-2. add BR_PORT_LOCKED flag but do nothing with it
-3. fix compile warning for unused dsa_8021q_rx_vid
+1. add BR_PORT_LOCKED flag but do nothing with it
+2. fix compile warning for unused dsa_8021q_rx_vid
 
 Signed-off-by: Chad Monroe <chad@monroe.io>
 ---
- drivers/net/dsa/mxl862xx/host_api/mxl862xx_api.h |    6 ------
- drivers/net/dsa/mxl862xx/mxl862xx.c              |    8 ++++----
- net/dsa/tag_mxl862xx_8021q.c                     |    2 ++
- 3 files changed, 6 insertions(+), 10 deletions(-)
+ drivers/net/dsa/mxl862xx/mxl862xx.c |    8 ++++----
+ net/dsa/tag_mxl862xx_8021q.c        |    2 ++
+ 2 files changed, 6 insertions(+), 4 deletions(-)
 
---- a/drivers/net/dsa/mxl862xx/host_api/mxl862xx_api.h
-+++ b/drivers/net/dsa/mxl862xx/host_api/mxl862xx_api.h
-@@ -36,8 +36,6 @@
- #pragma pack(push, 1)
- #pragma scalar_storage_order little-endian
- 
--//#define SCK_FW_1_0_41
--
- /** \brief Spanning Tree Protocol port states.
-     Used by \ref MXL862XX_STP_port_cfg_t. */
- typedef enum {
-@@ -413,7 +411,6 @@ typedef struct {
- 	    If it is 0, the block size of n_egress_vlan_filter2Block_id will be used.
- 	    Otherwise, this field will be used. */
- 	u16 egress_vlan_filter2block_size;
--#ifdef SCK_FW_1_0_41
- 	/** Enable Ingress VLAN Based Mac Learning */
- 	bool ingress_vlan_based_mac_learning_enable;
- 	/** 0 - Intermediate outer VLAN
-@@ -422,7 +419,6 @@ typedef struct {
- 	    1 - Original outer VLAN tag is used
- 	    for MAC address/multicast learning, lookup
- 	    and filtering. */
--#endif
- 	bool vlan_tag_selection;
- 	/** 0 - Disable, VLAN Priority field is not used
- 	    and value 0 is used for source MAC address
-@@ -463,14 +459,12 @@ typedef struct {
- 	    destination MAC address look up and
- 	    filtering. */
- 	bool vlan_dst_mac_vid_enable;
--#ifdef SCK_FW_1_0_41
- 	/** Enable, VLAN Based Multicast Lookup */
- 	bool vlan_based_multi_cast_lookup;
- 	/** 0 - Disable, VLAN Priority field is not used
- 	    and value 0 is used for IP multicast lookup.
- 	    1 - Enable, VLAN Priority field is used for IP
- 	    multicast lookup. */
--#endif
- 	bool vlan_multicast_priority_enable;
- 	/** 0 - Disable, VLAN CFI/DEI field is not used
- 	    and value 0 is used for IP multicast lookup.
 --- a/drivers/net/dsa/mxl862xx/mxl862xx.c
 +++ b/drivers/net/dsa/mxl862xx/mxl862xx.c
 @@ -4294,10 +4294,10 @@ static int mxl862xx_port_pre_bridge_flag
