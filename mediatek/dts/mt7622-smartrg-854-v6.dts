@@ -582,6 +582,7 @@
 	vusb33-supply = <&reg_3p3v>;
 	vbus-supply = <&reg_5v>;
 	status = "okay";
+	mediatek,u3p-dis-msk = <0x1>;
 };
 
 &u3phy {
