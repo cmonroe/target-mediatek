@@ -29,15 +29,15 @@ define Device/polecat
   DEVICE_DTS += mt7986a-smartrg-SDG-8614
   DEVICE_DTS += mt7986a-smartrg-SDG-8622
   DEVICE_DTS += mt7986a-smartrg-SDG-8632
-  DEVICE_DTS += mt7981-smartrg-SDG-8610
+  DEVICE_DTS += mt7981b-smartrg-SDG-8610
   DEVICE_DTS += mt7988a-smartrg-SDG-8733
   DEVICE_DTS += mt7988a-smartrg-SDG-8733v
   DEVICE_DTS += mt7988a-smartrg-SDG-8734
   DEVICE_DTS += mt7988a-smartrg-SDG-8734v
   DEVICE_DTS += mt7988d-smartrg-SDG-8733A
   DEVICE_DTS += mt7988a-smartrg-SDG-9000
-  DEVICE_DTS += mt7988a-smartrg-SDG-9732i
-  DEVICE_DTS += mt7988a-smartrg-SDG-9712o
+  DEVICE_DTS += mt7988d-smartrg-SDG-9732i
+  DEVICE_DTS += mt7988d-smartrg-SDG-9712o
   DEVICE_DTS_DIR := ../dts
   ARTIFACTS := emmc-preloader.bin emmc-bl31-uboot.fip
   ARTIFACT/emmc-preloader.bin := mt7986-bl2 emmc-ddr4
@@ -75,15 +75,15 @@ define Build/SrgFit
 		-i "SDG-8614" -d $(KDIR)/image-mt7986a-smartrg-SDG-8614.dtb.lzma -C lzma -h "crc32" -h "sha1" \
 		-i "SDG-8622" -d $(KDIR)/image-mt7986a-smartrg-SDG-8622.dtb.lzma -C lzma -h "crc32" -h "sha1" \
 		-i "SDG-8632" -d $(KDIR)/image-mt7986a-smartrg-SDG-8632.dtb.lzma -C lzma -h "crc32" -h "sha1" \
-		-i "SDG-8610" -d $(KDIR)/image-mt7981-smartrg-SDG-8610.dtb.lzma -C lzma -h "crc32" -h "sha1" \
+		-i "SDG-8610" -d $(KDIR)/image-mt7981b-smartrg-SDG-8610.dtb.lzma -C lzma -h "crc32" -h "sha1" \
 		-i "SDG-8733" -d $(KDIR)/image-mt7988a-smartrg-SDG-8733.dtb.lzma -C lzma -h "crc32" -h "sha1" \
 		-i "SDG-8733v" -d $(KDIR)/image-mt7988a-smartrg-SDG-8733v.dtb.lzma -C lzma -h "crc32" -h "sha1" \
 		-i "SDG-8734" -d $(KDIR)/image-mt7988a-smartrg-SDG-8734.dtb.lzma -C lzma -h "crc32" -h "sha1" \
 		-i "SDG-8734v" -d $(KDIR)/image-mt7988a-smartrg-SDG-8734v.dtb.lzma -C lzma -h "crc32" -h "sha1" \
 		-i "SDG-8733A" -d $(KDIR)/image-mt7988d-smartrg-SDG-8733A.dtb.lzma -C lzma -h "crc32" -h "sha1" \
 		-i "SDG-9000" -d $(KDIR)/image-mt7988a-smartrg-SDG-9000.dtb.lzma -C lzma -h "crc32" -h "sha1" \
-		-i "SDG-9732i" -d $(KDIR)/image-mt7988a-smartrg-SDG-9732i.dtb.lzma -C lzma -h "crc32" -h "sha1" \
-		-i "SDG-9712o" -d $(KDIR)/image-mt7988a-smartrg-SDG-9712o.dtb.lzma -C lzma -h "crc32" -h "sha1" \
+		-i "SDG-9732i" -d $(KDIR)/image-mt7988d-smartrg-SDG-9732i.dtb.lzma -C lzma -h "crc32" -h "sha1" \
+		-i "SDG-9712o" -d $(KDIR)/image-mt7988d-smartrg-SDG-9712o.dtb.lzma -C lzma -h "crc32" -h "sha1" \
 		-c "300" -K k1 -R rdisk -D "srbpi" \
 		-c "402" -K k1 -R rdisk -D "834-5" \
 		-c "403" -K k1 -R rdisk -D "834-5" \
