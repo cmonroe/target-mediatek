@@ -1,7 +1,7 @@
 --- a/drivers/net/phy/intel-xway.c
 +++ b/drivers/net/phy/intel-xway.c
-@@ -232,8 +232,6 @@ static int xway_gphy_rgmii_init(struct p
- static int xway_gphy_probe(struct phy_device *phydev)
+@@ -239,8 +239,6 @@ static int xway_gphy_rgmii_init(struct p
+ static int xway_gphy_init_leds(struct phy_device *phydev)
  {
  	int err;
 -	u32 ledxh;
@@ -9,7 +9,7 @@
  
  	/* Ensure that integrated led function is enabled for all leds */
  	err = phy_write(phydev, XWAY_MDIO_LED,
-@@ -258,15 +256,20 @@ static int xway_gphy_probe(struct phy_de
+@@ -265,15 +263,20 @@ static int xway_gphy_init_leds(struct ph
  	 * only available in some packages, leave it in its reset
  	 * configuration.
  	 */
@@ -37,5 +37,5 @@
 +	phy_write_mmd(phydev, MDIO_MMD_VEND2, XWAY_MMD_LED2L,
 +			XWAY_MMD_LEDxL_BLINKS_NONE);
  
- 	err = xway_gphy_rgmii_init(phydev);
- 	if (err)
+ 	return 0;
+ }

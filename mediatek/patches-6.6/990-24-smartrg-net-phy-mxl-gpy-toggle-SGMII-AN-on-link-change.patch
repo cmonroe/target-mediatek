@@ -14,7 +14,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 
 --- a/drivers/net/phy/mxl-gpy.c
 +++ b/drivers/net/phy/mxl-gpy.c
-@@ -537,6 +537,8 @@ static int gpy_config_aneg(struct phy_de
+@@ -554,6 +554,8 @@ static int gpy_config_aneg(struct phy_de
  	if (phydev->state != PHY_UP)
  		return 0;
  
@@ -23,7 +23,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	ret = phy_read_poll_timeout(phydev, MII_BMSR, ret, ret & BMSR_LSTATUS,
  				    20000, 4000000, false);
  	if (ret == -ETIMEDOUT)
-@@ -577,6 +579,35 @@ static int gpy_update_mdix(struct phy_de
+@@ -594,6 +596,35 @@ static int gpy_update_mdix(struct phy_de
  	return 0;
  }
  
@@ -59,79 +59,79 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  static int gpy_update_interface(struct phy_device *phydev)
  {
  	int ret;
-@@ -907,6 +938,7 @@ static struct phy_driver gpy_drivers[] =
- 		.set_wol	= gpy_set_wol,
- 		.get_wol	= gpy_get_wol,
- 		.set_loopback	= gpy_loopback,
-+		.link_change_notify	= gpy_link_change_notify,
+@@ -1088,6 +1119,7 @@ static struct phy_driver gpy_drivers[] =
+ 		.led_hw_control_get = gpy_led_hw_control_get,
+ 		.led_hw_control_set = gpy_led_hw_control_set,
+ 		.led_polarity_set = gpy_led_polarity_set,
++		.link_change_notify = gpy_link_change_notify,
  	},
  	{
  		.phy_id		= PHY_ID_GPY115B,
-@@ -925,6 +957,7 @@ static struct phy_driver gpy_drivers[] =
- 		.set_wol	= gpy_set_wol,
- 		.get_wol	= gpy_get_wol,
- 		.set_loopback	= gpy115_loopback,
-+		.link_change_notify	= gpy_link_change_notify,
+@@ -1111,6 +1143,7 @@ static struct phy_driver gpy_drivers[] =
+ 		.led_hw_control_get = gpy_led_hw_control_get,
+ 		.led_hw_control_set = gpy_led_hw_control_set,
+ 		.led_polarity_set = gpy_led_polarity_set,
++		.link_change_notify = gpy_link_change_notify,
  	},
  	{
  		PHY_ID_MATCH_MODEL(PHY_ID_GPY115C),
-@@ -942,6 +975,7 @@ static struct phy_driver gpy_drivers[] =
- 		.set_wol	= gpy_set_wol,
- 		.get_wol	= gpy_get_wol,
- 		.set_loopback	= gpy115_loopback,
-+		.link_change_notify	= gpy_link_change_notify,
+@@ -1133,6 +1166,7 @@ static struct phy_driver gpy_drivers[] =
+ 		.led_hw_control_get = gpy_led_hw_control_get,
+ 		.led_hw_control_set = gpy_led_hw_control_set,
+ 		.led_polarity_set = gpy_led_polarity_set,
++		.link_change_notify = gpy_link_change_notify,
  	},
  	{
  		.phy_id		= PHY_ID_GPY211B,
-@@ -960,6 +994,7 @@ static struct phy_driver gpy_drivers[] =
- 		.set_wol	= gpy_set_wol,
- 		.get_wol	= gpy_get_wol,
- 		.set_loopback	= gpy_loopback,
-+		.link_change_notify	= gpy_link_change_notify,
+@@ -1156,6 +1190,7 @@ static struct phy_driver gpy_drivers[] =
+ 		.led_hw_control_get = gpy_led_hw_control_get,
+ 		.led_hw_control_set = gpy_led_hw_control_set,
+ 		.led_polarity_set = gpy_led_polarity_set,
++		.link_change_notify = gpy_link_change_notify,
  	},
  	{
  		PHY_ID_MATCH_MODEL(PHY_ID_GPY211C),
-@@ -977,6 +1012,7 @@ static struct phy_driver gpy_drivers[] =
- 		.set_wol	= gpy_set_wol,
- 		.get_wol	= gpy_get_wol,
- 		.set_loopback	= gpy_loopback,
-+		.link_change_notify	= gpy_link_change_notify,
+@@ -1178,6 +1213,7 @@ static struct phy_driver gpy_drivers[] =
+ 		.led_hw_control_get = gpy_led_hw_control_get,
+ 		.led_hw_control_set = gpy_led_hw_control_set,
+ 		.led_polarity_set = gpy_led_polarity_set,
++		.link_change_notify = gpy_link_change_notify,
  	},
  	{
  		.phy_id		= PHY_ID_GPY212B,
-@@ -995,6 +1031,7 @@ static struct phy_driver gpy_drivers[] =
- 		.set_wol	= gpy_set_wol,
- 		.get_wol	= gpy_get_wol,
- 		.set_loopback	= gpy_loopback,
-+		.link_change_notify	= gpy_link_change_notify,
+@@ -1201,6 +1237,7 @@ static struct phy_driver gpy_drivers[] =
+ 		.led_hw_control_get = gpy_led_hw_control_get,
+ 		.led_hw_control_set = gpy_led_hw_control_set,
+ 		.led_polarity_set = gpy_led_polarity_set,
++		.link_change_notify = gpy_link_change_notify,
  	},
  	{
  		PHY_ID_MATCH_MODEL(PHY_ID_GPY212C),
-@@ -1012,6 +1049,7 @@ static struct phy_driver gpy_drivers[] =
- 		.set_wol	= gpy_set_wol,
- 		.get_wol	= gpy_get_wol,
- 		.set_loopback	= gpy_loopback,
-+		.link_change_notify	= gpy_link_change_notify,
+@@ -1223,6 +1260,7 @@ static struct phy_driver gpy_drivers[] =
+ 		.led_hw_control_get = gpy_led_hw_control_get,
+ 		.led_hw_control_set = gpy_led_hw_control_set,
+ 		.led_polarity_set = gpy_led_polarity_set,
++		.link_change_notify = gpy_link_change_notify,
  	},
  	{
  		.phy_id		= PHY_ID_GPY215B,
-@@ -1030,6 +1068,7 @@ static struct phy_driver gpy_drivers[] =
- 		.set_wol	= gpy_set_wol,
- 		.get_wol	= gpy_get_wol,
- 		.set_loopback	= gpy_loopback,
-+		.link_change_notify	= gpy_link_change_notify,
+@@ -1246,6 +1284,7 @@ static struct phy_driver gpy_drivers[] =
+ 		.led_hw_control_get = gpy_led_hw_control_get,
+ 		.led_hw_control_set = gpy_led_hw_control_set,
+ 		.led_polarity_set = gpy_led_polarity_set,
++		.link_change_notify = gpy_link_change_notify,
  	},
  	{
  		PHY_ID_MATCH_MODEL(PHY_ID_GPY215C),
-@@ -1047,6 +1086,7 @@ static struct phy_driver gpy_drivers[] =
- 		.set_wol	= gpy_set_wol,
- 		.get_wol	= gpy_get_wol,
- 		.set_loopback	= gpy_loopback,
-+		.link_change_notify	= gpy_link_change_notify,
+@@ -1268,6 +1307,7 @@ static struct phy_driver gpy_drivers[] =
+ 		.led_hw_control_get = gpy_led_hw_control_get,
+ 		.led_hw_control_set = gpy_led_hw_control_set,
+ 		.led_polarity_set = gpy_led_polarity_set,
++		.link_change_notify = gpy_link_change_notify,
  	},
  	{
  		PHY_ID_MATCH_MODEL(PHY_ID_GPY241B),
-@@ -1064,6 +1104,7 @@ static struct phy_driver gpy_drivers[] =
+@@ -1285,6 +1325,7 @@ static struct phy_driver gpy_drivers[] =
  		.set_wol	= gpy_set_wol,
  		.get_wol	= gpy_get_wol,
  		.set_loopback	= gpy_loopback,
@@ -139,7 +139,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	},
  	{
  		PHY_ID_MATCH_MODEL(PHY_ID_GPY241BM),
-@@ -1081,6 +1122,7 @@ static struct phy_driver gpy_drivers[] =
+@@ -1302,6 +1343,7 @@ static struct phy_driver gpy_drivers[] =
  		.set_wol	= gpy_set_wol,
  		.get_wol	= gpy_get_wol,
  		.set_loopback	= gpy_loopback,
@@ -147,7 +147,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	},
  	{
  		PHY_ID_MATCH_MODEL(PHY_ID_GPY245B),
-@@ -1098,6 +1140,7 @@ static struct phy_driver gpy_drivers[] =
+@@ -1319,6 +1361,7 @@ static struct phy_driver gpy_drivers[] =
  		.set_wol	= gpy_set_wol,
  		.get_wol	= gpy_get_wol,
  		.set_loopback	= gpy_loopback,

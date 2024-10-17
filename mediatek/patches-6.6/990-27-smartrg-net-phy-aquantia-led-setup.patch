@@ -45,9 +45,9 @@
 +		return ret;
 +
  	/* Restore LED polarity state after reset */
- 	for_each_set_bit(led_active_low, &priv->leds_active_low, AQR_MAX_LEDS) {
- 		ret = aqr_phy_led_active_low_set(phydev, led_active_low, true);
-@@ -1003,10 +1029,10 @@ static struct phy_driver aqr_driver[] =
+ 	for_each_set_bit(led_idx, &priv->leds_active_low, AQR_MAX_LEDS) {
+ 		ret = aqr_phy_led_active_low_set(phydev, led_idx, true);
+@@ -1009,10 +1035,10 @@ static struct phy_driver aqr_driver[] =
  	.get_strings    = aqr107_get_strings,
  	.get_stats      = aqr107_get_stats,
  	.link_change_notify = aqr107_link_change_notify,

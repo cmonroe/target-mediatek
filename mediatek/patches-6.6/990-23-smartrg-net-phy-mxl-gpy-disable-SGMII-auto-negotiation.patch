@@ -14,7 +14,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 
 --- a/drivers/net/phy/mxl-gpy.c
 +++ b/drivers/net/phy/mxl-gpy.c
-@@ -592,8 +592,6 @@ static int gpy_update_interface(struct p
+@@ -609,8 +609,6 @@ static int gpy_update_interface(struct p
  	switch (phydev->speed) {
  	case SPEED_2500:
  		phydev->interface = PHY_INTERFACE_MODE_2500BASEX;
@@ -23,7 +23,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  		ret = phy_modify_mmd(phydev, MDIO_MMD_VEND1, VSPEC1_SGMII_CTRL,
  				     VSPEC1_SGMII_CTRL_ANEN, 0);
  		if (ret < 0) {
-@@ -607,17 +605,11 @@ static int gpy_update_interface(struct p
+@@ -624,17 +622,11 @@ static int gpy_update_interface(struct p
  	case SPEED_100:
  	case SPEED_10:
  		phydev->interface = PHY_INTERFACE_MODE_SGMII;
