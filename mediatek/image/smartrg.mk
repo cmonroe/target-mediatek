@@ -18,7 +18,6 @@ define Device/polecat
   DEVICE_DTS := mt7622-smartrg-srbpi
   DEVICE_DTS += mt7622-smartrg-834-5
   DEVICE_DTS += mt7622-smartrg-841-t6
-  DEVICE_DTS += mt7622-smartrg-841-t6-mt7531
   DEVICE_DTS += mt7622-smartrg-854-6
   DEVICE_DTS += mt7622-smartrg-854-6-sfp
   DEVICE_DTS += mt7622-smartrg-854-v6
@@ -67,7 +66,6 @@ define Build/SrgFit
 		-i "854-v6" -d $(KDIR)/image-mt7622-smartrg-854-v6.dtb -h "crc32" -h "sha1" \
 		-i "854-v6-SFP" -d $(KDIR)/image-mt7622-smartrg-854-v6-sfp.dtb -h "crc32" -h "sha1" \
 		-i "834-v6" -d $(KDIR)/image-mt7622-smartrg-834-v6.dtb -h "crc32" -h "sha1" \
-		-i "841-t6-mt7531" -d $(KDIR)/image-mt7622-smartrg-841-t6-mt7531.dtb -h "crc32" -h "sha1" \
 		-i "854-6" -d $(KDIR)/image-mt7622-smartrg-854-6.dtb -h "crc32" -h "sha1" \
 		-i "854-6-SFP" -d $(KDIR)/image-mt7622-smartrg-854-6-sfp.dtb -h "crc32" -h "sha1" \
 		-i "srbpi-r3" -d $(KDIR)/image-mt7986a-smartrg-bpi-r3.dtb -h "crc32" -h "sha1" \
@@ -93,7 +91,6 @@ define Build/SrgFit
 		-c "406" -K k1 -R rdisk -D "854-v6" \
 		-c "406-SFP" -K k1 -R rdisk -D "854-v6-SFP" \
 		-c "407" -K k1 -R rdisk -D "834-v6" \
-		-c "414" -K k1 -R rdisk -D "841-t6-mt7531" \
 		-c "415" -K k1 -R rdisk -D "854-6" \
 		-c "415-SFP" -K k1 -R rdisk -D "854-6-SFP" \
 		-c "416" -K k1 -R rdisk -D "854-6" \
