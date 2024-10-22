@@ -18,11 +18,11 @@
 
 	aliases {
 		serial0 = &uart0;
-		ethernet0 = &gmac0;
-		led-boot = &sys_status;
-		led-failsafe = &sys_status;
-		led-running = &sys_status;
-		led-upgrade = &sys_status;
+		label-mac-device = &gmac2;
+		led-boot = &led_sys_green;
+		led-failsafe = &led_sys_blue;
+		led-running = &led_sys_white;
+		led-upgrade = &led_sys_red;
 	};
 
 	chosen {
@@ -85,7 +85,7 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&button_pins>;
 
-		factory {
+		button-reset {
 			label = "reset";
 			linux,code = <KEY_RESTART>;
 			gpios = <&pio 13 GPIO_ACTIVE_LOW>;
@@ -264,14 +264,20 @@
 };
 
 &gmac0 {
+	nvmem-cells = <&macaddr 0x0>;
+	nvmem-cell-names = "mac-address";
 	label = "dsa0";
+
 	status = "okay";
 };
 
 &gmac1 {
+	nvmem-cells = <&macaddr 0x0>;
+	nvmem-cell-names = "mac-address";
 	label = "dsa1";
-	status = "okay";
 	phy-mode = "10gbase-r";
+
+	status = "okay";
 
 	fixed-link {
 		speed = <10000>;
@@ -281,11 +287,14 @@
 };
 
 &gmac2 {
+	nvmem-cells = <&macaddr 0x0>;
+	nvmem-cell-names = "mac-address";
 	label = "wan";
-	status = "okay";
 	phy-mode = "usxgmii";
 	phy-connection-type = "usxgmii";
 	phy = <&phy0>;
+
+	status = "okay";
 };
 
 &eth {
@@ -437,23 +446,22 @@
 		compatible = "srg,sysled";
 		reg = <0x30>;
 
-		system_red {
+		led_sys_red: system_red {
 			label = "red";
 			reg = <1>;
 		};
 
-		sys_status: system_green {
+		led_sys_green: system_green {
 			label = "green";
 			reg = <2>;
-			linux,default-trigger = "timer";
 		};
 
-		system_blue {
+		led_sys_blue: system_blue {
 			label = "blue";
 			reg = <3>;
 		};
 
-		system_white {
+		led_sys_white: system_white {
 			label = "white";
 			reg = <4>;
 		};
@@ -680,14 +688,39 @@
 	max-frequency = <200000000>;
 	cap-mmc-highspeed;
 	mmc-hs200-1_8v;
-	/* mmc-hs400-1_8v; */
-	/* hs400-ds-delay = <0x12814>; */
 	vmmc-supply = <&reg_3p3v>;
 	vqmmc-supply = <&reg_1p8v>;
 	non-removable;
 	no-sd;
 	no-sdio;
 	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	card@0 {
+		#address-cells = <0>;
+		#size-cells = <0>;
+		compatible = "mmc-card";
+		reg = <0>;
+
+		block {
+			compatible = "block-device";
+
+			partitions {
+				block-partition-mfginfo {
+					partname = "mfginfo";
+
+					nvmem-layout {
+						compatible = "adtran,mfginfo";
+
+						macaddr: mfg-mac {
+							#nvmem-cell-cells = <1>;
+						};
+					};
+				};
+			};
+		};
+	};
 };
 
 &pcie0 {

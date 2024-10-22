@@ -14,12 +14,11 @@
 / {
 	aliases {
 		serial0 = &uart0;
-		ethernet0 = &gmac0;
-		ethernet1 = &gmac1;
-		led-boot = &sys_status;
-		led-failsafe = &sys_status;
-		led-running = &sys_status;
-		led-upgrade = &sys_status;
+		label-mac-device = &gmac1;
+		led-boot = &led_status_green;
+		led-failsafe = &led_status_blue;
+		led-running = &led_status_white;
+		led-upgrade = &led_status_red;
 	};
 
 	chosen {
@@ -143,7 +142,7 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&button_pins>;
 
-		reset {
+		button-reset {
 			label = "reset";
 			linux,code = <KEY_RESTART>;
 			gpios = <&pio 17 GPIO_ACTIVE_LOW>;
@@ -219,16 +218,17 @@
 	gmac0: mac@0 {
 		compatible = "mediatek,eth-mac";
 		reg = <0>;
-
+		nvmem-cells = <&macaddr 0x1>;
+		nvmem-cell-names = "mac-address";
 		phy-mode = "2500base-x";
 	};
 
 	gmac1: mac@1 {
-		label = "wan";
-
 		compatible = "mediatek,eth-mac";
 		reg = <1>;
-
+		label = "wan";
+		nvmem-cells = <&macaddr 0x0>;
+		nvmem-cell-names = "mac-address";
 		phy-mode = "2500base-x";
 	};
 
@@ -285,6 +285,49 @@
 	no-sd;
 	no-sdio;
 	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	card@0 {
+		compatible = "mmc-card";
+		reg = <0>;
+
+		block {
+			compatible = "block-device";
+
+			partitions {
+				block-partition-factory {
+					partname = "factory";
+
+					nvmem-layout {
+						compatible = "fixed-layout";
+						#address-cells = <1>;
+						#size-cells = <1>;
+
+						eeprom_factory_0: eeprom@0 {
+							reg = <0x0 0x1000>;
+						};
+
+						eeprom_factory_a0000: eeprom@a0000 {
+							reg = <0xa0000 0x1000>;
+						};
+					};
+				};
+
+				block-partition-mfginfo {
+					partname = "mfginfo";
+
+					nvmem-layout {
+						compatible = "adtran,mfginfo";
+
+						macaddr: mfg-mac {
+							#nvmem-cell-cells = <1>;
+						};
+					};
+				};
+			};
+		};
+	};
 };
 
 &pcie {
@@ -297,7 +340,10 @@
 
 		radio0: mt7915@0,0 {
 			reg = <0x0000 0 0 0 0>;
-			mediatek,eeprom-file-offset = <0xa0000>;
+
+			/* FIXME: add pre-cal */
+			nvmem-cells = <&eeprom_factory_a0000>, <&macaddr 0xa>;
+			nvmem-cell-names = "eeprom", "mac-address";
 		};
 	};
 };
@@ -307,11 +353,28 @@
 };
 
 &wifi {
-	status = "okay";
+	nvmem-cells = <&eeprom_factory_0>;
+	nvmem-cell-names = "eeprom";
 	pinctrl-names = "default";
 	pinctrl-0 = <&wf_2g_5g_pins>;
+	#address-cells = <1>;
+	#size-cells = <0>;
 
-	mediatek,eeprom-file-offset = <0x0>;
+	status = "okay";
+
+	band@0 {
+		/* 2.4 GHz */
+		reg = <0>;
+		nvmem-cells = <&macaddr 0x4>;
+		nvmem-cell-names = "mac-address";
+	};
+
+	band@1 {
+		/* 5 GHz */
+		reg = <1>;
+		nvmem-cells = <&macaddr 0xa>;
+		nvmem-cell-names = "mac-address";
+	};
 };
 
 &pio {
@@ -474,23 +537,22 @@
 		compatible = "srg,sysled";
 		reg = <0x30>;
 
-		system_red {
+		led_status_red: system_red {
 			label = "red";
 			reg = <1>;
 		};
 
-		sys_status: system_green {
+		led_status_green: system_green {
 			label = "green";
 			reg = <2>;
-			linux,default-trigger = "timer";
 		};
 
-		system_blue {
+		led_status_blue: system_blue {
 			label = "blue";
 			reg = <3>;
 		};
 
-		system_white {
+		led_status_white: system_white {
 			label = "white";
 			reg = <4>;
 		};

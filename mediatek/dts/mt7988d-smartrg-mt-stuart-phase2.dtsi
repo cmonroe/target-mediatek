@@ -15,11 +15,11 @@
 / {
 	aliases {
 		serial0 = &uart0;
-		ethernet0 = &gmac1;
-		led-boot = &sys_status;
-		led-failsafe = &sys_status;
-		led-running = &sys_status;
-		led-upgrade = &sys_status;
+		label-mac-device = &gmac1;
+		led-boot = &led_sys_green;
+		led-failsafe = &led_sys_blue;
+		led-running = &led_sys_white;
+		led-upgrade = &led_sys_red;
 	};
 
 	chosen {
@@ -86,7 +86,7 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&button_pins>;
 
-		factory {
+		button-reset {
 			label = "reset";
 			linux,code = <KEY_RESTART>;
 			gpios = <&pio 13 GPIO_ACTIVE_LOW>;
@@ -122,11 +122,14 @@
 };
 
 &gmac1 {
+	nvmem-cells = <&macaddr 0x1>;
+	nvmem-cell-names = "mac-address";
 	label = "lan";
-	status = "okay";
 	phy-mode = "internal";
 	phy-connection-type = "internal";
 	phy = <&int_2p5g_phy>;
+
+	status = "okay";
 };
 
 &int_2p5g_phy {
@@ -200,23 +203,22 @@
 		compatible = "srg,sysled";
 		reg = <0x30>;
 
-		system_red {
+		led_sys_red: system_red {
 			label = "red";
 			reg = <1>;
 		};
 
-		sys_status: system_green {
+		led_sys_green: system_green {
 			label = "green";
 			reg = <2>;
-			linux,default-trigger = "timer";
 		};
 
-		system_blue {
+		led_sys_blue: system_blue {
 			label = "blue";
 			reg = <3>;
 		};
 
-		system_white {
+		led_sys_white: system_white {
 			label = "white";
 			reg = <4>;
 		};
@@ -231,29 +233,89 @@
 	max-frequency = <200000000>;
 	cap-mmc-highspeed;
 	mmc-hs200-1_8v;
-	/* mmc-hs400-1_8v; */
-	/* hs400-ds-delay = <0x12814>; */
 	vmmc-supply = <&reg_3p3v>;
 	vqmmc-supply = <&reg_1p8v>;
 	non-removable;
 	no-sd;
 	no-sdio;
 	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	card@0 {
+		#address-cells = <0>;
+		#size-cells = <0>;
+		compatible = "mmc-card";
+		reg = <0>;
+
+		block {
+			compatible = "block-device";
+
+			partitions {
+				block-partition-factory {
+					partname = "factory";
+
+					nvmem-layout {
+						compatible = "fixed-layout";
+						#address-cells = <1>;
+						#size-cells = <1>;
+
+						eeprom_factory_0: eeprom@0 {
+							reg = <0x0 0x1e00>;
+						};
+					};
+				};
+
+				block-partition-mfginfo {
+					partname = "mfginfo";
+
+					nvmem-layout {
+						compatible = "adtran,mfginfo";
+
+						macaddr: mfg-mac {
+							#nvmem-cell-cells = <1>;
+						};
+					};
+				};
+			};
+		};
+	};
 };
 
 &pcie0 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pcie0_pins>;
-	wifi-reset-gpios = <&pio 9 GPIO_ACTIVE_HIGH>;
-	wifi-reset-msleep = <100>;
+	reset-gpios = <&pio 9 GPIO_ACTIVE_LOW>;
 	status = "okay";
 
-	slot0: pcie@0,0 {
+	pcie@0,0 {
 		reg = <0x0000 0 0 0 0>;
 
 		radio0: mt7996@0,0 {
 			reg = <0x0000 0 0 0 0>;
-			mediatek,eeprom-file-offset = <0x0>;
+			nvmem-cells = <&eeprom_factory_0>;
+			nvmem-cell-names = "eeprom";
+
+			band@0 {
+				/* 2.4 GHz */
+				reg = <0>;
+				nvmem-cells = <&macaddr 0x4>;
+				nvmem-cell-names = "mac-address";
+			};
+
+			band@1 {
+				/* 5 GHz */
+				reg = <1>;
+				nvmem-cells = <&macaddr 0xa>;
+				nvmem-cell-names = "mac-address";
+			};
+
+			band@2 {
+				/* 6 GHz */
+				reg = <2>;
+				nvmem-cells = <&macaddr 0x6>;
+				nvmem-cell-names = "mac-address";
+			};
 		};
 	};
 };

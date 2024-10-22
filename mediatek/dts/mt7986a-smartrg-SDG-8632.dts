@@ -40,4 +40,11 @@
 
 &wifi {
 	ieee80211-freq-limit = <2400000 2500000>, <5945000 7125000>;
+
+	band@1 {
+		/* 6 GHz */
+		reg = <1>;
+		nvmem-cells = <&macaddr 0x6>;
+		nvmem-cell-names = "mac-address";
+	};
 };

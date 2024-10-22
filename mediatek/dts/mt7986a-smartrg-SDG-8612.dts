@@ -17,6 +17,8 @@
 };
 
 &gmac0 {
+	label = "dsa0";
+
 	fixed-link {
 		speed = <2500>;
 		full-duplex;

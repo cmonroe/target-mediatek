@@ -13,12 +13,11 @@
 
 	aliases {
 		serial0 = &uart0;
-		ethernet0 = &gmac0;
-		ethernet1 = &gmac1;
-		led-boot = &sys_status;
-		led-failsafe = &sys_status;
-		led-running = &sys_status;
-		led-upgrade = &sys_status;
+		label-mac-device = &gmac0;
+		led-boot = &led_sys_green;
+		led-failsafe = &led_sys_blue;
+		led-running = &led_sys_white;
+		led-upgrade = &led_sys_red;
 	};
 
 	chosen {
@@ -135,6 +134,8 @@
 	status = "okay";
 
 	gmac0: mac@0 {
+		nvmem-cells = <&macaddr 0x0>;
+		nvmem-cell-names = "mac-address";
 		label = "wan";
 		compatible = "mediatek,eth-mac";
 		reg = <0>;
@@ -145,6 +146,8 @@
 	};
 
 	gmac1: mac@1 {
+		nvmem-cells = <&macaddr 0x1>;
+		nvmem-cell-names = "mac-address";
         label = "lan";
 		compatible = "mediatek,eth-mac";
 		reg = <1>;
@@ -228,27 +231,6 @@
 		line-name = "mux-oe";
 		output-high;
 	};
-
-	spi2_flash_pins: spi2-pins {
-		mux {
-			function = "spi";
-			groups = "spi2";
-			/* groups = "spi2", "spi2_wp_hold"; */
-		};
-
-		conf-pu {
-			/* pins = "SPI2_CS", "SPI2_HOLD", "SPI2_WP"; */
-			pins = "SPI2_CS";
-			drive-strength = <8>;
-			bias-pull-up = <103>;
-		};
-
-		conf-pd {
-			pins = "SPI2_CLK", "SPI2_MOSI", "SPI2_MISO";
-			drive-strength = <8>;
-			bias-pull-down = <103>;
-		};
-	};
 };
 
 &mmc0 {
@@ -261,65 +243,51 @@
 	vmmc-supply = <&reg_3p3v>;
 	non-removable;
 	status = "okay";
-};
+	#address-cells = <1>;
+	#size-cells = <0>;
 
-&spi2 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&spi2_flash_pins>;
-	status = "disabled";
-
-	flash@0 {
-		#address-cells = <1>;
-		#size-cells = <1>;
-
-		compatible = "jedec,spi-nor";
+	card@0 {
+		#address-cells = <0>;
+		#size-cells = <0>;
+		compatible = "mmc-card";
 		reg = <0>;
 
-		spi-max-frequency = <25000000>;
-		spi-tx-bus-width = <4>;
-		spi-rx-bus-width = <4>;
+		block {
+			compatible = "block-device";
 
-		partitions {
-			compatible = "fixed-partitions";
-			#address-cells = <1>;
-			#size-cells = <1>;
+			partitions {
+				block-partition-factory {
+					partname = "factory";
 
-			partition@00000 {
-				label = "BL2";
-				reg = <0x00000 0x0040000>;
-			};
+					nvmem-layout {
+						compatible = "fixed-layout";
+						#address-cells = <1>;
+						#size-cells = <1>;
 
-			partition@40000 {
-				label = "u-boot-env";
-				reg = <0x40000 0x0010000>;
-			};
+						eeprom_factory_0: eeprom@0 {
+							reg = <0x0 0x1e00>;
+						};
+					};
+				};
 
-			factory: partition@50000 {
-				label = "Factory";
-				reg = <0x50000 0x00B0000>;
-			};
+				block-partition-mfginfo {
+					partname = "mfginfo";
 
-			partition@100000 {
-				label = "FIP";
-				reg = <0x100000 0x0080000>;
+					nvmem-layout {
+						compatible = "adtran,mfginfo";
+
+						macaddr: mfg-mac {
+							#nvmem-cell-cells = <1>;
+						};
+					};
+				};
 			};
 		};
 	};
 };
 
-
-&xhci {
-	vusb33-supply = <&reg_3p3v>;
-	vbus-supply = <&reg_5v>;
-	status = "okay";
-};
-
 &uart0 {
 	status = "okay";
-};
-
-&usb_phy {
-	status = "disabled";
 };
 
 &i2c0 {
@@ -331,23 +299,22 @@
 		compatible = "srg,sysled";
 		reg = <0x30>;
 
-		system_red {
+		led_sys_red: system_red {
 			label = "red";
 			reg = <1>;
 		};
 
-		sys_status: system_green {
+		led_sys_green: system_green {
 			label = "green";
 			reg = <2>;
-			linux,default-trigger = "timer";
 		};
 
-		system_blue {
+		led_sys_blue: system_blue {
 			label = "blue";
 			reg = <3>;
 		};
 
-		system_white {
+		led_sys_white: system_white {
 			label = "white";
 			reg = <4>;
 		};
@@ -359,7 +326,23 @@
 };
 
 &wifi {
+	nvmem-cells = <&eeprom_factory_0>;
+	nvmem-cell-names = "eeprom";
 	status = "okay";
-	mediatek,eeprom-file-offset = <0x0>;
+
 	ieee80211-freq-limit = <2400000 2500000>, <5170000 5835000>;
+
+	band@0 {
+		/* 2.4 GHz */
+		reg = <0>;
+		nvmem-cells = <&macaddr 0x4>;
+		nvmem-cell-names = "mac-address";
+	};
+
+	band@1 {
+		/* 5 GHz */
+		reg = <1>;
+		nvmem-cells = <&macaddr 0xa>;
+		nvmem-cell-names = "mac-address";
+	};
 };

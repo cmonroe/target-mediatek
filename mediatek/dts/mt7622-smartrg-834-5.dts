@@ -18,10 +18,11 @@
 
 	aliases {
 		serial0 = &uart0;
-		led-boot = &sys_status;
-		led-failsafe = &sys_status;
-		led-running = &sys_status;
-		led-upgrade = &sys_status;
+		label-mac-device = &gmac0;
+		led-boot = &led_sys_green;
+		led-failsafe = &led_sys_blue;
+		led-running = &led_sys_white;
+		led-upgrade = &led_sys_red;
 	};
 
 	chosen {
@@ -44,13 +45,13 @@
 	gpio-keys {
 		compatible = "gpio-keys";
 
-		reset {
+		button-reset {
 			label = "reset";
 			linux,code = <KEY_RESTART>;
 			gpios = <&pio 5 GPIO_ACTIVE_LOW>;
 		};
 
-		wps {
+		button-wps {
 			label = "wps";
 			linux,code = <KEY_WPS_BUTTON>;
 			gpios = <&pio 102 GPIO_ACTIVE_LOW>;
@@ -60,25 +61,25 @@
 	leds {
 		compatible = "gpio-leds";
 
-		system_red {
+		led_sys_red: system_red {
 			label = "red";
 			gpios = <&pio 51 GPIO_ACTIVE_LOW>;
 			default-state = "off";
 		};
 
-		sys_status: system_green {
+		led_sys_green: system_green {
 			label = "green";
 			gpios = <&pio 52 GPIO_ACTIVE_LOW>;
 			linux,default-trigger = "timer";
 		};
 
-		system_blue {
+		led_sys_blue: system_blue {
 			label = "blue";
 			gpios = <&pio 75 GPIO_ACTIVE_LOW>;
 			default-state = "off";
 		};
 
-		system_white {
+		led_sys_white: system_white {
 			label = "white";
 			gpios = <&pio 98 GPIO_ACTIVE_LOW>;
 			default-state = "off";
@@ -162,6 +163,10 @@
 		compatible = "mediatek,eth-mac";
 		reg = <0>;
 		phy-mode = "2500base-x";
+		label = "dsa0";
+
+		nvmem-cells = <&macaddr 0x0>;
+		nvmem-cell-names = "mac-address";
 
 		fixed-link {
 			speed = <2500>;
@@ -313,6 +318,49 @@
 	assigned-clocks = <&topckgen CLK_TOP_MSDC30_0_SEL>;
 	assigned-clock-parents = <&topckgen CLK_TOP_UNIV48M>;
 	non-removable;
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	card@0 {
+		compatible = "mmc-card";
+		reg = <0>;
+
+		block {
+			partitions {
+				block-partition-rf {
+					partnum = <4>;
+					partname = "rf";
+
+					nvmem-layout {
+						compatible = "fixed-layout";
+						#address-cells = <1>;
+						#size-cells = <1>;
+
+						eeprom_factory_0: eeprom@0 {
+							reg = <0x0 0x5000>;
+						};
+
+						eeprom_factory_5000: eeprom@5000 {
+							reg = <0x5000 0x5000>;
+						};
+					};
+				};
+
+				block-partition-mfginfo {
+					partnum = <7>;
+					partname = "mfginfo";
+
+					nvmem-layout {
+						compatible = "adtran,mfginfo";
+
+						macaddr: mfg-mac {
+							#nvmem-cell-cells = <1>;
+						};
+					};
+				};
+			};
+		};
+	};
 };
 
 &pcie0 {
@@ -324,7 +372,8 @@
 &slot0 {
 	mt7615@0,0 {
 		reg = <0x0000 0 0 0 0>;
-		mediatek,eeprom-file-offset = <0x5000>;
+		nvmem-cells = <&eeprom_factory_5000>, <&macaddr 0xa>;
+		nvmem-cell-names = "eeprom", "mac-address";
 		ieee80211-freq-limit = <5170000 5835000>;
 	};
 };
@@ -471,6 +520,7 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&wmac0_pins>;
 
-	mediatek,eeprom-file-offset = <0x0>;
+	nvmem-cells = <&eeprom_factory_0>, <&macaddr 0x4>;
+	nvmem-cell-names = "eeprom", "mac-address";
 	status = "okay";
 };

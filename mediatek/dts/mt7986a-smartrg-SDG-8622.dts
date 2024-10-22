@@ -40,4 +40,11 @@
 
 &wifi {
 	ieee80211-freq-limit = <2400000 2500000>, <5490000 5835000>;
+
+	band@1 {
+		/* upper 5 GHz */
+		reg = <1>;
+		nvmem-cells = <&macaddr 0xf>;
+		nvmem-cell-names = "mac-address";
+	};
 };
