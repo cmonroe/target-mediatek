@@ -309,7 +309,11 @@
 						};
 
 						eeprom_factory_a0000: eeprom@a0000 {
-							reg = <0xa0000 0x1000>;
+							reg = <0xa0000 0xe00>;
+						};
+
+						precal_factory_a0e10: precal@a0e10 {
+							reg = <0xa0e10 0x19c10>;
 						};
 					};
 				};
@@ -341,9 +345,8 @@
 		radio0: mt7915@0,0 {
 			reg = <0x0000 0 0 0 0>;
 
-			/* FIXME: add pre-cal */
-			nvmem-cells = <&eeprom_factory_a0000>, <&macaddr 0xa>;
-			nvmem-cell-names = "eeprom", "mac-address";
+			nvmem-cells = <&eeprom_factory_a0000>, <&precal_factory_a0e10>, <&macaddr 0xa>;
+			nvmem-cell-names = "eeprom", "precal", "mac-address";
 		};
 	};
 };
