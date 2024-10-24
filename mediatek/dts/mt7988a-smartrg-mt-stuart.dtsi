@@ -531,6 +531,10 @@
 						eeprom_factory_0: eeprom@0 {
 							reg = <0x0 0x1e00>;
 						};
+
+						precal_factory_1e10: precal@1e10 {
+							reg = <0x1e10 0xedfd0>;
+						};
 					};
 				};
 
@@ -561,8 +565,8 @@
 
 		radio0: mt7996@0,0 {
 			reg = <0x0000 0 0 0 0>;
-			nvmem-cells = <&eeprom_factory_0>;
-			nvmem-cell-names = "eeprom";
+			nvmem-cells = <&eeprom_factory_0>, <&precal_factory_1e10>;
+			nvmem-cell-names = "eeprom", "precal";
 			ieee80211-freq-limit = <2400000 2500000>, <5170000 5835000>, <5945000 7125000>;
 
 			band@0 {
