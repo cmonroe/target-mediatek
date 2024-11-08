@@ -1,0 +1,164 @@
+From: Chad Monroe <chad@monroe.io>
+Date: Wed, 30 Oct 2024 19:48:29 -0700
+Subject: [PATCH] net: ethernet: mediatek: limit PPE roaming fix to WED
+
+Only apply PPE roaming fix to WED/WiFi related flows. 
+
+originally sourced from the Mediatek SDK[1].
+
+1: https://git01.mediatek.com/plugins/gitiles/openwrt/feeds/mtk-openwrt-feeds/+/3c8eed47cfdf9b4ae094f39f5503f844bdef2cc9%5E%21/
+
+Signed-off-by: Chad Monroe <chad@monroe.io>
+---
+ drivers/net/ethernet/mediatek/mtk_eth_soc.h     |   14 +++
+ drivers/net/ethernet/mediatek/mtk_ppe.c         |   64 +++++++++++++-
+ drivers/net/ethernet/mediatek/mtk_ppe.h         |    2
+ drivers/net/ethernet/mediatek/mtk_ppe_offload.c |    2
+ 4 files changed, 81 insertions(+), 1 deletion(-)
+
+--- a/drivers/net/ethernet/mediatek/mtk_eth_soc.h
++++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.h
+@@ -1575,6 +1575,20 @@ static inline u32 mtk_get_ib1_pkt_type(s
+ 	return FIELD_GET(MTK_FOE_IB1_PACKET_TYPE, val);
+ }
+ 
++static inline void mtk_set_ib1_sp(struct mtk_eth *eth, struct mtk_foe_entry *foe, u32 val)
++{
++	if (mtk_is_netsys_v2_or_greater(eth))
++		foe->ib1 |= FIELD_PREP(MTK_FOE_IB1_UNBIND_SRC_PORT_V2, val);
++}
++
++static inline u32 mtk_get_ib1_sp(struct mtk_eth *eth, struct mtk_foe_entry *foe)
++{
++	if (mtk_is_netsys_v2_or_greater(eth))
++		return FIELD_GET(MTK_FOE_IB1_UNBIND_SRC_PORT_V2, foe->ib1);
++
++	return 0;
++}
++
+ static inline u32 mtk_get_ib2_multicast_mask(struct mtk_eth *eth)
+ {
+ 	if (mtk_is_netsys_v2_or_greater(eth))
+--- a/drivers/net/ethernet/mediatek/mtk_ppe.c
++++ b/drivers/net/ethernet/mediatek/mtk_ppe.c
+@@ -495,6 +495,24 @@ int mtk_foe_entry_set_queue(struct mtk_e
+ }
+ 
+ static bool
++mtk_foe_entry_match(struct mtk_eth *eth, struct mtk_foe_entry *entry,
++				struct mtk_foe_entry *data)
++{
++	int type, len;
++
++	if ((data->ib1 ^ entry->ib1) & MTK_FOE_IB1_UDP)
++		return false;
++
++	type = mtk_get_ib1_pkt_type(eth, entry->ib1);
++	if (type > MTK_PPE_PKT_TYPE_IPV4_DSLITE)
++		len = offsetof(struct mtk_foe_entry, ipv6._rsv);
++	else
++		len = offsetof(struct mtk_foe_entry, ipv4.ib2);
++
++	return !memcmp(&entry->data, &data->data, len - 4);
++}
++
++static bool
+ mtk_foe_mac_match(struct mtk_eth *eth, struct mtk_foe_entry *entry, u8 *mac)
+ {
+ 	int type;
+@@ -517,6 +535,27 @@ mtk_foe_mac_match(struct mtk_eth *eth, s
+ 	return false;
+ }
+ 
++int mtk_foe_entry_set_sp(struct mtk_ppe *ppe, struct mtk_foe_entry *entry)
++{
++	struct mtk_eth *eth = ppe->eth;
++	struct mtk_foe_entry *hwe;
++	u32 hash, sp = 0;
++	int i;
++
++	hash = mtk_ppe_hash_entry(eth, entry);
++	for (i = 0; i < eth->soc->hash_offset; i++) {
++		hwe = mtk_foe_get_entry(ppe, hash + i);
++		if (mtk_foe_entry_match(eth, hwe, entry)) {
++			sp = mtk_get_ib1_sp(ppe->eth, hwe);
++			break;
++		}
++	}
++
++	mtk_set_ib1_sp(ppe->eth, entry, sp);
++
++	return 0;
++}
++
+ static int
+ mtk_flow_entry_match_len(struct mtk_eth *eth, struct mtk_foe_entry *entry)
+ {
+@@ -1141,6 +1180,28 @@ int mtk_ppe_stop(struct mtk_ppe *ppe)
+ 	return 0;
+ }
+ 
++static int
++mtk_ppe_check_wdma_path(struct mtk_eth *eth, struct mtk_foe_entry *foe)
++{
++	u32 sp, winfo;
++	u32 *ib2;
++
++	ib2 = mtk_foe_entry_ib2(eth, foe);
++	sp = mtk_get_ib1_sp(eth, foe);
++
++	if (mtk_is_netsys_v2_or_greater(eth)) 
++		winfo = FIELD_GET(MTK_FOE_IB2_WDMA_WINFO_V2, *ib2);
++	else
++		winfo = FIELD_GET(MTK_FOE_IB2_WDMA_WINFO, *ib2);
++
++	if (winfo || (sp == PSE_WDMA0_PORT ||
++		      sp == PSE_WDMA1_PORT ||
++		      sp == PSE_WDMA2_PORT))
++		return 1;
++
++	return 0;
++}
++
+ static int mtk_ppe_delete_by_mac(struct mtk_ppe *ppe, u8 *mac)
+ {
+ 	struct mtk_eth *eth;
+@@ -1157,7 +1218,8 @@ static int mtk_ppe_delete_by_mac(struct
+ 		int type, state;
+ 
+ 		state = FIELD_GET(MTK_FOE_IB1_STATE, entry->ib1);
+-		if (state != MTK_FOE_STATE_BIND || !mtk_foe_mac_match(eth, entry, mac))
++		if (state != MTK_FOE_STATE_BIND || !mtk_foe_mac_match(eth, entry, mac) ||
++		    !mtk_ppe_check_wdma_path(eth, entry))
+ 			continue;
+ 
+ 		memset(&tuple, 0, sizeof(tuple));
+--- a/drivers/net/ethernet/mediatek/mtk_ppe.h
++++ b/drivers/net/ethernet/mediatek/mtk_ppe.h
+@@ -33,6 +33,7 @@
+ #define MTK_FOE_IB1_STATIC		BIT(31)
+ 
+ /* CONFIG_MEDIATEK_NETSYS_V2 */
++#define MTK_FOE_IB1_UNBIND_SRC_PORT_V2	GENMASK(11, 8)
+ #define MTK_FOE_IB1_BIND_TIMESTAMP_V2	GENMASK(7, 0)
+ #define MTK_FOE_IB1_BIND_VLAN_LAYER_V2	GENMASK(16, 14)
+ #define MTK_FOE_IB1_BIND_PPPOE_V2	BIT(17)
+@@ -400,6 +401,7 @@ int mtk_foe_entry_set_wdma(struct mtk_et
+ 			   bool amsdu_en);
+ int mtk_foe_entry_set_queue(struct mtk_eth *eth, struct mtk_foe_entry *entry,
+ 			    unsigned int queue);
++int mtk_foe_entry_set_sp(struct mtk_ppe *ppe, struct mtk_foe_entry *entry);
+ int mtk_foe_entry_commit(struct mtk_ppe *ppe, struct mtk_flow_entry *entry);
+ void mtk_foe_entry_clear(struct mtk_ppe *ppe, struct mtk_flow_entry *entry);
+ int mtk_ppe_debugfs_init(struct mtk_ppe *ppe, int index);
+--- a/drivers/net/ethernet/mediatek/mtk_ppe_offload.c
++++ b/drivers/net/ethernet/mediatek/mtk_ppe_offload.c
+@@ -455,6 +455,8 @@ mtk_flow_offload_replace(struct mtk_eth
+ 	if (data.pppoe.num == 1)
+ 		mtk_foe_entry_set_pppoe(eth, &foe, data.pppoe.sid);
+ 
++	mtk_foe_entry_set_sp(eth->ppe[ppe_index], &foe);
++
+ 	err = mtk_flow_set_output_device(eth, &foe, odev, data.eth.h_dest,
+ 					 &wed_index);
+ 	if (err)

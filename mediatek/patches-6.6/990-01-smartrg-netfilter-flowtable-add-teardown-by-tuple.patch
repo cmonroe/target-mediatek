@@ -1,0 +1,58 @@
+From: Chad Monroe <chad@monroe.io>
+Date: Wed, 30 Oct 2024 19:56:21 -0700
+Subject: [PATCH] netfilter: flowtable: add teardown by tuple
+
+add helper to remove all flows from any flowtable by tuple.
+
+originally sourced from the Mediatek SDK[1].
+
+1: https://git01.mediatek.com/plugins/gitiles/openwrt/feeds/mtk-openwrt-feeds/+/1023cdd0d0f7d32615474a1262b155cb94f9baac%5E%21/
+
+Signed-off-by: Chad Monroe <chad@monroe.io>
+---
+ include/net/netfilter/nf_flow_table.h |    1 +
+ net/netfilter/nf_flow_table_core.c    |   23 +++++++++++++++++++++++
+ 2 files changed, 24 insertions(+)
+
+--- a/include/net/netfilter/nf_flow_table.h
++++ b/include/net/netfilter/nf_flow_table.h
+@@ -292,6 +292,7 @@ int nf_flow_table_init(struct nf_flowtab
+ void nf_flow_table_free(struct nf_flowtable *flow_table);
+ 
+ void flow_offload_teardown(struct flow_offload *flow);
++void flow_offload_teardown_by_tuple(struct flow_offload_tuple *tuple);
+ 
+ int nf_flow_table_iterate(struct nf_flowtable *flow_table,
+                       void (*iter)(struct nf_flowtable *flowtable,
+--- a/net/netfilter/nf_flow_table_core.c
++++ b/net/netfilter/nf_flow_table_core.c
+@@ -351,6 +351,29 @@ void flow_offload_teardown(struct flow_o
+ }
+ EXPORT_SYMBOL_GPL(flow_offload_teardown);
+ 
++void flow_offload_teardown_by_tuple(struct flow_offload_tuple *tuple)
++{
++	struct net_device *netdev;
++	struct nf_flowtable *flowtable;
++	struct flow_offload_tuple_rhash *tuplehash;
++	struct flow_offload *flow;
++	int dir;
++
++	list_for_each_entry(flowtable, &flowtables, list) {
++		for_each_netdev(&init_net, netdev) {
++			tuple->iifidx = netdev->ifindex;
++			tuplehash = flow_offload_lookup(flowtable, tuple);
++			if (!tuplehash)
++				continue;
++
++			dir = tuplehash->tuple.dir;
++			flow = container_of(tuplehash, struct flow_offload, tuplehash[dir]);
++			flow_offload_teardown(flow);
++		}
++	};
++}
++EXPORT_SYMBOL_GPL(flow_offload_teardown_by_tuple);
++
+ struct flow_offload_tuple_rhash *
+ flow_offload_lookup(struct nf_flowtable *flow_table,
+ 		    struct flow_offload_tuple *tuple)
