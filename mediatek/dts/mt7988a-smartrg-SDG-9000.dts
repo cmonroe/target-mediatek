@@ -80,6 +80,13 @@
 		regulator-always-on;
 	};
 
+	fan2: pwm-fan2 {
+		compatible = "pwm-fan";
+		#cooling-cells = <2>;
+		#thermal-sensor-cells = <1>;
+		status = "disabled";
+	};
+
 	gpio-keys {
 		compatible = "gpio-keys";
 		pinctrl-names = "default";
@@ -106,6 +113,20 @@
 			gpio-export,output = <1>;
 			gpios = <&pio 26 GPIO_ACTIVE_LOW>;
 		};
+
+		watchdog_enable {
+			gpio-export,name = "watchdog-enable";
+			gpio-export,output = <1>;
+			gpios = <&pio 60 GPIO_ACTIVE_HIGH>;
+		};
+	};
+
+	gpio-watchdog {
+		compatible = "linux,wdt-gpio";
+		gpios = <&pio 62 GPIO_ACTIVE_LOW>;
+		hw_algo = "toggle";
+		hw_margin_ms = <25000>;
+		always-running;
 	};
 
 	leds: gpio-leds {
@@ -216,32 +237,31 @@
 	cooling-maps {
 		cpu-active-high {
 			/* active: set fan to cooling level 3 */
-			cooling-device = <&fan 3 3>;
+			cooling-device = <&fan 3 3>, <&fan2 3 3>;
 			trip = <&cpu_trip_active_high>;
 		};
 
 		cpu-active-med {
 			/* active: set fan to cooling level 2 */
-			cooling-device = <&fan 2 2>;
+			cooling-device = <&fan 2 2>, <&fan2 2 2>;
 			trip = <&cpu_trip_active_med>;
 		};
 
 		cpu-active-low {
 			/* active: set fan to cooling level 1 */
-			cooling-device = <&fan 1 1>;
+			cooling-device = <&fan 1 1>, <&fan2 1 1>;
 			trip = <&cpu_trip_active_low>;
 		};
 
 		cpu-active-silent {
 			/* active: set fan to cooling level 0 */
-			cooling-device = <&fan 0 0>;
+			cooling-device = <&fan 0 0>, <&fan2 0 0>;
 			trip = <&cpu_trip_active_silent>;
 		};
 	};
 };
 
 &fan {
-	/* FIXME: add  support for 2nd fan */
 	pwms = <&pwm 0 40000 0>;
 
 	/**
@@ -258,6 +278,18 @@
 
 	interrupt-parent = <&pio>;
 	interrupts = <51 IRQ_TYPE_EDGE_FALLING>;
+	pulses-per-revolution = <2>;
+
+	status = "okay";
+};
+
+&fan2 {
+	pwms = <&pwm 1 40000 0>;
+
+	cooling-levels = <61 77 102 128>;
+
+	interrupt-parent = <&pio>;
+	interrupts = <50 IRQ_TYPE_EDGE_FALLING>;
 	pulses-per-revolution = <2>;
 
 	status = "okay";
@@ -292,7 +324,7 @@
 	label = "wan";
 	phy-mode = "usxgmii";
 	phy-connection-type = "usxgmii";
-	phy = <&phy0>;
+	phy = <&phy8>;
 
 	status = "okay";
 };
@@ -314,7 +346,7 @@
 			channel0: channel@0 {
 				reg = <0>;
 				phy-mode = "usxgmii";
-				phy = <&phy0>;
+				phy = <&phy8>;
 			};
 
 			channel1: channel@1 {
@@ -470,11 +502,11 @@
 
 &mdio_bus {
 	phy0: ethernet-phy@0 {
-		/* CUX3410 */
+		/* CUX3410 - LAN */
 		compatible = "ethernet-phy-ieee802.3-c45";
 		reg = <0>;
 
-		reset-gpios = <&pio 0 GPIO_ACTIVE_LOW>;
+		reset-gpios = <&pio 68 GPIO_ACTIVE_LOW>;
 		reset-assert-us = <100000>;
 		reset-deassert-us = <1000000>;
 
@@ -506,11 +538,11 @@
 	};
 
 	phy8: ethernet-phy@8 {
-		/* CUX3410 */
+		/* CUX3410 - WAN */
 		compatible = "ethernet-phy-ieee802.3-c45";
 		reg = <8>;
 
-		reset-gpios = <&pio 68 GPIO_ACTIVE_LOW>;
+		reset-gpios = <&pio 0 GPIO_ACTIVE_LOW>;
 		reset-assert-us = <100000>;
 		reset-deassert-us = <1000000>;
 
@@ -641,7 +673,7 @@
 			port@9 {
 				reg = <9>;
 				label = "lan9";
-				phy-handle = <&phy8>;
+				phy-handle = <&phy0>;
 				phy-mode = "usxgmii";
 				status = "okay";
 			};
@@ -790,8 +822,8 @@
 		fps = <60>;
 		buswidth = <8>;
 		rgb;
-		dc = <&pio 29 GPIO_ACTIVE_HIGH>;
-		reset = <&pio 62 GPIO_ACTIVE_HIGH>;
+		dc = <&pio 69 GPIO_ACTIVE_HIGH>;
+		reset = <&pio 70 GPIO_ACTIVE_HIGH>;
 		width = <240>;
 		height = <240>;
 		debug = <0x0>;
