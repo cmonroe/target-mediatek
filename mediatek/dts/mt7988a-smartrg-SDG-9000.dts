@@ -1020,7 +1020,6 @@
 &spi1 {
 	status = "okay";
 
-/*
 	st7789v: st7789v@0 {
 		compatible = "sitronix,st7789v";
 		reg = <0>;
@@ -1032,13 +1031,12 @@
 		fps = <60>;
 		buswidth = <8>;
 		rgb;
-		dc = <&pio 69 GPIO_ACTIVE_HIGH>;
-		reset = <&pio 70 GPIO_ACTIVE_HIGH>;
+		dc-gpios = <&pio 69 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&pio 70 GPIO_ACTIVE_LOW>;
 		width = <240>;
 		height = <240>;
 		debug = <0x0>;
 	};
-*/
 };
 
 &ssusb0 {
