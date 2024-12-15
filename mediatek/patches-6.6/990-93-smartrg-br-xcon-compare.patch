@@ -23,5 +23,5 @@ Subject: [PATCH] OWRT-8586 xcon wan override
 +	}
 +
  	return !test_bit(p->hwdom, &cb->fwd_hwdoms) &&
- 		(!skb->offload_fwd_mark || cb->src_hwdom != p->hwdom);
+ 		(!skb->offload_fwd_mark || !p->hwdom || cb->src_hwdom != p->hwdom);
  }
