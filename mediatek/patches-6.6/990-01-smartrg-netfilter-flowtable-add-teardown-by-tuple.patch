@@ -26,7 +26,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
                        void (*iter)(struct nf_flowtable *flowtable,
 --- a/net/netfilter/nf_flow_table_core.c
 +++ b/net/netfilter/nf_flow_table_core.c
-@@ -351,6 +351,29 @@ void flow_offload_teardown(struct flow_o
+@@ -347,6 +347,29 @@ void flow_offload_teardown(struct flow_o
  }
  EXPORT_SYMBOL_GPL(flow_offload_teardown);
  
