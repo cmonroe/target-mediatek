@@ -790,8 +790,7 @@
 		reg = <0x10>;
 		dsa,member = <1 0>;
 
-		/* FIXME: use passthru mode for now */
-		status = "disabled";
+		status = "okay";
 
 		reset-gpios = <&pio 1 GPIO_ACTIVE_LOW>;
 		reset-assert-us = <100000>;
@@ -879,7 +878,9 @@
 				};
 			};
 
-			/*
+			/**
+			 * not supported by MXL DSA driver yet
+			 **
 			port@9 {
 				reg = <9>;
 				label = "lan9";
