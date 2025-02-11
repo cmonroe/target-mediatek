@@ -110,11 +110,6 @@
 	proc-supply = <&rt5190_buck3>;
 };
 
-&cpu_thermal {
-	/delete-node/cooling-maps;
-	/delete-node/trips;
-};
-
 &eth {
 	pinctrl-0 = <&mdio0_pins>;
 	pinctrl-names = "default";
