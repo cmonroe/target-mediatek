@@ -10,7 +10,7 @@
  obj-$(CONFIG_SND_SOC_SRC4XXX)	+= snd-soc-src4xxx.o
 --- a/sound/soc/codecs/Kconfig
 +++ b/sound/soc/codecs/Kconfig
-@@ -2404,4 +2404,7 @@ config SND_SOC_LPASS_TX_MACRO
+@@ -2405,4 +2405,7 @@ config SND_SOC_LPASS_TX_MACRO
  	select SND_SOC_LPASS_MACRO_COMMON
  	tristate "Qualcomm TX Macro in LPASS(Low Power Audio SubSystem)"
  

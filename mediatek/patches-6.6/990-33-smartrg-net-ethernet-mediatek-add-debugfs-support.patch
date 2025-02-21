@@ -42,7 +42,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  		.glo_cfg	= 0x0a04,
  		.rst_idx	= 0x0a08,
  		.delay_irq	= 0x0a0c,
-@@ -73,9 +75,11 @@ static const struct mtk_reg_map mtk_reg_
+@@ -74,9 +76,11 @@ static const struct mtk_reg_map mtk_reg_
  		.fc_th		= 0x1a10,
  		.tx_sch_rate	= 0x1a14,
  		.int_grp	= 0x1a20,
@@ -54,7 +54,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  		.crx_ptr	= 0x1b10,
  		.drx_ptr	= 0x1b14,
  		.fq_head	= 0x1b20,
-@@ -103,6 +107,7 @@ static const struct mtk_reg_map mt7628_r
+@@ -104,6 +108,7 @@ static const struct mtk_reg_map mt7628_r
  		.rx_ptr		= 0x0900,
  		.rx_cnt_cfg	= 0x0904,
  		.pcrx_ptr	= 0x0908,
@@ -62,7 +62,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  		.glo_cfg	= 0x0a04,
  		.rst_idx	= 0x0a08,
  		.delay_irq	= 0x0a0c,
-@@ -119,6 +124,7 @@ static const struct mtk_reg_map mt7986_r
+@@ -120,6 +125,7 @@ static const struct mtk_reg_map mt7986_r
  		.rx_ptr		= 0x4100,
  		.rx_cnt_cfg	= 0x4104,
  		.pcrx_ptr	= 0x4108,
@@ -70,7 +70,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  		.glo_cfg	= 0x4204,
  		.rst_idx	= 0x4208,
  		.delay_irq	= 0x420c,
-@@ -138,9 +144,12 @@ static const struct mtk_reg_map mt7986_r
+@@ -140,9 +146,12 @@ static const struct mtk_reg_map mt7986_r
  		.delay_irq	= 0x460c,
  		.fc_th		= 0x4610,
  		.int_grp	= 0x4620,
@@ -83,7 +83,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  		.crx_ptr	= 0x4710,
  		.drx_ptr	= 0x4714,
  		.fq_head	= 0x4720,
-@@ -170,6 +179,7 @@ static const struct mtk_reg_map mt7988_r
+@@ -172,6 +181,7 @@ static const struct mtk_reg_map mt7988_r
  		.rx_ptr		= 0x6900,
  		.rx_cnt_cfg	= 0x6904,
  		.pcrx_ptr	= 0x6908,
@@ -91,7 +91,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  		.glo_cfg	= 0x6a04,
  		.rst_idx	= 0x6a08,
  		.delay_irq	= 0x6a0c,
-@@ -189,9 +199,12 @@ static const struct mtk_reg_map mt7988_r
+@@ -192,9 +202,12 @@ static const struct mtk_reg_map mt7988_r
  		.delay_irq	= 0x460c,
  		.fc_th		= 0x4610,
  		.int_grp	= 0x4620,
@@ -104,7 +104,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  		.crx_ptr	= 0x4710,
  		.drx_ptr	= 0x4714,
  		.fq_head	= 0x4720,
-@@ -326,8 +339,8 @@ static int mtk_mdio_busy_wait(struct mtk
+@@ -329,8 +342,8 @@ static int mtk_mdio_busy_wait(struct mtk
  	return -ETIMEDOUT;
  }
  
@@ -115,7 +115,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  {
  	int ret;
  
-@@ -350,8 +363,8 @@ static int _mtk_mdio_write_c22(struct mt
+@@ -353,8 +366,8 @@ static int _mtk_mdio_write_c22(struct mt
  	return 0;
  }
  
@@ -126,7 +126,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  {
  	int ret;
  
-@@ -386,7 +399,7 @@ static int _mtk_mdio_write_c45(struct mt
+@@ -389,7 +402,7 @@ static int _mtk_mdio_write_c45(struct mt
  	return 0;
  }
  
@@ -135,7 +135,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  {
  	int ret;
  
-@@ -408,8 +421,8 @@ static int _mtk_mdio_read_c22(struct mtk
+@@ -411,8 +424,8 @@ static int _mtk_mdio_read_c22(struct mtk
  	return mtk_r32(eth, MTK_PHY_IAC) & PHY_IAC_DATA_MASK;
  }
  
@@ -146,7 +146,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  {
  	int ret;
  
-@@ -2568,12 +2581,12 @@ static int mtk_poll_tx(struct mtk_eth *e
+@@ -2571,12 +2584,12 @@ static int mtk_poll_tx(struct mtk_eth *e
  
  static void mtk_handle_status_irq(struct mtk_eth *eth)
  {
@@ -161,7 +161,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	}
  }
  
-@@ -3353,7 +3366,7 @@ static void mtk_dma_free(struct mtk_eth
+@@ -3356,7 +3369,7 @@ static void mtk_dma_free(struct mtk_eth
  
  static bool mtk_hw_reset_check(struct mtk_eth *eth)
  {
@@ -170,7 +170,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  
  	return (val & MTK_FE_INT_FQ_EMPTY) || (val & MTK_FE_INT_RFIFO_UF) ||
  	       (val & MTK_FE_INT_RFIFO_OV) || (val & MTK_FE_INT_TSO_FAIL) ||
-@@ -4307,6 +4320,12 @@ static int mtk_do_ioctl(struct net_devic
+@@ -4360,6 +4373,12 @@ static int mtk_do_ioctl(struct net_devic
  	return -EOPNOTSUPP;
  }
  
@@ -183,7 +183,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  static void mtk_prepare_for_reset(struct mtk_eth *eth)
  {
  	u32 val;
-@@ -4714,6 +4733,7 @@ static const struct net_device_ops mtk_n
+@@ -4771,6 +4790,7 @@ static const struct net_device_ops mtk_n
  	.ndo_set_mac_address	= mtk_set_mac_address,
  	.ndo_validate_addr	= eth_validate_addr,
  	.ndo_eth_ioctl		= mtk_do_ioctl,
@@ -191,7 +191,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	.ndo_change_mtu		= mtk_change_mtu,
  	.ndo_tx_timeout		= mtk_tx_timeout,
  	.ndo_get_stats64        = mtk_get_stats64,
-@@ -5484,6 +5504,9 @@ static int mtk_probe(struct platform_dev
+@@ -5541,6 +5561,9 @@ static int mtk_probe(struct platform_dev
  	netif_napi_add(&eth->dummy_dev, &eth->tx_napi, mtk_napi_tx);
  	netif_napi_add(&eth->dummy_dev, &eth->rx_napi, mtk_napi_rx);
  
@@ -321,13 +321,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  		u32	glo_cfg;	/* global configuration */
  		u32	rst_idx;	/* reset index */
  		u32	delay_irq;	/* delay interrupt */
-@@ -1173,14 +1230,18 @@ struct mtk_reg_map {
- 		u32	rx_ptr;		/* rx base pointer */
- 		u32	rx_cnt_cfg;	/* rx max count configuration */
- 		u32	qcrx_ptr;	/* rx cpu pointer */
-+		u32	page;		/* page configuration */
- 		u32	glo_cfg;	/* global configuration */
- 		u32	rst_idx;	/* reset index */
+@@ -1179,9 +1236,12 @@ struct mtk_reg_map {
  		u32	delay_irq;	/* delay interrupt */
  		u32	fc_th;		/* flow control */
  		u32	int_grp;

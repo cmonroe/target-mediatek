@@ -18,7 +18,7 @@ Subject: [PATCH] sound add si3218x spi driver
  	imply SND_SOC_SI476X
  	imply SND_SOC_SIMPLE_AMPLIFIER
  	imply SND_SOC_SIMPLE_MUX
-@@ -2374,6 +2375,10 @@ config SND_SOC_NAU8825
+@@ -2375,6 +2376,10 @@ config SND_SOC_NAU8825
  	tristate
  	depends on I2C
  

@@ -18,7 +18,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
-@@ -2378,14 +2378,17 @@ skip_rx:
+@@ -2381,14 +2381,17 @@ skip_rx:
  		ring->data[idx] = new_data;
  		rxd->rxd1 = (unsigned int)dma_addr;
  release_desc:
