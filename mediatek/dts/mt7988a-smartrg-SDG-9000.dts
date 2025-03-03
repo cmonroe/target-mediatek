@@ -721,7 +721,7 @@
 		reset-deassert-us = <1000000>;
 
 		marvell,mdi-cfg-order = <0>;
-		aqr,led-config = <0x80 0x60 0xC000>;
+		marvell,led-config = <0x80 0x60 0xC000>;
 
 		leds {
 			#address-cells = <1>;
@@ -757,7 +757,7 @@
 		reset-deassert-us = <1000000>;
 
 		marvell,mdi-cfg-order = <0>;
-		aqr,led-config = <0x80 0x60 0xC000>;
+		marvell,led-config = <0x80 0x60 0xC000>;
 
 		leds {
 			#address-cells = <1>;

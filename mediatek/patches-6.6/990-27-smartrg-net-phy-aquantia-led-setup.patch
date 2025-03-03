@@ -21,7 +21,7 @@
 +	if (!IS_ENABLED(CONFIG_OF_MDIO))
 +		return 0;
 +
-+	if (!of_property_read_u32_array(node, "aqr,led-config", led_cfg, AQR_MAX_LEDS)) {
++	if (!of_property_read_u32_array(node, "marvell,led-config", led_cfg, AQR_MAX_LEDS)) {
 +		/* Write LED register values */
 +		for (i = 0; i < AQR_MAX_LEDS; i++) {
 +			ret = phy_write_mmd(phydev, MDIO_MMD_VEND1, AQR_LED_PROV(i), (u16)led_cfg[i]);

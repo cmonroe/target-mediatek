@@ -429,7 +429,7 @@
 		reset-assert-us = <100000>;
 		reset-deassert-us = <1000000>;
 
-		aqr,led-config = <0xC000 0x60 0x80>;
+		marvell,led-config = <0xC000 0x60 0x80>;
 
 		leds {
 			#address-cells = <1>;
@@ -465,7 +465,7 @@
 		reset-assert-us = <100000>;
 		reset-deassert-us = <1000000>;
 
-		aqr,led-config = <0xC000 0x60 0x80>;
+		marvell,led-config = <0xC000 0x60 0x80>;
 
 		leds {
 			#address-cells = <1>;
