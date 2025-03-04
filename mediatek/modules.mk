@@ -18,7 +18,7 @@ $(eval $(call KernelPackage,ata-ahci-mtk))
 define KernelPackage/btmtkuart
   SUBMENU:=Other modules
   TITLE:=MediaTek HCI UART driver
-  DEPENDS:=@(TARGET_mediatek_mt7622||TARGET_mediatek_filogic) +kmod-bluetooth +mt7622bt-firmware
+  DEPENDS:=@(TARGET_mediatek_mt7622||TARGET_mediatek_filogic) +kmod-bluetooth +kmod-btmtk +mt7622bt-firmware
   KCONFIG:=CONFIG_BT_MTKUART
   FILES:= \
 	$(LINUX_DIR)/drivers/bluetooth/btmtkuart.ko
