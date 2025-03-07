@@ -80,6 +80,15 @@
 		regulator-always-on;
 	};
 
+	reg_pse: regulator-vpvr-pse {
+		compatible = "regulator-fixed";
+		regulator-name = "fixed-vpvr-pse";
+		regulator-min-microvolt = <54000000>;
+		regulator-max-microvolt = <54000000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
 	fan2: pwm-fan2 {
 		compatible = "pwm-fan";
 		#cooling-cells = <2>;
@@ -646,9 +655,166 @@
 	pinctrl-0 = <&i2c1_pins>;
 	status = "okay";
 
-	/**
-	 * SI34742 PoE: 0x40
-	 */
+	ethernet-pse@26 {
+		compatible = "skyworks,si3474";
+		reg = <0x26>;
+		channels {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			phys0_0: channel@0 {
+				reg = <0>;
+			};
+			phys0_1: channel@1 {
+				reg = <1>;
+			};
+			phys0_2: channel@2 {
+				reg = <2>;
+			};
+			phys0_3: channel@3 {
+				reg = <3>;
+			};
+		};
+		pse-pis {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			pse_pi2: pse-pi@2 {
+				reg = <2>;
+				#pse-cells = <0>;
+				pairset-names = "alternative-a", "alternative-b";
+				pairsets = <&phys0_0>, <&phys0_1>;
+				polarity-supported = "MDI-X", "S";
+				vpwr-supply = <&reg_pse>;
+			};
+			pse_pi3: pse-pi@3 {
+				reg = <3>;
+				#pse-cells = <0>;
+				pairset-names = "alternative-a", "alternative-b";
+				pairsets = <&phys0_2>, <&phys0_3>;
+				polarity-supported = "MDI-X", "S";
+				vpwr-supply = <&reg_pse>;
+			};
+		};
+	};
+	ethernet-pse@27 {
+		compatible = "skyworks,si3474";
+		reg = <0x27>;
+		channels {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			phys0_4: channel@0 {
+				reg = <0>;
+			};
+			phys0_5: channel@1 {
+				reg = <1>;
+			};
+			phys0_6: channel@2 {
+				reg = <2>;
+			};
+			phys0_7: channel@3 {
+				reg = <3>;
+			};
+		};
+		pse-pis {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			pse_pi0: pse-pi@0 {
+				reg = <0>;
+				#pse-cells = <0>;
+				pairset-names = "alternative-a", "alternative-b";
+				pairsets = <&phys0_4>, <&phys0_5>;
+				polarity-supported = "MDI-X", "S";
+				vpwr-supply = <&reg_pse>;
+			};
+			pse_pi1: pse-pi@1 {
+				reg = <1>;
+				#pse-cells = <0>;
+				pairset-names = "alternative-a", "alternative-b";
+				pairsets = <&phys0_6>, <&phys0_7>;
+				polarity-supported = "MDI-X", "S";
+				vpwr-supply = <&reg_pse>;
+			};
+		};
+	};
+	ethernet-pse@36 {
+		compatible = "skyworks,si3474";
+		reg = <0x36>;
+		channels {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			phys1_0: channel@0 {
+				reg = <0>;
+			};
+			phys1_1: channel@1 {
+				reg = <1>;
+			};
+			phys1_2: channel@2 {
+				reg = <2>;
+			};
+			phys1_3: channel@3 {
+				reg = <3>;
+			};
+		};
+		pse-pis {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			pse_pi4: pse-pi@4 {
+				reg = <4>;
+				#pse-cells = <0>;
+				pairset-names = "alternative-a", "alternative-b";
+				pairsets = <&phys1_0>, <&phys1_1>;
+				polarity-supported = "MDI-X", "S";
+				vpwr-supply = <&reg_pse>;
+			};
+			pse_pi5: pse-pi@5 {
+				reg = <5>;
+				#pse-cells = <0>;
+				pairset-names = "alternative-a", "alternative-b";
+				pairsets = <&phys1_2>, <&phys1_3>;
+				polarity-supported = "MDI-X", "S";
+				vpwr-supply = <&reg_pse>;
+			};
+		};
+	};
+	ethernet-pse@37 {
+		compatible = "skyworks,si3474";
+		reg = <0x37>;
+		channels {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			phys1_4: channel@0 {
+				reg = <0>;
+			};
+			phys1_5: channel@1 {
+				reg = <1>;
+			};
+			phys1_6: channel@2 {
+				reg = <2>;
+			};
+			phys1_7: channel@3 {
+				reg = <3>;
+			};
+		};
+		pse-pis {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			pse_pi6: pse-pi@6 {
+				reg = <6>;
+				#pse-cells = <0>;
+				pairset-names = "alternative-a", "alternative-b";
+				pairsets = <&phys1_4>, <&phys1_5>;
+				polarity-supported = "MDI-X", "S";
+				vpwr-supply = <&reg_pse>;
+			};
+			pse_pi7: pse-pi@7 {
+				reg = <7>;
+				#pse-cells = <0>;
+				pairset-names = "alternative-a", "alternative-b";
+				pairsets = <&phys1_6>, <&phys1_7>;
+				polarity-supported = "MDI-X", "S";
+				vpwr-supply = <&reg_pse>;
+			};
+		};
+	};
 };
 
 &i2c2 {
@@ -941,27 +1107,35 @@
 
 			swphy0: swphy@0 {
 				reg = <0>;
+				pses = <&pse_pi0>;
 			};
 			swphy1: swphy@1 {
 				reg = <1>;
+				pses = <&pse_pi1>;
 			};
 			swphy2: swphy@2 {
 				reg = <2>;
+				pses = <&pse_pi2>;
 			};
 			swphy3: swphy@3 {
 				reg = <3>;
+				pses = <&pse_pi3>;
 			};
 			swphy4: swphy@4 {
 				reg = <4>;
+				pses = <&pse_pi4>;
 			};
 			swphy5: swphy@5 {
 				reg = <5>;
+				pses = <&pse_pi5>;
 			};
 			swphy6: swphy@6 {
 				reg = <6>;
+				pses = <&pse_pi6>;
 			};
 			swphy7: swphy@7 {
 				reg = <7>;
+				pses = <&pse_pi7>;
 			};
 		};
 	};
