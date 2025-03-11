@@ -5,6 +5,11 @@
  */
 
 #include "mt7988d-smartrg-mt-stuart-phase2.dtsi"
+#include "mt7988d-smartrg-SDG-9712o-power-limits-r1-RCM-AU-NZ.dtsi"
+#include "mt7988d-smartrg-SDG-9712o-power-limits-r2-IC-CA.dtsi"
+#include "mt7988d-smartrg-SDG-9712o-power-limits-r3-ETSI-GB.dtsi"
+#include "mt7988d-smartrg-SDG-9712o-power-limits-r4-ETSI.dtsi"
+#include "mt7988d-smartrg-SDG-9712o-power-limits-r5-FCC-US.dtsi"
 
 / {
 	model = "SmartRG SDG-9712o";
