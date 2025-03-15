@@ -124,8 +124,7 @@ define Build/SrgDiskSquashfs
 	mkdir -p $(TARGET_DIR)/Boot
 	$(STAGING_DIR_HOST)/bin/mksquashfs4 $(TARGET_DIR) $(KDIR)/root.squashfs.run \
 		-nopad -noappend -root-owned \
-		-comp $(SQUASHFSCOMP) $(SQUASHFSOPT) \
-		-processors 1
+		-comp $(SQUASHFSCOMP) $(SQUASHFSOPT)
 	$(CP) $(KDIR)/root.squashfs.run $(KDIR)/root.squashfs.run.bin 
 	dd if=/dev/zero bs=128k count=1 >> $(KDIR)/root.squashfs.run.bin
 	sha256sum  $(KDIR)/root.squashfs.run.bin  | cut -d ' ' -f 1 | xargs echo -n  >> $(KDIR)/root.squashfs.run.bin
@@ -135,8 +134,7 @@ define Build/SrgDiskSquashfs
 	$(CP) $(BIN_DIR)/$(IMG_PREFIX)-polecat-fit-multi.itb $(TARGET_DIR)/Boot/fit-multi.itb
 	$(STAGING_DIR_HOST)/bin/mksquashfs4 $(TARGET_DIR) $(KDIR)/root.squashfs \
 		-nopad -noappend -root-owned \
-		-comp $(SQUASHFSCOMP) $(SQUASHFSOPT) \
-		-processors 1
+		-comp $(SQUASHFSCOMP) $(SQUASHFSOPT)
 	$(CP) $(KDIR)/root.squashfs $(KDIR)/root.squashfs.bin 
 	dd if=/dev/zero bs=128k count=1 >> $(KDIR)/root.squashfs.bin
 	sha256sum  $(KDIR)/root.squashfs.bin  | cut -d ' ' -f 1 | xargs echo -n  >> $(KDIR)/root.squashfs.bin
