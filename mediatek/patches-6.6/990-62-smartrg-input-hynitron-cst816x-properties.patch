@@ -1,0 +1,38 @@
+--- a/drivers/input/touchscreen/hynitron-cst816x.c
++++ b/drivers/input/touchscreen/hynitron-cst816x.c
+@@ -10,6 +10,7 @@
+ #include <linux/gpio/consumer.h>
+ #include <linux/i2c.h>
+ #include <linux/input.h>
++#include <linux/input/touchscreen.h>
+ #include <linux/interrupt.h>
+ #include <linux/module.h>
+ 
+@@ -32,6 +33,7 @@ struct cst816x_priv {
+ 	struct gpio_desc *reset;
+ 	struct input_dev *input;
+ 	struct cst816x_event_map event_map[16];
++	struct touchscreen_properties prop;
+ };
+ 
+ static int cst816x_parse_dt_event_map(struct device *dev,
+@@ -123,6 +125,8 @@ static int cst816x_register_input(struct
+ 
+ 	input_set_abs_params(priv->input, ABS_X, 0, 240, 0, 0);
+ 	input_set_abs_params(priv->input, ABS_Y, 0, 240, 0, 0);
++	input_set_capability(priv->input, EV_KEY, BTN_TOUCH);
++	touchscreen_parse_properties(priv->input, false, &priv->prop);
+ 
+ 	return input_register_device(priv->input);
+ }
+@@ -144,8 +148,8 @@ static irqreturn_t cst816x_irq_cb(int ir
+ 		return IRQ_HANDLED;
+ 
+ 	if (info.touch) {
+-		input_report_abs(priv->input, ABS_X, info.abs_x);
+-		input_report_abs(priv->input, ABS_Y, info.abs_y);
++		touchscreen_report_pos(priv->input, &priv->prop,
++				       info.abs_x, info.abs_y, false);
+ 		input_report_key(priv->input, BTN_TOUCH, 1);
+ 	}
+ 
