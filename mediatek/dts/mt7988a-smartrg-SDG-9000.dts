@@ -87,6 +87,15 @@
 		status = "disabled";
 	};
 
+	backlight: backlight-lcd0 {
+		compatible = "pwm-backlight";
+		pwms = <&pwm 2 50000>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pwm2_backlight_pins>;
+
+		status = "okay";
+	};
+
 	gpio-keys {
 		compatible = "gpio-keys";
 		pinctrl-names = "default";
@@ -399,37 +408,37 @@
 	trips {
 		cpu_trip_crit: crit {
 			temperature = <125000>;
-			hysteresis = <2000>;
+			hysteresis = <4000>;
 			type = "critical";
 		};
 
 		cpu_trip_hot: hot {
 			temperature = <120000>;
-			hysteresis = <2000>;
+			hysteresis = <4000>;
 			type = "hot";
 		};
 
 		cpu_trip_active_high: active-high {
 			temperature = <110000>;
-			hysteresis = <2000>;
+			hysteresis = <4000>;
 			type = "active";
 		};
 
 		cpu_trip_active_med: active-med {
 			temperature = <80000>;
-			hysteresis = <2000>;
+			hysteresis = <4000>;
 			type = "active";
 		};
 
 		cpu_trip_active_low: active-low {
 			temperature = <60000>;
-			hysteresis = <2000>;
+			hysteresis = <4000>;
 			type = "active";
 		};
 
 		cpu_trip_active_silent: active-silent {
 			temperature = <40000>;
-			hysteresis = <2000>;
+			hysteresis = <4000>;
 			type = "active";
 		};
 	};
@@ -462,19 +471,21 @@
 };
 
 &fan {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pwm0_fan_pins>;
 	pwms = <&pwm 0 40000 0>;
 
 	/**
 	 * set fan speed
 	 *
 	 * 0 = off
-	 * 61 = 24% duty cycle
 	 * 77 = 30% duty cycle
 	 * 102 = 40% duty cycle
 	 * 128 - 50% duty cycle
+	 * 152 - 60% duty cycle
 	 * 255 = 100% duty cycle
 	 */
-	cooling-levels = <61 77 102 128>;
+	cooling-levels = <77 102 128 152>;
 
 	interrupt-parent = <&pio>;
 	interrupts = <51 IRQ_TYPE_EDGE_FALLING>;
@@ -484,9 +495,11 @@
 };
 
 &fan2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pwm1_fan_pins>;
 	pwms = <&pwm 1 40000 0>;
 
-	cooling-levels = <61 77 102 128>;
+	cooling-levels = <77 102 128 152>;
 
 	interrupt-parent = <&pio>;
 	interrupts = <50 IRQ_TYPE_EDGE_FALLING>;
@@ -654,6 +667,41 @@
 		reset-gpios = <&pio 33 GPIO_ACTIVE_LOW>;
 		touchscreen-size-x = <240>;
 		touchscreen-size-y = <240>;
+		touchscreen-swapped-x-y;
+		touchscreen-inverted-y;
+		panel = <&tft_panel>;
+
+		gestures {
+			swipe_up {
+				cst816x,gesture = <0x3>;
+				linux,code = <BTN_FORWARD>;
+			};
+
+			swipe_down {
+				cst816x,gesture = <0x4>;
+				linux,code = <BTN_BACK>;
+			};
+
+			swipe_left {
+				cst816x,gesture = <0x2>;
+				linux,code = <BTN_LEFT>;
+			};
+
+			swipe_right {
+				cst816x,gesture = <0x1>;
+				linux,code = <BTN_RIGHT>;
+			};
+
+			single_tap {
+				cst816x,gesture = <0x5>;
+				linux,code = <BTN_TOUCH>;
+			};
+
+			long_press {
+				cst816x,gesture = <0xc>;
+				linux,code = <BTN_TOOL_TRIPLETAP>;
+			};
+		};
 	};
 
 	swled_gpio0: tca9535@32 {
@@ -1004,39 +1052,68 @@
 		output-high;
 	};
 
-	pwm_pins: pwm-pins {
+	pwm0_fan_pins: pwm0-pins {
 		mux {
 			function = "pwm";
-			groups = "pwm0", "pwm1";
+			groups = "pwm0";
+		};
+	};
+
+	pwm1_fan_pins: pwm1-pins {
+		mux {
+			function = "pwm";
+			groups = "pwm1";
+		};
+	};
+
+	pwm2_backlight_pins: pwm2-pins {
+		mux {
+			function = "pwm";
+			groups = "pwm2_0";
+		};
+
+		conf {
+			groups = "pwm2_0";
+			bias-pull-down = <MTK_PUPD_SET_R1R0_10>;
 		};
 	};
 };
 
 &pwm {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pwm_pins>;
 	status = "okay";
 };
 
 &spi1 {
 	status = "okay";
 
-	st7789v: st7789v@0 {
-		compatible = "sitronix,st7789v";
+	tft_panel: display@0 {
+		compatible = "ph240240t004-zar", "panel-mipi-dbi-spi";
 		reg = <0>;
-		status = "okay";
-		spi-max-frequency = <48000000>;
-		spi-cpol;
+		spi-max-frequency = <52000000>;
+		spi-tx-buswidth = <1>;
+		spi-rx-buswidth = <0>;
 		spi-cpha;
-		rotate = <0>;
-		fps = <60>;
-		buswidth = <8>;
-		rgb;
+		spi-cpol;
+
 		dc-gpios = <&pio 69 GPIO_ACTIVE_HIGH>;
-		reset-gpios = <&pio 70 GPIO_ACTIVE_LOW>;
-		width = <240>;
-		height = <240>;
-		debug = <0x0>;
+		reset-gpios = <&pio 70 GPIO_ACTIVE_HIGH>;
+		backlight = <&backlight>;
+		write-only;
+
+		width-mm = <23>;
+		height-mm = <23>;
+
+		panel-timing {
+			hactive = <240>;
+			vactive = <240>;
+			hback-porch = <80>;
+			vback-porch = <0>;
+			clock-frequency = <0>;
+			hfront-porch = <0>;
+			hsync-len = <0>;
+			vfront-porch = <0>;
+			vsync-len = <0>;
+		};
 	};
 };
 
