@@ -37,7 +37,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  
  	eth->rx_dim.mode = DIM_CQ_PERIOD_MODE_START_FROM_EQE;
  	INIT_WORK(&eth->rx_dim.work, mtk_dim_rx);
-+	atomic_set(&eth->reset.force, 0);
++	atomic_set(&eth->reset.force, 1);
  	INIT_DELAYED_WORK(&eth->reset.monitor_work, mtk_hw_reset_monitor_work);
  
  	eth->tx_dim.mode = DIM_CQ_PERIOD_MODE_START_FROM_EQE;
