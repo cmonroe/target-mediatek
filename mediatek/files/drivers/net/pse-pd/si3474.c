@@ -26,6 +26,7 @@
 
 /* Main status registers */
 #define POWER_STATUS_REG 0x10
+#define PB_POWER_ENABLE 0x19
 
 struct si3474_port_desc {
 	u8 chan[2];
@@ -161,15 +162,76 @@ static int si3474_setup_pi_matrix(struct pse_controller_dev *pcdev)
 
 static int si3474_pi_enable(struct pse_controller_dev *pcdev, int id)
 {
+	struct si3474_priv *priv = to_si3474_priv(pcdev);
+	struct i2c_client *client = priv->client;
+	uint8_t chan0, chan1;
+	uint16_t val = 0;
+	int32_t ret;
+
+	if (id >= SI3474_MAX_CHANS)
+		return -ERANGE;
+
+	chan0 = priv->port[id].chan[0];
+	chan1 = priv->port[id].chan[1];
+
+	if (chan0 >= 4 || chan1 >= 4)
+		return -ERANGE;
+
+	val = (BIT(chan0) | BIT(chan1));
+	ret = i2c_smbus_write_word_data(client, PB_POWER_ENABLE, val);
+
+	if (ret)
+		return ret;
+
 	return 0;
 }
+
 static int si3474_pi_disable(struct pse_controller_dev *pcdev, int id)
 {
+	struct si3474_priv *priv = to_si3474_priv(pcdev);
+	struct i2c_client *client = priv->client;
+	uint8_t chan0, chan1;
+	uint16_t val = 0;
+	int32_t ret;
+
+	if (id >= SI3474_MAX_CHANS)
+		return -ERANGE;
+
+	chan0 = priv->port[id].chan[0];
+	chan1 = priv->port[id].chan[1];
+
+	if (chan0 >= 4 || chan1 >= 4)
+		return -ERANGE;
+
+	val = (BIT(chan0 + 4) | BIT(chan1 + 4));
+	ret = i2c_smbus_write_word_data(client, PB_POWER_ENABLE, val);
+
+	if (ret)
+		return ret;
+
 	return 0;
 }
+
 static int si3474_pi_is_enabled(struct pse_controller_dev *pcdev, int id)
 {
-	return true;
+	struct si3474_priv *priv = to_si3474_priv(pcdev);
+	struct i2c_client *client = priv->client;
+	bool enabled = FALSE;
+	uint8_t chan0, chan1;
+	int32_t ret;
+
+	ret = i2c_smbus_read_byte_data(client, POWER_STATUS_REG);
+	if (ret < 0)
+		return ret;
+
+	chan0 = priv->port[id].chan[0];
+	chan1 = priv->port[id].chan[1];
+
+	if (chan0 < 4 && chan1 < 4) {
+		enabled = (ret & (BIT(chan0) | BIT(chan1))) != 0;
+	}
+
+	return enabled;
 }
 
 static const struct pse_controller_ops si3474_ops = {
