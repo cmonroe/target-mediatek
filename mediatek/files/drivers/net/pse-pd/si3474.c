@@ -93,15 +93,14 @@ static int si3474_get_of_channels(struct si3474_priv *priv)
 	uint32_t port_no, chan_id;
 	int ret = 0;
 
-	if (!priv->np)
+	pse_node = of_get_child_by_name(priv->np, "pse-pis");
+	if (!pse_node) {
+		dev_warn(&priv->client->dev,
+			 "Unable to parse DT PSE port-matrix, no pse-pis node\n");
 		return -EINVAL;
+	}
 
-	pse_node = of_find_node_by_name(priv->np, "pse-pis");
-	if (!pse_node)
-		return -EINVAL;
-
-	for_each_child_of_node(pse_node, node)
-	{
+	for_each_child_of_node(pse_node, node) {
 		if (!of_node_name_eq(node, "pse-pi"))
 			continue;
 
@@ -120,6 +119,14 @@ static int si3474_get_of_channels(struct si3474_priv *priv)
 		}
 
 		pi = &priv->pcdev.pi[port_no];
+		if (!pi->pairset[0].np) {
+			dev_err(&priv->client->dev,
+				"pairset[0] np is NULL, port %u\n",
+				port_no);
+			ret = -EINVAL;
+			goto out;
+		}
+
 		ret = of_property_read_u32(pi->pairset[0].np, "reg", &chan_id);
 		if (ret) {
 			dev_err(
@@ -130,7 +137,16 @@ static int si3474_get_of_channels(struct si3474_priv *priv)
 			goto out;
 		}
 		priv->port[port_no].chan[0] = chan_id;
+
 		// FIXME: Prepared for tuple pairsets only
+		if (!pi->pairset[1].np) {
+			dev_err(&priv->client->dev,
+				"pairset[1] np is NULL, port %u\n",
+				port_no);
+			ret = -EINVAL;
+			goto out;
+		}
+
 		ret = of_property_read_u32(pi->pairset[1].np, "reg", &chan_id);
 		if (ret) {
 			dev_err(&priv->client->dev,
@@ -144,6 +160,7 @@ static int si3474_get_of_channels(struct si3474_priv *priv)
 
 out:
 	of_node_put(pse_node);
+	of_node_put(node);
 	return ret;
 }
 
