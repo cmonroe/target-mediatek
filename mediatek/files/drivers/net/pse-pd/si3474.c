@@ -26,7 +26,22 @@
 
 /* Main status registers */
 #define POWER_STATUS_REG 0x10
-#define PB_POWER_ENABLE 0x19
+#define PB_POWER_ENABLE_REG 0x19
+
+/* PORTn Current */
+#define PORT1_CURRENT_LSB_REG 0x30
+
+/* PORTn Current [mA], return in [nA] */
+/* 1000 * ((PORTn_CURRENT_MSB << 8) + PORTn_CURRENT_LSB) / 16384 */
+#define SI3474_NA_STEP (1000 * 1000 * 1000 / 16384)
+
+/* VPWR Voltage */
+#define VPWR_LSB_REG 0x2E
+#define VPWR_MSB_REG 0x2F
+
+/* VPWR Voltage [V], return in [uV] */
+/* 60 * (( VPWR_MSB << 8) + VPWR_LSB) / 16384 */
+#define SI3474_UV_STEP (1000 * 1000 * 60 / 16384)
 
 struct si3474_port_desc {
 	u8 chan[2];
@@ -195,7 +210,7 @@ static int si3474_pi_enable(struct pse_controller_dev *pcdev, int id)
 		return -ERANGE;
 
 	val = (BIT(chan0) | BIT(chan1));
-	ret = i2c_smbus_write_word_data(client, PB_POWER_ENABLE, val);
+	ret = i2c_smbus_write_word_data(client, PB_POWER_ENABLE_REG, val);
 
 	if (ret)
 		return ret;
@@ -221,7 +236,7 @@ static int si3474_pi_disable(struct pse_controller_dev *pcdev, int id)
 		return -ERANGE;
 
 	val = (BIT(chan0 + 4) | BIT(chan1 + 4));
-	ret = i2c_smbus_write_word_data(client, PB_POWER_ENABLE, val);
+	ret = i2c_smbus_write_word_data(client, PB_POWER_ENABLE_REG, val);
 
 	if (ret)
 		return ret;
@@ -251,10 +266,83 @@ static int si3474_pi_is_enabled(struct pse_controller_dev *pcdev, int id)
 	return enabled;
 }
 
+static int
+si3474_pi_get_chan_current(struct si3474_priv *priv, u8 chan)
+{
+	struct i2c_client *client = priv->client;
+	int reg, ret;
+	u64 tmp_64;
+
+	/* Registers 0x30 to 0x3d */
+	reg = PORT1_CURRENT_LSB_REG + (chan % 4) * 4;
+
+	ret = i2c_smbus_read_word_data(client, reg);
+	if (ret < 0)
+		return ret;
+
+	tmp_64 = ret * SI3474_NA_STEP;
+
+	/* uA = nA / 1000 */
+	tmp_64 = DIV_ROUND_CLOSEST_ULL(tmp_64, 1000);
+	return (int)tmp_64;
+}
+
+static int si3474_pi_get_voltage(struct pse_controller_dev *pcdev, int id)
+{
+	struct si3474_priv *priv = to_si3474_priv(pcdev);
+	struct i2c_client *client = priv->client;
+
+	uint32_t val;
+	int32_t ret;
+
+	ret = i2c_smbus_read_word_data(client, VPWR_LSB_REG);
+	if (ret < 0)
+		return ret;
+
+	/* Calculate output voltage [uV] */
+	val = ret * SI3474_UV_STEP;
+
+	return (int)val;
+}
+
+static int
+si3474_pi_get_actual_pw(struct pse_controller_dev *pcdev, int id)
+{
+	struct si3474_priv *priv = to_si3474_priv(pcdev);
+	int ret, uV, uA;
+	u64 tmp_64;
+	uint8_t chan0, chan1;
+
+	ret = si3474_pi_get_voltage(&priv->pcdev, id);
+	if (ret < 0)
+		return ret;
+	uV = ret;
+
+	chan0 = priv->port[id].chan[0];
+	chan1 = priv->port[id].chan[1];
+
+	ret = si3474_pi_get_chan_current(priv, chan[0]);
+	if (ret < 0)
+		return ret;
+	uA = ret;
+
+	ret = si3474_pi_get_chan_current(priv, chan);
+	if (ret < 0)
+		return ret;
+	uA += ret;
+
+	tmp_64 = uV;
+	tmp_64 *= uA;
+	/* mW = uV * uA / 1000000000 */
+	return DIV_ROUND_CLOSEST_ULL(tmp_64, 1000000000);
+}
+
 static const struct pse_controller_ops si3474_ops = {
     .setup_pi_matrix = si3474_setup_pi_matrix,
     .pi_enable = si3474_pi_enable,
     .pi_disable = si3474_pi_disable,
+    .pi_get_actual_pw = si3474_pi_get_actual_pw,
+    .pi_get_voltage = si3474_pi_get_voltage,
     .pi_is_enabled = si3474_pi_is_enabled,
     .ethtool_get_status = si3474_ethtool_get_status,
 };
