@@ -60,42 +60,60 @@ static struct si3474_priv *to_si3474_priv(struct pse_controller_dev *pcdev)
 	return container_of(pcdev, struct si3474_priv, pcdev);
 }
 
-static int si3474_ethtool_get_status(struct pse_controller_dev *pcdev,
-				     unsigned long id,
-				     struct netlink_ext_ack *extack,
-				     struct pse_control_status *status)
+static int si3474_pi_get_admin_state(struct pse_controller_dev *pcdev, int id,
+				    struct pse_admin_state *admin_state)
 {
 	struct si3474_priv *priv = to_si3474_priv(pcdev);
 	struct i2c_client *client = priv->client;
 	bool enabled = FALSE;
-	bool delivering = FALSE;
 	uint8_t chan0, chan1;
 	int32_t ret;
 
 	ret = i2c_smbus_read_byte_data(client, POWER_STATUS_REG);
 	if (ret < 0) {
-		status->c33_pw_status = ETHTOOL_C33_PSE_PW_D_STATUS_UNKNOWN;
-		status->c33_admin_state = ETHTOOL_C33_PSE_ADMIN_STATE_UNKNOWN;
+		admin_state->c33_admin_state = ETHTOOL_C33_PSE_ADMIN_STATE_UNKNOWN;
 		return ret;
 	}
 
 	chan0 = priv->port[id].chan[0];
 	chan1 = priv->port[id].chan[1];
 
-	if (chan0 < 4 && chan1 < 4) {
+	if (chan0 < 4 && chan1 < 4)
 		enabled = (ret & (BIT(chan0) | BIT(chan1))) != 0;
-		delivering = (ret & (BIT(chan0 + 4) | BIT(chan1 + 4))) != 0;
-	}
-
-	if (delivering)
-		status->c33_pw_status = ETHTOOL_C33_PSE_PW_D_STATUS_DELIVERING;
-	else
-		status->c33_pw_status = ETHTOOL_C33_PSE_PW_D_STATUS_DISABLED;
 
 	if (enabled)
-		status->c33_admin_state = ETHTOOL_C33_PSE_ADMIN_STATE_ENABLED;
+		admin_state->c33_admin_state = ETHTOOL_C33_PSE_ADMIN_STATE_ENABLED;
 	else
-		status->c33_admin_state = ETHTOOL_C33_PSE_ADMIN_STATE_DISABLED;
+		admin_state->c33_admin_state = ETHTOOL_C33_PSE_ADMIN_STATE_DISABLED;
+
+	return 0;
+}
+
+static int si3474_pi_get_pw_status(struct pse_controller_dev *pcdev, int id,
+				  struct pse_pw_status *pw_status)
+{
+	struct si3474_priv *priv = to_si3474_priv(pcdev);
+	struct i2c_client *client = priv->client;
+	bool delivering = FALSE;
+	uint8_t chan0, chan1;
+	int32_t ret;
+
+	ret = i2c_smbus_read_byte_data(client, POWER_STATUS_REG);
+	if (ret < 0) {
+		pw_status->c33_pw_status = ETHTOOL_C33_PSE_PW_D_STATUS_UNKNOWN;
+		return ret;
+	}
+
+	chan0 = priv->port[id].chan[0];
+	chan1 = priv->port[id].chan[1];
+
+	if (chan0 < 4 && chan1 < 4)
+		delivering = (ret & (BIT(chan0 + 4) | BIT(chan1 + 4))) != 0;
+
+	if (delivering)
+		pw_status->c33_pw_status = ETHTOOL_C33_PSE_PW_D_STATUS_DELIVERING;
+	else
+		pw_status->c33_pw_status = ETHTOOL_C33_PSE_PW_D_STATUS_DISABLED;
 
 	return 0;
 }
@@ -321,16 +339,16 @@ si3474_pi_get_actual_pw(struct pse_controller_dev *pcdev, int id)
 	chan0 = priv->port[id].chan[0];
 	chan1 = priv->port[id].chan[1];
 
-	ret = si3474_pi_get_chan_current(priv, chan[0]);
+	ret = si3474_pi_get_chan_current(priv, chan0);
 	if (ret < 0)
 		return ret;
 	uA = ret;
 
-	ret = si3474_pi_get_chan_current(priv, chan);
+	ret = si3474_pi_get_chan_current(priv, chan1);
 	if (ret < 0)
 		return ret;
 	uA += ret;
-
+	
 	tmp_64 = uV;
 	tmp_64 *= uA;
 	/* mW = uV * uA / 1000000000 */
@@ -344,7 +362,8 @@ static const struct pse_controller_ops si3474_ops = {
     .pi_get_actual_pw = si3474_pi_get_actual_pw,
     .pi_get_voltage = si3474_pi_get_voltage,
     .pi_is_enabled = si3474_pi_is_enabled,
-    .ethtool_get_status = si3474_ethtool_get_status,
+    .pi_get_admin_state = si3474_pi_get_admin_state,
+    .pi_get_pw_status = si3474_pi_get_pw_status,
 };
 
 static int si3474_i2c_probe(struct i2c_client *client)
