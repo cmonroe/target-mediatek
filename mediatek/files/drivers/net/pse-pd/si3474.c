@@ -128,6 +128,7 @@ static int si3474_get_of_channels(struct si3474_priv *priv)
 	struct pse_pi *pi;
 	uint32_t port_no, chan_id;
 	int ret = 0;
+	int8_t pairset_cnt;
 
 	pse_node = of_get_child_by_name(priv->np, "pse-pis");
 	if (!pse_node) {
@@ -154,10 +155,19 @@ static int si3474_get_of_channels(struct si3474_priv *priv)
 			goto out;
 		}
 
+		pairset_cnt = of_property_count_elems_of_size(node, "pairsets", sizeof(u32));
+    		if (!pairset_cnt) {
+        		dev_err(
+			    &priv->client->dev,
+			    "Failed to get pairsets property\n");
+			ret = -EINVAL;
+			goto out;
+    		}
+
 		pi = &priv->pcdev.pi[port_no];
 		if (!pi->pairset[0].np) {
 			dev_err(&priv->client->dev,
-				"pairset[0] np is NULL, port %u\n",
+				"Missing pairset reference, port: %u\n",
 				port_no);
 			ret = -EINVAL;
 			goto out;
@@ -167,31 +177,38 @@ static int si3474_get_of_channels(struct si3474_priv *priv)
 		if (ret) {
 			dev_err(
 			    &priv->client->dev,
-			    "Failed to read channel reg property, ret:%d \n",
+			    "Failed to read channel reg property, ret:%d\n",
 			    ret);
 			ret = -EINVAL;
 			goto out;
 		}
 		priv->port[port_no].chan[0] = chan_id;
+		priv->port[port_no].is_4p = FALSE;
 
-		// FIXME: Prepared for tuple pairsets only
-		if (!pi->pairset[1].np) {
+		if (pairset_cnt == 2) {
+			if (!pi->pairset[1].np) {
+				dev_err(&priv->client->dev,
+					"Missing pairset reference, port: %u\n",
+					port_no);
+				ret = -EINVAL;
+				goto out;
+			}
+
+			ret = of_property_read_u32(pi->pairset[1].np, "reg", &chan_id);
+			if (ret) {
+				dev_err(&priv->client->dev,
+					"Failed to read channel reg property\n");
+				ret = -EINVAL;
+				goto out;
+			}
+			priv->port[port_no].chan[1] = chan_id;
+			priv->port[port_no].is_4p = TRUE;
+		} else {
 			dev_err(&priv->client->dev,
-				"pairset[1] np is NULL, port %u\n",
-				port_no);
-			ret = -EINVAL;
+				"Number of pairsets incorrect - only 4p configurations supported\n");
+				ret = -EINVAL;
 			goto out;
 		}
-
-		ret = of_property_read_u32(pi->pairset[1].np, "reg", &chan_id);
-		if (ret) {
-			dev_err(&priv->client->dev,
-				"Failed to read channel reg property\n");
-			ret = -EINVAL;
-			goto out;
-		}
-		priv->port[port_no].chan[1] = chan_id;
-		priv->port[port_no].is_4p = TRUE;
 	}
 
 out:
