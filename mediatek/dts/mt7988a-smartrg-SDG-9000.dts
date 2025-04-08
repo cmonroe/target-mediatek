@@ -654,47 +654,6 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c1_pins>;
 	status = "okay";
-
-	ethernet-pse@26 {
-		compatible = "skyworks,si3474";
-		reg = <0x26>;
-		channels {
-			#address-cells = <1>;
-			#size-cells = <0>;
-			phys0_0: channel@0 {
-				reg = <0>;
-			};
-			phys0_1: channel@1 {
-				reg = <1>;
-			};
-			phys0_2: channel@2 {
-				reg = <2>;
-			};
-			phys0_3: channel@3 {
-				reg = <3>;
-			};
-		};
-		pse-pis {
-			#address-cells = <1>;
-			#size-cells = <0>;
-			pse_pi2: pse-pi@2 {
-				reg = <2>;
-				#pse-cells = <0>;
-				pairset-names = "alternative-a", "alternative-b";
-				pairsets = <&phys0_0>, <&phys0_1>;
-				polarity-supported = "MDI-X", "S";
-				vpwr-supply = <&reg_pse>;
-			};
-			pse_pi3: pse-pi@3 {
-				reg = <3>;
-				#pse-cells = <0>;
-				pairset-names = "alternative-a", "alternative-b";
-				pairsets = <&phys0_2>, <&phys0_3>;
-				polarity-supported = "MDI-X", "S";
-				vpwr-supply = <&reg_pse>;
-			};
-		};
-	};
 	ethernet-pse@27 {
 		compatible = "skyworks,si3474";
 		reg = <0x27>;
@@ -730,6 +689,46 @@
 				#pse-cells = <0>;
 				pairset-names = "alternative-a", "alternative-b";
 				pairsets = <&phys0_6>, <&phys0_7>;
+				polarity-supported = "MDI-X", "S";
+				vpwr-supply = <&reg_pse>;
+			};
+		};
+	};
+	ethernet-pse@26 {
+		compatible = "skyworks,si3474";
+		reg = <0x26>;
+		channels {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			phys0_0: channel@0 {
+				reg = <0>;
+			};
+			phys0_1: channel@1 {
+				reg = <1>;
+			};
+			phys0_2: channel@2 {
+				reg = <2>;
+			};
+			phys0_3: channel@3 {
+				reg = <3>;
+			};
+		};
+		pse-pis {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			pse_pi2: pse-pi@2 {
+				reg = <2>;
+				#pse-cells = <0>;
+				pairset-names = "alternative-a", "alternative-b";
+				pairsets = <&phys0_0>, <&phys0_1>;
+				polarity-supported = "MDI-X", "S";
+				vpwr-supply = <&reg_pse>;
+			};
+			pse_pi3: pse-pi@3 {
+				reg = <3>;
+				#pse-cells = <0>;
+				pairset-names = "alternative-a", "alternative-b";
+				pairsets = <&phys0_2>, <&phys0_3>;
 				polarity-supported = "MDI-X", "S";
 				vpwr-supply = <&reg_pse>;
 			};
