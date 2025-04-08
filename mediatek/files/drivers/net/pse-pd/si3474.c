@@ -39,6 +39,9 @@
 #define VPWR_LSB_REG 0x2E
 #define VPWR_MSB_REG 0x2F
 
+/* PORTn Voltage */
+#define PORT1_VOLTAGE_LSB_REG 0x32
+
 /* VPWR Voltage [V], return in [uV] */
 /* 60 * (( VPWR_MSB << 8) + VPWR_LSB) / 16384 */
 #define SI3474_UV_STEP (1000 * 1000 * 60 / 16384)
@@ -305,22 +308,51 @@ si3474_pi_get_chan_current(struct si3474_priv *priv, u8 chan)
 	return (int)tmp_64;
 }
 
+static int si3474_pi_get_chan_voltage(struct si3474_priv *priv, u8 chan)
+{
+	struct i2c_client *client = priv->client;
+	int reg, ret;
+	uint32_t val;
+
+	/* Registers 0x32 to 0x3f */
+	reg = PORT1_VOLTAGE_LSB_REG + (chan % 4) * 4;
+
+	ret = i2c_smbus_read_word_data(client, reg);
+	if (ret < 0)
+		return ret;
+
+	val = ret * SI3474_UV_STEP;
+
+	return (int)val;
+}
+
 static int si3474_pi_get_voltage(struct pse_controller_dev *pcdev, int id)
 {
 	struct si3474_priv *priv = to_si3474_priv(pcdev);
 	struct i2c_client *client = priv->client;
 
-	uint32_t val;
+	uint8_t chan0, chan1;
 	int32_t ret;
 
-	ret = i2c_smbus_read_word_data(client, VPWR_LSB_REG);
+	chan0 = priv->port[id].chan[0];
+	chan1 = priv->port[id].chan[1];
+
+	/* Check which channels are enabled*/
+	ret = i2c_smbus_read_byte_data(client, POWER_STATUS_REG);
 	if (ret < 0)
 		return ret;
 
-	/* Calculate output voltage [uV] */
-	val = ret * SI3474_UV_STEP;
 
-	return (int)val;
+	/* Take voltage from the first enabled channel */
+	if (ret & BIT(chan0))
+		ret = si3474_pi_get_chan_voltage(priv, chan0);
+	else if (ret & BIT(chan1))
+		ret = si3474_pi_get_chan_voltage(priv, chan1);
+	else
+		/* 'should' be no voltage in this case */
+		return 0;
+
+	return ret;
 }
 
 static int
