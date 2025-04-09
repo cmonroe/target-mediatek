@@ -428,6 +428,7 @@ static int si3474_i2c_probe(struct i2c_client *client)
 	struct device *dev = &client->dev;
 	struct si3474_priv *priv;
 	int32_t ret;
+	uint8_t fw_version;
 
 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
 		dev_err(dev, "i2c check functionality failed\n");
@@ -448,16 +449,15 @@ static int si3474_i2c_probe(struct i2c_client *client)
 	}
 
 	ret = i2c_smbus_read_byte_data(client, FIRMWARE_REVISION_REG);
-	if (ret < 0)
+	if (ret  < 0)
 		return ret;
-
-	dev_info(&client->dev, "Firmware revision: 0x%x\n", ret);
+	fw_version = ret;
 
 	ret = i2c_smbus_read_byte_data(client, CHIP_REVISION_REG);
 	if (ret < 0)
 		return ret;
 
-	dev_info(&client->dev, "Chip revision: 0x%x\n", ret);
+	dev_info(&client->dev, "Chip revision: 0x%x, firmware version: 0x%x\n", ret, fw_version);
 
 	priv->client = client;
 	i2c_set_clientdata(client, priv);
