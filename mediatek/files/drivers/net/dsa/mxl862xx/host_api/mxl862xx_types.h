@@ -72,5 +72,6 @@ typedef enum {
 typedef struct {
 	int sw_addr;
 	struct mii_bus *bus;
+	struct device *dev;
 } mxl862xx_device_t;
 #endif /* _MXL862XX_TYPES_H_ */

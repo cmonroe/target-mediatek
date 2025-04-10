@@ -56,6 +56,24 @@
 #define MXL862_IGP_EGP_SHIFT 0
 #define MXL862_IGP_EGP_MASK GENMASK(3, 0)
 
+static int __dsa_port_to_tag_port(const int in_dsa_port)
+{
+	if (in_dsa_port < 15)
+		return in_dsa_port + 1;
+
+	dev_err_ratelimited(NULL, "%s Wrong in_dsa_port value: %d\n", __FILE__, in_dsa_port);
+	return 0;
+}
+
+static int __tag_port_to_dsa_port(const int in_hw_port)
+{
+	if (in_hw_port >= 1 && in_hw_port <= 15)
+		return in_hw_port - 1;
+
+	dev_err_ratelimited(NULL, "%s Wrong in_hw_port value: %d\n", __FILE__, in_hw_port);
+	return 0;
+}
+
 static struct sk_buff *mxl862_tag_xmit(struct sk_buff *skb,
 				       struct net_device *dev)
 {
@@ -68,8 +86,8 @@ static struct sk_buff *mxl862_tag_xmit(struct sk_buff *skb,
 	struct dsa_port *dp = dsa_user_to_port(dev);
 #endif
 	struct dsa_port *cpu_dp = dp->cpu_dp;
-	unsigned int cpu_port = cpu_dp->index + 1;
-	unsigned int usr_port = dp->index + 1;
+	int cpu_port = __dsa_port_to_tag_port(cpu_dp->index);
+	int usr_port = __dsa_port_to_tag_port(dp->index);
 
 	u8 *mxl862_tag;
 
@@ -112,8 +130,10 @@ static struct sk_buff *mxl862_tag_rcv(struct sk_buff *skb,
 				      struct net_device *dev)
 #endif
 {
-	int port;
+	int tag_port;
+	int usr_port = 0;
 	u8 *mxl862_tag;
+
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 2, 0))
 	struct dsa_port *dp;
 #endif
@@ -140,17 +160,32 @@ static struct sk_buff *mxl862_tag_rcv(struct sk_buff *skb,
 	}
 
 	/* Get source port information */
-	port = (mxl862_tag[7] & MXL862_IGP_EGP_MASK) >> MXL862_IGP_EGP_SHIFT;
-	port = port - 1;
+	tag_port = (mxl862_tag[7] & MXL862_IGP_EGP_MASK) >> MXL862_IGP_EGP_SHIFT;
+	if (tag_port >= 1) {
+		usr_port = __tag_port_to_dsa_port(tag_port);
+	} else {
+		dev_err_ratelimited(
+			&dev->dev, "mxl %s, %s, %d, Source Port value ERROR %d\n", 
+			__FILE__, __func__, __LINE__, tag_port);
+		dev_warn_ratelimited(
+			&dev->dev,
+			"mxl %s, %s, %d, Rx Packet Tag: 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x\n",
+			__FILE__, __func__, __LINE__,
+			mxl862_tag[0], mxl862_tag[1], mxl862_tag[2],
+			mxl862_tag[3], mxl862_tag[4], mxl862_tag[5],
+			mxl862_tag[6], mxl862_tag[7]);
+		return NULL;
+	}
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 7, 0))
-	skb->dev = dsa_master_find_slave(dev, 0, port);
+	skb->dev = dsa_master_find_slave(dev, 0, usr_port);
 #else
-	skb->dev = dsa_conduit_find_user(dev, 0, port);
+	skb->dev = dsa_conduit_find_user(dev, 0, usr_port);
 #endif
 	if (!skb->dev) {
 		dev_warn_ratelimited(
 			&dev->dev,
-			"Dropping packet due to invalid source port\n");
+			"Dropping packet due to invalid tag_port source port (hw %d, usr %d)\n",
+			tag_port, usr_port);
 		dev_warn_ratelimited(
 			&dev->dev,
 			"Rx Packet Tag: 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x\n",

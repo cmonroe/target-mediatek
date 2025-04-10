@@ -1,0 +1,19 @@
+--- a/drivers/net/dsa/mxl862xx/mxl862xx.c
++++ b/drivers/net/dsa/mxl862xx/mxl862xx.c
+@@ -1232,14 +1232,14 @@ static int mxl862xx_phy_write_mii_bus(st
+ }
+ 
+ #if (KERNEL_VERSION(6, 3, 0) <= LINUX_VERSION_CODE)
+-static int mxl862xx_phy_read_c45_mii_bus(struct mii_bus *bus, int devnum, int addr, int regnum)
++static int mxl862xx_phy_read_c45_mii_bus(struct mii_bus *bus, int addr, int devnum, int regnum)
+ {
+ 	int ret = mxl862xx_phy_read_mmd(NULL, devnum, addr, regnum);
+ 	return ret;
+ }
+ 
+ 
+-static int mxl862xx_phy_write_c45_mii_bus(struct mii_bus *bus, int devnum, int addr, int regnum, u16 val)
++static int mxl862xx_phy_write_c45_mii_bus(struct mii_bus *bus, int addr, int devnum, int regnum, u16 val)
+ {
+ 	int ret = mxl862xx_phy_write_mmd(NULL, devnum, addr, regnum, val);
+ 	return ret;

@@ -1823,4 +1823,6 @@ int mxl862xx_vlan_filter_get(const mxl862xx_device_t *, mxl862xx_vlanfilter_conf
 int mxl862xx_vlan_filter_free(const mxl862xx_device_t *, mxl862xx_vlanfilter_alloc_t *);
 int mxl862xx_cfg_get(const mxl862xx_device_t *, mxl862xx_cfg_t *);
 int mxl862xx_cfg_set(const mxl862xx_device_t *, mxl862xx_cfg_t *);
+
+int mxl862xx_fw_upgrade(const mxl862xx_device_t *, const char *);
 #endif /* _MXL862XX_API_H_ */

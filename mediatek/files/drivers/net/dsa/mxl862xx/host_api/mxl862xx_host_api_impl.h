@@ -25,7 +25,8 @@
 
 #include "mxl862xx_types.h"
 
-extern int mxl862xx_api_wrap(const mxl862xx_device_t *dev, uint16_t cmd, void *pdata,
-			uint16_t size, uint16_t cmd_r, uint16_t r_size);
+extern int mxl862xx_api_wrap(const mxl862xx_device_t *dev, uint16_t cmd,
+			     void *pdata, uint16_t size, uint16_t cmd_r,
+			     uint16_t r_size);
 
 #endif /* _MXL862XX_HOST_API_IMPL_H_ */

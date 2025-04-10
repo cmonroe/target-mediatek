@@ -5,3 +5,16 @@ config NET_DSA_MXL862
 	select NET_DSA_TAG_MXL862
 	help
 	  This enables support for the MaxLinear MxL862xx switch family.
+
+config NET_DSA_MXL862_IOCTL
+	bool "Support IOCTL"
+	depends on NET_DSA_MXL862
+	help
+	  This enables support for IOCTL for user space application quick
+	  access.
+
+config NET_DSA_MXL862_SYSFS
+	bool "Support SYSFS for scripting"
+	depends on NET_DSA_MXL862
+	help
+	  This enables support for sysfs for direct command from user space.

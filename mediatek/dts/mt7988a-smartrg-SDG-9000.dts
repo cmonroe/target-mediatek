@@ -926,17 +926,13 @@
 				};
 			};
 
-			/**
-			 * not supported by MXL DSA driver yet
-			 **
 			port@9 {
-				reg = <9>;
+				reg = <12>;
 				label = "lan9";
 				phy-handle = <&phy0>;
 				phy-mode = "usxgmii";
 				status = "okay";
 			};
-			*/
 		};
 
 		mdio {

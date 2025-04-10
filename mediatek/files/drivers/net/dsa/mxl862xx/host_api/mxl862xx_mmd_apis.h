@@ -270,10 +270,33 @@ typedef union mmd_api_data {
 #define SYS_MISC_PVT_TEMP (SYS_MISC_MAGIC + 0x03)
 #define SYS_MISC_PVT_VOLTAGE (SYS_MISC_MAGIC + 0x04)
 
-#define MMD_API_MAXIMUM_ID 0x7FFF
+#define MMD_API_ID_MASK		0x1FFF
+#define MMD_API_ID_MAX		MMD_API_ID_MASK
+
+#define MMD_API_CRC_CHK		(1UL << 14)
+
+#define MMD_API_CTRL_BUSY	(1UL << 15)
+
+#define MMD_API_RET_LSB_MSK	0x03FF
+#define MMD_API_RET_LSB_BITS	10
+#define MMD_API_PARAM_LEN_MSK	MMD_API_RET_LSB_MSK
+
+#define MMD_API_RET_MSB_MSK	(1UL << 14)
+
+#define MMD_API_RET_MSK		(MMD_API_RET_MSB_MSK | MMD_API_RET_LSB_MSK)
+
+#define MMD_API_RET_MIN		MMD_API_CRC6_ERR
+#define MMD_API_CRC6_ERR	-1024 /* Ctrl and Length/Return CRC error */
+#define MMD_API_CRC16_ERR	-1023 /* data CRC error */
+#define MMD_API_MDIO_BUS_ERR	-1022 /* MDIO bus error */
+#define MMD_API_RET_UNDERFLOW	-1021 /* error code underflow */
+#define MMD_API_RET_OVERFLOW	1023  /* return value overflow */
+#define MMD_API_RET_MAX		MMD_API_RET_OVERFLOW
 
 int mxl862xx_read(const mxl862xx_device_t *dev, uint32_t regaddr);
 int mxl862xx_write(const mxl862xx_device_t *dev, uint32_t regaddr, uint16_t data);
 
+int mxl862xx_api_crc_chk_en(const mxl862xx_device_t *dev, bool enable,
+			    unsigned int msecs);
 
 #endif /* _MXL862XX_MMD_APIS_H_ */
