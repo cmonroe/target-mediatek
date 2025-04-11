@@ -9,8 +9,6 @@ Signed-off-by: Piotr Kubik <piotr.kubik@adtran.com>
  drivers/net/pse-pd/Makefile |  1 +
  2 files changed, 11 insertions(+)
 
-diff --git a/drivers/net/pse-pd/Kconfig b/drivers/net/pse-pd/Kconfig
-index 7fab916a7f46..6d2fef6c2602 100644
 --- a/drivers/net/pse-pd/Kconfig
 +++ b/drivers/net/pse-pd/Kconfig
 @@ -41,4 +41,14 @@ config PSE_TPS23881
@@ -28,16 +26,11 @@ index 7fab916a7f46..6d2fef6c2602 100644
 +	  To compile this driver as a module, choose M here: the
 +	  module will be called si3474.
  endif
-diff --git a/drivers/net/pse-pd/Makefile b/drivers/net/pse-pd/Makefile
-index 9d2898b36737..b33b4d905cd5 100644
 --- a/drivers/net/pse-pd/Makefile
 +++ b/drivers/net/pse-pd/Makefile
-@@ -6,3 +6,4 @@ obj-$(CONFIG_PSE_CONTROLLER) += pse_core.o
+@@ -6,3 +6,4 @@ obj-$(CONFIG_PSE_CONTROLLER) += pse_core
  obj-$(CONFIG_PSE_REGULATOR) += pse_regulator.o
  obj-$(CONFIG_PSE_PD692X0) += pd692x0.o
  obj-$(CONFIG_PSE_TPS23881) += tps23881.o
 +obj-$(CONFIG_PSE_SI3474) += si3474.o
 \ No newline at end of file
--- 
-2.43.0
-

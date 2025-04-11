@@ -19,11 +19,9 @@ Signed-off-by: Piotr Kubik <piotr.kubik@adtran.com>
  drivers/net/pse-pd/pse_core.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/net/pse-pd/pse_core.c b/drivers/net/pse-pd/pse_core.c
-index 2906ce173f66..337dba321fc7 100644
 --- a/drivers/net/pse-pd/pse_core.c
 +++ b/drivers/net/pse-pd/pse_core.c
-@@ -708,7 +708,7 @@ struct pse_control *of_pse_control_get(struct device_node *node)
+@@ -229,7 +229,7 @@ of_pse_control_get(struct device_node *n
  	}
  
  	if (!pcdev) {
@@ -32,6 +30,3 @@ index 2906ce173f66..337dba321fc7 100644
  		goto out;
  	}
  
--- 
-2.43.0
-

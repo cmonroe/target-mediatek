@@ -1,0 +1,1060 @@
+From: Kory Maincent <kory.maincent@bootlin.com>
+Date: Fri, 10 Jan 2025 10:40:26 +0100
+Subject: [PATCH 1/4] net: pse-pd: Use power limit at driver side instead of
+ current limit
+
+The regulator framework uses current limits, but the PSE standard and
+known PSE controllers rely on power limits. Instead of converting
+current to power within each driver, perform the conversion in the PSE
+core. This avoids redundancy in driver implementation and aligns better
+with the standard, simplifying driver development.
+
+Remove at the same time the _pse_ethtool_get_status() function which is
+not needed anymore.
+
+Acked-by: Oleksij Rempel <o.rempel@pengutronix.de>
+Signed-off-by: Kory Maincent <kory.maincent@bootlin.com>
+Signed-off-by: Paolo Abeni <pabeni@redhat.com>
+
+(cherry picked from commit e0a5e2bba38aa61a900934b45d6e846e0a6d7524)
+Signed-off-by: Piotr Kubik <piotr.kubik@adtran.com>
+---
+ drivers/net/pse-pd/pd692x0.c  | 45 ++++-------------
+ drivers/net/pse-pd/pse_core.c | 91 ++++++++++++++++-------------------
+ include/linux/pse-pd/pse.h    | 16 +++---
+ 3 files changed, 57 insertions(+), 95 deletions(-)
+
+--- a/drivers/net/pse-pd/pd692x0.c
++++ b/drivers/net/pse-pd/pd692x0.c
+@@ -517,21 +517,38 @@ pd692x0_pse_ext_state_map[] = {
+ 	{ /* sentinel */ }
+ };
+ 
+-static void
+-pd692x0_get_ext_state(struct ethtool_c33_pse_ext_state_info *c33_ext_state_info,
+-		      u32 status_code)
++static int
++pd692x0_pi_get_ext_state(struct pse_controller_dev *pcdev, int id,
++			 struct pse_ext_state_info *ext_state_info)
+ {
++	struct ethtool_c33_pse_ext_state_info *c33_ext_state_info;
+ 	const struct pd692x0_pse_ext_state_mapping *ext_state_map;
++	struct pd692x0_priv *priv = to_pd692x0_priv(pcdev);
++	struct pd692x0_msg msg, buf = {0};
++	int ret;
++
++	ret = pd692x0_fw_unavailable(priv);
++	if (ret)
++		return ret;
++
++	msg = pd692x0_msg_template_list[PD692X0_MSG_GET_PORT_STATUS];
++	msg.sub[2] = id;
++	ret = pd692x0_sendrecv_msg(priv, &msg, &buf);
++	if (ret < 0)
++		return ret;
+ 
++	c33_ext_state_info = &ext_state_info->c33_ext_state_info;
+ 	ext_state_map = pd692x0_pse_ext_state_map;
+ 	while (ext_state_map->status_code) {
+-		if (ext_state_map->status_code == status_code) {
++		if (ext_state_map->status_code == buf.sub[0]) {
+ 			c33_ext_state_info->c33_pse_ext_state = ext_state_map->pse_ext_state;
+ 			c33_ext_state_info->__c33_pse_ext_substate = ext_state_map->pse_ext_substate;
+-			return;
++			return  0;
+ 		}
+ 		ext_state_map++;
+ 	}
++
++	return 0;
+ }
+ 
+ struct pd692x0_class_pw {
+@@ -613,35 +630,36 @@ static int pd692x0_pi_set_pw_from_table(
+ }
+ 
+ static int
+-pd692x0_pi_get_pw_ranges(struct pse_control_status *st)
++pd692x0_pi_get_pw_limit_ranges(struct pse_controller_dev *pcdev, int id,
++			       struct pse_pw_limit_ranges *pw_limit_ranges)
+ {
++	struct ethtool_c33_pse_pw_limit_range *c33_pw_limit_ranges;
+ 	const struct pd692x0_class_pw *pw_table;
+ 	int i;
+ 
+ 	pw_table = pd692x0_class_pw_table;
+-	st->c33_pw_limit_ranges = kcalloc(PD692X0_CLASS_PW_TABLE_SIZE,
+-					  sizeof(struct ethtool_c33_pse_pw_limit_range),
+-					  GFP_KERNEL);
+-	if (!st->c33_pw_limit_ranges)
++	c33_pw_limit_ranges = kcalloc(PD692X0_CLASS_PW_TABLE_SIZE,
++				      sizeof(*c33_pw_limit_ranges),
++				      GFP_KERNEL);
++	if (!c33_pw_limit_ranges)
+ 		return -ENOMEM;
+ 
+ 	for (i = 0; i < PD692X0_CLASS_PW_TABLE_SIZE; i++, pw_table++) {
+-		st->c33_pw_limit_ranges[i].min = pw_table->class_pw;
+-		st->c33_pw_limit_ranges[i].max = pw_table->class_pw + pw_table->max_added_class_pw;
++		c33_pw_limit_ranges[i].min = pw_table->class_pw;
++		c33_pw_limit_ranges[i].max = pw_table->class_pw +
++					     pw_table->max_added_class_pw;
+ 	}
+ 
+-	st->c33_pw_limit_nb_ranges = i;
+-	return 0;
++	pw_limit_ranges->c33_pw_limit_ranges = c33_pw_limit_ranges;
++	return i;
+ }
+ 
+-static int pd692x0_ethtool_get_status(struct pse_controller_dev *pcdev,
+-				      unsigned long id,
+-				      struct netlink_ext_ack *extack,
+-				      struct pse_control_status *status)
++static int
++pd692x0_pi_get_admin_state(struct pse_controller_dev *pcdev, int id,
++			   struct pse_admin_state *admin_state)
+ {
+ 	struct pd692x0_priv *priv = to_pd692x0_priv(pcdev);
+ 	struct pd692x0_msg msg, buf = {0};
+-	u32 class;
+ 	int ret;
+ 
+ 	ret = pd692x0_fw_unavailable(priv);
+@@ -654,39 +672,65 @@ static int pd692x0_ethtool_get_status(st
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	/* Compare Port Status (Communication Protocol Document par. 7.1) */
+-	if ((buf.sub[0] & 0xf0) == 0x80 || (buf.sub[0] & 0xf0) == 0x90)
+-		status->c33_pw_status = ETHTOOL_C33_PSE_PW_D_STATUS_DELIVERING;
+-	else if (buf.sub[0] == 0x1b || buf.sub[0] == 0x22)
+-		status->c33_pw_status = ETHTOOL_C33_PSE_PW_D_STATUS_SEARCHING;
+-	else if (buf.sub[0] == 0x12)
+-		status->c33_pw_status = ETHTOOL_C33_PSE_PW_D_STATUS_FAULT;
+-	else
+-		status->c33_pw_status = ETHTOOL_C33_PSE_PW_D_STATUS_DISABLED;
+-
+ 	if (buf.sub[1])
+-		status->c33_admin_state = ETHTOOL_C33_PSE_ADMIN_STATE_ENABLED;
++		admin_state->c33_admin_state =
++			ETHTOOL_C33_PSE_ADMIN_STATE_ENABLED;
+ 	else
+-		status->c33_admin_state = ETHTOOL_C33_PSE_ADMIN_STATE_DISABLED;
++		admin_state->c33_admin_state =
++			ETHTOOL_C33_PSE_ADMIN_STATE_DISABLED;
+ 
+-	priv->admin_state[id] = status->c33_admin_state;
++	priv->admin_state[id] = admin_state->c33_admin_state;
+ 
+-	pd692x0_get_ext_state(&status->c33_ext_state_info, buf.sub[0]);
+-	status->c33_actual_pw = (buf.data[0] << 4 | buf.data[1]) * 100;
++	return 0;
++}
+ 
+-	msg = pd692x0_msg_template_list[PD692X0_MSG_GET_PORT_PARAM];
++static int
++pd692x0_pi_get_pw_status(struct pse_controller_dev *pcdev, int id,
++			 struct pse_pw_status *pw_status)
++{
++	struct pd692x0_priv *priv = to_pd692x0_priv(pcdev);
++	struct pd692x0_msg msg, buf = {0};
++	int ret;
++
++	ret = pd692x0_fw_unavailable(priv);
++	if (ret)
++		return ret;
++
++	msg = pd692x0_msg_template_list[PD692X0_MSG_GET_PORT_STATUS];
+ 	msg.sub[2] = id;
+-	memset(&buf, 0, sizeof(buf));
+ 	ret = pd692x0_sendrecv_msg(priv, &msg, &buf);
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	ret = pd692x0_pi_get_pw_from_table(buf.data[0], buf.data[1]);
+-	if (ret < 0)
++	/* Compare Port Status (Communication Protocol Document par. 7.1) */
++	if ((buf.sub[0] & 0xf0) == 0x80 || (buf.sub[0] & 0xf0) == 0x90)
++		pw_status->c33_pw_status =
++			ETHTOOL_C33_PSE_PW_D_STATUS_DELIVERING;
++	else if (buf.sub[0] == 0x1b || buf.sub[0] == 0x22)
++		pw_status->c33_pw_status =
++			ETHTOOL_C33_PSE_PW_D_STATUS_SEARCHING;
++	else if (buf.sub[0] == 0x12)
++		pw_status->c33_pw_status =
++			ETHTOOL_C33_PSE_PW_D_STATUS_FAULT;
++	else
++		pw_status->c33_pw_status =
++			ETHTOOL_C33_PSE_PW_D_STATUS_DISABLED;
++
++	return 0;
++}
++
++static int
++pd692x0_pi_get_pw_class(struct pse_controller_dev *pcdev, int id)
++{
++	struct pd692x0_priv *priv = to_pd692x0_priv(pcdev);
++	struct pd692x0_msg msg, buf = {0};
++	u32 class;
++	int ret;
++
++	ret = pd692x0_fw_unavailable(priv);
++	if (ret)
+ 		return ret;
+-	status->c33_avail_pw_limit = ret;
+ 
+-	memset(&buf, 0, sizeof(buf));
+ 	msg = pd692x0_msg_template_list[PD692X0_MSG_GET_PORT_CLASS];
+ 	msg.sub[2] = id;
+ 	ret = pd692x0_sendrecv_msg(priv, &msg, &buf);
+@@ -695,13 +739,29 @@ static int pd692x0_ethtool_get_status(st
+ 
+ 	class = buf.data[3] >> 4;
+ 	if (class <= 8)
+-		status->c33_pw_class = class;
++		return class;
+ 
+-	ret = pd692x0_pi_get_pw_ranges(status);
++	return 0;
++}
++
++static int
++pd692x0_pi_get_actual_pw(struct pse_controller_dev *pcdev, int id)
++{
++	struct pd692x0_priv *priv = to_pd692x0_priv(pcdev);
++	struct pd692x0_msg msg, buf = {0};
++	int ret;
++
++	ret = pd692x0_fw_unavailable(priv);
++	if (ret)
++		return ret;
++
++	msg = pd692x0_msg_template_list[PD692X0_MSG_GET_PORT_STATUS];
++	msg.sub[2] = id;
++	ret = pd692x0_sendrecv_msg(priv, &msg, &buf);
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	return 0;
++	return (buf.data[0] << 4 | buf.data[1]) * 100;
+ }
+ 
+ static struct pd692x0_msg_ver pd692x0_get_sw_version(struct pd692x0_priv *priv)
+@@ -999,13 +1059,12 @@ static int pd692x0_pi_get_voltage(struct
+ 	return (buf.sub[0] << 8 | buf.sub[1]) * 100000;
+ }
+ 
+-static int pd692x0_pi_get_current_limit(struct pse_controller_dev *pcdev,
+-					int id)
++static int pd692x0_pi_get_pw_limit(struct pse_controller_dev *pcdev,
++				   int id)
+ {
+ 	struct pd692x0_priv *priv = to_pd692x0_priv(pcdev);
+ 	struct pd692x0_msg msg, buf = {0};
+-	int mW, uV, uA, ret;
+-	s64 tmp_64;
++	int ret;
+ 
+ 	msg = pd692x0_msg_template_list[PD692X0_MSG_GET_PORT_PARAM];
+ 	msg.sub[2] = id;
+@@ -1013,48 +1072,24 @@ static int pd692x0_pi_get_current_limit(
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	ret = pd692x0_pi_get_pw_from_table(buf.data[2], buf.data[3]);
+-	if (ret < 0)
+-		return ret;
+-	mW = ret;
+-
+-	ret = pd692x0_pi_get_voltage(pcdev, id);
+-	if (ret < 0)
+-		return ret;
+-	uV = ret;
+-
+-	tmp_64 = mW;
+-	tmp_64 *= 1000000000ull;
+-	/* uA = mW * 1000000000 / uV */
+-	uA = DIV_ROUND_CLOSEST_ULL(tmp_64, uV);
+-	return uA;
++	return pd692x0_pi_get_pw_from_table(buf.data[2], buf.data[3]);
+ }
+ 
+-static int pd692x0_pi_set_current_limit(struct pse_controller_dev *pcdev,
+-					int id, int max_uA)
++static int pd692x0_pi_set_pw_limit(struct pse_controller_dev *pcdev,
++				   int id, int max_mW)
+ {
+ 	struct pd692x0_priv *priv = to_pd692x0_priv(pcdev);
+ 	struct device *dev = &priv->client->dev;
+ 	struct pd692x0_msg msg, buf = {0};
+-	int uV, ret, mW;
+-	s64 tmp_64;
++	int ret;
+ 
+ 	ret = pd692x0_fw_unavailable(priv);
+ 	if (ret)
+ 		return ret;
+ 
+-	ret = pd692x0_pi_get_voltage(pcdev, id);
+-	if (ret < 0)
+-		return ret;
+-	uV = ret;
+-
+ 	msg = pd692x0_msg_template_list[PD692X0_MSG_SET_PORT_PARAM];
+ 	msg.sub[2] = id;
+-	tmp_64 = uV;
+-	tmp_64 *= max_uA;
+-	/* mW = uV * uA / 1000000000 */
+-	mW = DIV_ROUND_CLOSEST_ULL(tmp_64, 1000000000);
+-	ret = pd692x0_pi_set_pw_from_table(dev, &msg, mW);
++	ret = pd692x0_pi_set_pw_from_table(dev, &msg, max_mW);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -1063,13 +1098,18 @@ static int pd692x0_pi_set_current_limit(
+ 
+ static const struct pse_controller_ops pd692x0_ops = {
+ 	.setup_pi_matrix = pd692x0_setup_pi_matrix,
+-	.ethtool_get_status = pd692x0_ethtool_get_status,
++	.pi_get_admin_state = pd692x0_pi_get_admin_state,
++	.pi_get_pw_status = pd692x0_pi_get_pw_status,
++	.pi_get_ext_state = pd692x0_pi_get_ext_state,
++	.pi_get_pw_class = pd692x0_pi_get_pw_class,
++	.pi_get_actual_pw = pd692x0_pi_get_actual_pw,
+ 	.pi_enable = pd692x0_pi_enable,
+ 	.pi_disable = pd692x0_pi_disable,
+ 	.pi_is_enabled = pd692x0_pi_is_enabled,
+ 	.pi_get_voltage = pd692x0_pi_get_voltage,
+-	.pi_get_current_limit = pd692x0_pi_get_current_limit,
+-	.pi_set_current_limit = pd692x0_pi_set_current_limit,
++	.pi_get_pw_limit = pd692x0_pi_get_pw_limit,
++	.pi_set_pw_limit = pd692x0_pi_set_pw_limit,
++	.pi_get_pw_limit_ranges = pd692x0_pi_get_pw_limit_ranges,
+ };
+ 
+ #define PD692X0_FW_LINE_MAX_SZ 0xff
+--- a/drivers/net/pse-pd/pse_core.c
++++ b/drivers/net/pse-pd/pse_core.c
+@@ -291,33 +291,25 @@ static int pse_pi_get_voltage(struct reg
+ 	return ret;
+ }
+ 
+-static int _pse_ethtool_get_status(struct pse_controller_dev *pcdev,
+-				   int id,
+-				   struct netlink_ext_ack *extack,
+-				   struct pse_control_status *status);
+-
+ static int pse_pi_get_current_limit(struct regulator_dev *rdev)
+ {
+ 	struct pse_controller_dev *pcdev = rdev_get_drvdata(rdev);
+ 	const struct pse_controller_ops *ops;
+-	struct netlink_ext_ack extack = {};
+-	struct pse_control_status st = {};
+-	int id, uV, ret;
++	int id, uV, mW, ret;
+ 	s64 tmp_64;
+ 
+ 	ops = pcdev->ops;
+ 	id = rdev_get_id(rdev);
++	if (!ops->pi_get_pw_limit || !ops->pi_get_voltage)
++		return -EOPNOTSUPP;
++
+ 	mutex_lock(&pcdev->lock);
+-	if (ops->pi_get_current_limit) {
+-		ret = ops->pi_get_current_limit(pcdev, id);
++	ret = ops->pi_get_pw_limit(pcdev, id);
++	if (ret < 0)
+ 		goto out;
+-	}
++	mW = ret;
+ 
+-	/* If pi_get_current_limit() callback not populated get voltage
+-	 * from pi_get_voltage() and power limit from ethtool_get_status()
+-	 *  to calculate current limit.
+-	 */
+-	ret = _pse_pi_get_voltage(rdev);
++	ret = pse_pi_get_voltage(rdev);
+ 	if (!ret) {
+ 		dev_err(pcdev->dev, "Voltage null\n");
+ 		ret = -ERANGE;
+@@ -327,16 +319,7 @@ static int pse_pi_get_current_limit(stru
+ 		goto out;
+ 	uV = ret;
+ 
+-	ret = _pse_ethtool_get_status(pcdev, id, &extack, &st);
+-	if (ret)
+-		goto out;
+-
+-	if (!st.c33_avail_pw_limit) {
+-		ret = -ENODATA;
+-		goto out;
+-	}
+-
+-	tmp_64 = st.c33_avail_pw_limit;
++	tmp_64 = mW;
+ 	tmp_64 *= 1000000000ull;
+ 	/* uA = mW * 1000000000 / uV */
+ 	ret = DIV_ROUND_CLOSEST_ULL(tmp_64, uV);
+@@ -351,15 +334,30 @@ static int pse_pi_set_current_limit(stru
+ {
+ 	struct pse_controller_dev *pcdev = rdev_get_drvdata(rdev);
+ 	const struct pse_controller_ops *ops;
+-	int id, ret;
++	int id, mW, ret;
++	s64 tmp_64;
+ 
+ 	ops = pcdev->ops;
+-	if (!ops->pi_set_current_limit)
++	if (!ops->pi_set_pw_limit || !ops->pi_get_voltage)
+ 		return -EOPNOTSUPP;
+ 
+ 	id = rdev_get_id(rdev);
+ 	mutex_lock(&pcdev->lock);
+-	ret = ops->pi_set_current_limit(pcdev, id, max_uA);
++	ret = pse_pi_get_voltage(rdev);
++	if (!ret) {
++		dev_err(pcdev->dev, "Voltage null\n");
++		ret = -ERANGE;
++		goto out;
++	}
++	if (ret < 0)
++		goto out;
++
++	tmp_64 = ret;
++	tmp_64 *= max_uA;
++	/* mW = uA * uV / 1000000000 */
++	mW = DIV_ROUND_CLOSEST_ULL(tmp_64, 1000000000);
++	ret = ops->pi_set_pw_limit(pcdev, id, mW);
++out:
+ 	mutex_unlock(&pcdev->lock);
+ 
+ 	return ret;
+@@ -403,7 +401,7 @@ devm_pse_pi_regulator_register(struct ps
+ 
+ 	rinit_data->constraints.valid_ops_mask = REGULATOR_CHANGE_STATUS;
+ 
+-	if (pcdev->ops->pi_set_current_limit) {
++	if (pcdev->ops->pi_set_pw_limit) {
+ 		rinit_data->constraints.valid_ops_mask |=
+ 			REGULATOR_CHANGE_CURRENT;
+ 		rinit_data->constraints.max_uA = MAX_PI_CURRENT;
+@@ -414,6 +412,7 @@ devm_pse_pi_regulator_register(struct ps
+ 	rconfig.dev = pcdev->dev;
+ 	rconfig.driver_data = pcdev;
+ 	rconfig.init_data = rinit_data;
++	rconfig.of_node = pcdev->pi[id].np;
+ 
+ 	rdev = devm_regulator_register(pcdev->dev, rdesc, &rconfig);
+ 	if (IS_ERR(rdev)) {
+@@ -444,6 +443,13 @@ int pse_controller_register(struct pse_c
+ 	if (!pcdev->nr_lines)
+ 		pcdev->nr_lines = 1;
+ 
++	if (!pcdev->ops->pi_get_admin_state ||
++	    !pcdev->ops->pi_get_pw_status) {
++		dev_err(pcdev->dev,
++			"Mandatory status report callbacks are missing");
++		return -EINVAL;
++	}
++
+ 	ret = of_load_pse_pis(pcdev);
+ 	if (ret)
+ 		return ret;
+@@ -736,23 +742,6 @@ out:
+ }
+ EXPORT_SYMBOL_GPL(of_pse_control_get);
+ 
+-static int _pse_ethtool_get_status(struct pse_controller_dev *pcdev,
+-				   int id,
+-				   struct netlink_ext_ack *extack,
+-				   struct pse_control_status *status)
+-{
+-	const struct pse_controller_ops *ops;
+-
+-	ops = pcdev->ops;
+-	if (!ops->ethtool_get_status) {
+-		NL_SET_ERR_MSG(extack,
+-			       "PSE driver does not support status report");
+-		return -EOPNOTSUPP;
+-	}
+-
+-	return ops->ethtool_get_status(pcdev, id, extack, status);
+-}
+-
+ /**
+  * pse_ethtool_get_status - get status of PSE control
+  * @psec: PSE control pointer
+@@ -763,15 +752,81 @@ static int _pse_ethtool_get_status(struc
+  */
+ int pse_ethtool_get_status(struct pse_control *psec,
+ 			   struct netlink_ext_ack *extack,
+-			   struct pse_control_status *status)
++			   struct ethtool_pse_control_status *status)
+ {
+-	int err;
++	struct pse_admin_state admin_state = {0};
++	struct pse_pw_status pw_status = {0};
++	const struct pse_controller_ops *ops;
++	struct pse_controller_dev *pcdev;
++	int ret;
+ 
+-	mutex_lock(&psec->pcdev->lock);
+-	err = _pse_ethtool_get_status(psec->pcdev, psec->id, extack, status);
+-	mutex_unlock(&psec->pcdev->lock);
++	pcdev = psec->pcdev;
++	ops = pcdev->ops;
++	mutex_lock(&pcdev->lock);
++	ret = ops->pi_get_admin_state(pcdev, psec->id, &admin_state);
++	if (ret)
++		goto out;
++	status->podl_admin_state = admin_state.podl_admin_state;
++	status->c33_admin_state = admin_state.c33_admin_state;
++
++	ret = ops->pi_get_pw_status(pcdev, psec->id, &pw_status);
++	if (ret)
++		goto out;
++	status->podl_pw_status = pw_status.podl_pw_status;
++	status->c33_pw_status = pw_status.c33_pw_status;
++
++	if (ops->pi_get_ext_state) {
++		struct pse_ext_state_info ext_state_info = {0};
++
++		ret = ops->pi_get_ext_state(pcdev, psec->id,
++					    &ext_state_info);
++		if (ret)
++			goto out;
++
++		memcpy(&status->c33_ext_state_info,
++		       &ext_state_info.c33_ext_state_info,
++		       sizeof(status->c33_ext_state_info));
++	}
++
++	if (ops->pi_get_pw_class) {
++		ret = ops->pi_get_pw_class(pcdev, psec->id);
++		if (ret < 0)
++			goto out;
+ 
+-	return err;
++		status->c33_pw_class = ret;
++	}
++
++	if (ops->pi_get_actual_pw) {
++		ret = ops->pi_get_actual_pw(pcdev, psec->id);
++		if (ret < 0)
++			goto out;
++
++		status->c33_actual_pw = ret;
++	}
++
++	if (ops->pi_get_pw_limit) {
++		ret = ops->pi_get_pw_limit(pcdev, psec->id);
++		if (ret < 0)
++			goto out;
++
++		status->c33_avail_pw_limit = ret;
++	}
++
++	if (ops->pi_get_pw_limit_ranges) {
++		struct pse_pw_limit_ranges pw_limit_ranges = {0};
++
++		ret = ops->pi_get_pw_limit_ranges(pcdev, psec->id,
++						  &pw_limit_ranges);
++		if (ret < 0)
++			goto out;
++
++		status->c33_pw_limit_ranges =
++			pw_limit_ranges.c33_pw_limit_ranges;
++		status->c33_pw_limit_nb_ranges = ret;
++	}
++out:
++	mutex_unlock(&psec->pcdev->lock);
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(pse_ethtool_get_status);
+ 
+--- a/include/linux/pse-pd/pse.h
++++ b/include/linux/pse-pd/pse.h
+@@ -29,7 +29,52 @@ struct pse_control_config {
+ };
+ 
+ /**
+- * struct pse_control_status - PSE control/channel status.
++ * struct pse_admin_state - PSE operational state
++ *
++ * @podl_admin_state: operational state of the PoDL PSE
++ *	functions. IEEE 802.3-2018 30.15.1.1.2 aPoDLPSEAdminState
++ * @c33_admin_state: operational state of the PSE
++ *	functions. IEEE 802.3-2022 30.9.1.1.2 aPSEAdminState
++ */
++struct pse_admin_state {
++	enum ethtool_podl_pse_admin_state podl_admin_state;
++	enum ethtool_c33_pse_admin_state c33_admin_state;
++};
++
++/**
++ * struct pse_pw_status - PSE power detection status
++ *
++ * @podl_pw_status: power detection status of the PoDL PSE.
++ *	IEEE 802.3-2018 30.15.1.1.3 aPoDLPSEPowerDetectionStatus:
++ * @c33_pw_status: power detection status of the PSE.
++ *	IEEE 802.3-2022 30.9.1.1.5 aPSEPowerDetectionStatus:
++ */
++struct pse_pw_status {
++	enum ethtool_podl_pse_pw_d_status podl_pw_status;
++	enum ethtool_c33_pse_pw_d_status c33_pw_status;
++};
++
++/**
++ * struct pse_ext_state_info - PSE extended state information
++ *
++ * @c33_ext_state_info: extended state information of the PSE
++ */
++struct pse_ext_state_info {
++	struct ethtool_c33_pse_ext_state_info c33_ext_state_info;
++};
++
++/**
++ * struct pse_pw_limit_ranges - PSE power limit configuration range
++ *
++ * @c33_pw_limit_ranges: supported power limit configuration range. The driver
++ *			 is in charge of the memory allocation.
++ */
++struct pse_pw_limit_ranges {
++	struct ethtool_c33_pse_pw_limit_range *c33_pw_limit_ranges;
++};
++
++/**
++ * struct ethtool_pse_control_status - PSE control/channel status.
+  *
+  * @podl_admin_state: operational state of the PoDL PSE
+  *	functions. IEEE 802.3-2018 30.15.1.1.2 aPoDLPSEAdminState
+@@ -47,11 +92,11 @@ struct pse_control_config {
+  * @c33_avail_pw_limit: available power limit of the PSE in mW
+  *	IEEE 802.3-2022 145.2.5.4 pse_avail_pwr
+  * @c33_pw_limit_ranges: supported power limit configuration range. The driver
+- *	is in charge of the memory allocation.
++ *	is in charge of the memory allocation
+  * @c33_pw_limit_nb_ranges: number of supported power limit configuration
+  *	ranges
+  */
+-struct pse_control_status {
++struct ethtool_pse_control_status {
+ 	enum ethtool_podl_pse_admin_state podl_admin_state;
+ 	enum ethtool_podl_pse_pw_d_status podl_pw_status;
+ 	enum ethtool_c33_pse_admin_state c33_admin_state;
+@@ -67,40 +112,54 @@ struct pse_control_status {
+ /**
+  * struct pse_controller_ops - PSE controller driver callbacks
+  *
+- * @ethtool_get_status: get PSE control status for ethtool interface
+  * @setup_pi_matrix: setup PI matrix of the PSE controller
++ * @pi_get_admin_state: Get the operational state of the PSE PI. This ops
++ *			is mandatory.
++ * @pi_get_pw_status: Get the power detection status of the PSE PI. This
++ *		      ops is mandatory.
++ * @pi_get_ext_state: Get the extended state of the PSE PI.
++ * @pi_get_pw_class: Get the power class of the PSE PI.
++ * @pi_get_actual_pw: Get actual power of the PSE PI in mW.
+  * @pi_is_enabled: Return 1 if the PSE PI is enabled, 0 if not.
+  *		   May also return negative errno.
+  * @pi_enable: Configure the PSE PI as enabled.
+  * @pi_disable: Configure the PSE PI as disabled.
+  * @pi_get_voltage: Return voltage similarly to get_voltage regulator
+- *		    callback.
+- * @pi_get_current_limit: Get the configured current limit similarly to
+- *			  get_current_limit regulator callback.
+- * @pi_set_current_limit: Configure the current limit similarly to
+- *			  set_current_limit regulator callback.
+- *			  Should not return an error in case of MAX_PI_CURRENT
+- *			  current value set.
++ *		    callback in uV.
++ * @pi_get_pw_limit: Get the configured power limit of the PSE PI in mW.
++ * @pi_set_pw_limit: Configure the power limit of the PSE PI in mW.
++ * @pi_get_pw_limit_ranges: Get the supported power limit configuration
++ *			    range. The driver is in charge of the memory
++ *			    allocation and should return the number of
++ *			    ranges.
+  */
+ struct pse_controller_ops {
+-	int (*ethtool_get_status)(struct pse_controller_dev *pcdev,
+-		unsigned long id, struct netlink_ext_ack *extack,
+-		struct pse_control_status *status);
+ 	int (*setup_pi_matrix)(struct pse_controller_dev *pcdev);
++	int (*pi_get_admin_state)(struct pse_controller_dev *pcdev, int id,
++				  struct pse_admin_state *admin_state);
++	int (*pi_get_pw_status)(struct pse_controller_dev *pcdev, int id,
++				struct pse_pw_status *pw_status);
++	int (*pi_get_ext_state)(struct pse_controller_dev *pcdev, int id,
++				struct pse_ext_state_info *ext_state_info);
++	int (*pi_get_pw_class)(struct pse_controller_dev *pcdev, int id);
++	int (*pi_get_actual_pw)(struct pse_controller_dev *pcdev, int id);
+ 	int (*pi_is_enabled)(struct pse_controller_dev *pcdev, int id);
+ 	int (*pi_enable)(struct pse_controller_dev *pcdev, int id);
+ 	int (*pi_disable)(struct pse_controller_dev *pcdev, int id);
+ 	int (*pi_get_voltage)(struct pse_controller_dev *pcdev, int id);
+-	int (*pi_get_current_limit)(struct pse_controller_dev *pcdev,
+-				    int id);
+-	int (*pi_set_current_limit)(struct pse_controller_dev *pcdev,
+-				    int id, int max_uA);
++	int (*pi_get_pw_limit)(struct pse_controller_dev *pcdev,
++			       int id);
++	int (*pi_set_pw_limit)(struct pse_controller_dev *pcdev,
++			       int id, int max_mW);
++	int (*pi_get_pw_limit_ranges)(struct pse_controller_dev *pcdev, int id,
++				      struct pse_pw_limit_ranges *pw_limit_ranges);
+ };
+ 
+ struct module;
+ struct device_node;
+ struct of_phandle_args;
+ struct pse_control;
++struct ethtool_pse_control_status;
+ 
+ /* PSE PI pairset pinout can either be Alternative A or Alternative B */
+ enum pse_pi_pairset_pinout {
+@@ -177,7 +236,7 @@ void pse_control_put(struct pse_control
+ 
+ int pse_ethtool_get_status(struct pse_control *psec,
+ 			   struct netlink_ext_ack *extack,
+-			   struct pse_control_status *status);
++			   struct ethtool_pse_control_status *status);
+ int pse_ethtool_set_config(struct pse_control *psec,
+ 			   struct netlink_ext_ack *extack,
+ 			   const struct pse_control_config *config);
+@@ -203,7 +262,7 @@ static inline void pse_control_put(struc
+ 
+ static inline int pse_ethtool_get_status(struct pse_control *psec,
+ 					 struct netlink_ext_ack *extack,
+-					 struct pse_control_status *status)
++					 struct ethtool_pse_control_status *status)
+ {
+ 	return -EOPNOTSUPP;
+ }
+--- a/drivers/net/pse-pd/tps23881.c
++++ b/drivers/net/pse-pd/tps23881.c
+@@ -53,6 +53,55 @@ static struct tps23881_priv *to_tps23881
+ 	return container_of(pcdev, struct tps23881_priv, pcdev);
+ }
+ 
++/*
++ * Helper to extract a value from a u16 register value, which is made of two
++ * u8 registers. The function calculates the bit offset based on the channel
++ * and extracts the relevant bits using a provided field mask.
++ *
++ * @param reg_val: The u16 register value (composed of two u8 registers).
++ * @param chan: The channel number (0-7).
++ * @param field_offset: The base bit offset to apply (e.g., 0 or 4).
++ * @param field_mask: The mask to apply to extract the required bits.
++ * @return: The extracted value for the specific channel.
++ */
++static u16 tps23881_calc_val(u16 reg_val, u8 chan, u8 field_offset,
++			     u16 field_mask)
++{
++	if (chan >= 4)
++		reg_val >>= 8;
++
++	return (reg_val >> field_offset) & field_mask;
++}
++
++/*
++ * Helper to combine individual channel values into a u16 register value.
++ * The function sets the value for a specific channel in the appropriate
++ * position.
++ *
++ * @param reg_val: The current u16 register value.
++ * @param chan: The channel number (0-7).
++ * @param field_offset: The base bit offset to apply (e.g., 0 or 4).
++ * @param field_mask: The mask to apply for the field (e.g., 0x0F).
++ * @param field_val: The value to set for the specific channel (masked by
++ *                   field_mask).
++ * @return: The updated u16 register value with the channel value set.
++ */
++static u16 tps23881_set_val(u16 reg_val, u8 chan, u8 field_offset,
++			    u16 field_mask, u16 field_val)
++{
++	field_val &= field_mask;
++
++	if (chan < 4) {
++		reg_val &= ~(field_mask << field_offset);
++		reg_val |= (field_val << field_offset);
++	} else {
++		reg_val &= ~(field_mask << (field_offset + 8));
++		reg_val |= (field_val << (field_offset + 8));
++	}
++
++	return reg_val;
++}
++
+ static int tps23881_pi_enable(struct pse_controller_dev *pcdev, int id)
+ {
+ 	struct tps23881_priv *priv = to_tps23881_priv(pcdev);
+@@ -65,17 +114,12 @@ static int tps23881_pi_enable(struct pse
+ 		return -ERANGE;
+ 
+ 	chan = priv->port[id].chan[0];
+-	if (chan < 4)
+-		val = BIT(chan);
+-	else
+-		val = BIT(chan + 4);
++	val = tps23881_set_val(0, chan, 0, BIT(chan % 4), BIT(chan % 4));
+ 
+ 	if (priv->port[id].is_4p) {
+ 		chan = priv->port[id].chan[1];
+-		if (chan < 4)
+-			val |= BIT(chan);
+-		else
+-			val |= BIT(chan + 4);
++		val = tps23881_set_val(val, chan, 0, BIT(chan % 4),
++				       BIT(chan % 4));
+ 	}
+ 
+ 	ret = i2c_smbus_write_word_data(client, TPS23881_REG_PW_EN, val);
+@@ -97,17 +141,12 @@ static int tps23881_pi_disable(struct ps
+ 		return -ERANGE;
+ 
+ 	chan = priv->port[id].chan[0];
+-	if (chan < 4)
+-		val = BIT(chan + 4);
+-	else
+-		val = BIT(chan + 8);
++	val = tps23881_set_val(0, chan, 4, BIT(chan % 4), BIT(chan % 4));
+ 
+ 	if (priv->port[id].is_4p) {
+ 		chan = priv->port[id].chan[1];
+-		if (chan < 4)
+-			val |= BIT(chan + 4);
+-		else
+-			val |= BIT(chan + 8);
++		val = tps23881_set_val(val, chan, 4, BIT(chan % 4),
++				       BIT(chan % 4));
+ 	}
+ 
+ 	ret = i2c_smbus_write_word_data(client, TPS23881_REG_PW_EN, val);
+@@ -123,6 +162,7 @@ static int tps23881_pi_is_enabled(struct
+ 	struct i2c_client *client = priv->client;
+ 	bool enabled;
+ 	u8 chan;
++	u16 val;
+ 	int ret;
+ 
+ 	ret = i2c_smbus_read_word_data(client, TPS23881_REG_PW_STATUS);
+@@ -130,32 +170,28 @@ static int tps23881_pi_is_enabled(struct
+ 		return ret;
+ 
+ 	chan = priv->port[id].chan[0];
+-	if (chan < 4)
+-		enabled = ret & BIT(chan);
+-	else
+-		enabled = ret & BIT(chan + 4);
++	val = tps23881_calc_val(ret, chan, 0, BIT(chan % 4));
++	enabled = !!(val);
+ 
+ 	if (priv->port[id].is_4p) {
+ 		chan = priv->port[id].chan[1];
+-		if (chan < 4)
+-			enabled &= !!(ret & BIT(chan));
+-		else
+-			enabled &= !!(ret & BIT(chan + 4));
++		val = tps23881_calc_val(ret, chan, 0, BIT(chan % 4));
++		enabled &= !!(val);
+ 	}
+ 
+ 	/* Return enabled status only if both channel are on this state */
+ 	return enabled;
+ }
+ 
+-static int tps23881_ethtool_get_status(struct pse_controller_dev *pcdev,
+-				       unsigned long id,
+-				       struct netlink_ext_ack *extack,
+-				       struct pse_control_status *status)
++static int
++tps23881_pi_get_admin_state(struct pse_controller_dev *pcdev, int id,
++			    struct pse_admin_state *admin_state)
+ {
+ 	struct tps23881_priv *priv = to_tps23881_priv(pcdev);
+ 	struct i2c_client *client = priv->client;
+-	bool enabled, delivering;
++	bool enabled;
+ 	u8 chan;
++	u16 val;
+ 	int ret;
+ 
+ 	ret = i2c_smbus_read_word_data(client, TPS23881_REG_PW_STATUS);
+@@ -163,36 +199,58 @@ static int tps23881_ethtool_get_status(s
+ 		return ret;
+ 
+ 	chan = priv->port[id].chan[0];
+-	if (chan < 4) {
+-		enabled = ret & BIT(chan);
+-		delivering = ret & BIT(chan + 4);
+-	} else {
+-		enabled = ret & BIT(chan + 4);
+-		delivering = ret & BIT(chan + 8);
++	val = tps23881_calc_val(ret, chan, 0, BIT(chan % 4));
++	enabled = !!(val);
++
++	if (priv->port[id].is_4p) {
++		chan = priv->port[id].chan[1];
++		val = tps23881_calc_val(ret, chan, 0, BIT(chan % 4));
++		enabled &= !!(val);
+ 	}
+ 
++	/* Return enabled status only if both channel are on this state */
++	if (enabled)
++		admin_state->c33_admin_state =
++			ETHTOOL_C33_PSE_ADMIN_STATE_ENABLED;
++	else
++		admin_state->c33_admin_state =
++			ETHTOOL_C33_PSE_ADMIN_STATE_DISABLED;
++
++	return 0;
++}
++
++static int
++tps23881_pi_get_pw_status(struct pse_controller_dev *pcdev, int id,
++			  struct pse_pw_status *pw_status)
++{
++	struct tps23881_priv *priv = to_tps23881_priv(pcdev);
++	struct i2c_client *client = priv->client;
++	bool delivering;
++	u8 chan;
++	u16 val;
++	int ret;
++
++	ret = i2c_smbus_read_word_data(client, TPS23881_REG_PW_STATUS);
++	if (ret < 0)
++		return ret;
++
++	chan = priv->port[id].chan[0];
++	val = tps23881_calc_val(ret, chan, 4, BIT(chan % 4));
++	delivering = !!(val);
++
+ 	if (priv->port[id].is_4p) {
+ 		chan = priv->port[id].chan[1];
+-		if (chan < 4) {
+-			enabled &= !!(ret & BIT(chan));
+-			delivering &= !!(ret & BIT(chan + 4));
+-		} else {
+-			enabled &= !!(ret & BIT(chan + 4));
+-			delivering &= !!(ret & BIT(chan + 8));
+-		}
++		val = tps23881_calc_val(ret, chan, 4, BIT(chan % 4));
++		delivering &= !!(val);
+ 	}
+ 
+ 	/* Return delivering status only if both channel are on this state */
+ 	if (delivering)
+-		status->c33_pw_status = ETHTOOL_C33_PSE_PW_D_STATUS_DELIVERING;
+-	else
+-		status->c33_pw_status = ETHTOOL_C33_PSE_PW_D_STATUS_DISABLED;
+-
+-	/* Return enabled status only if both channel are on this state */
+-	if (enabled)
+-		status->c33_admin_state = ETHTOOL_C33_PSE_ADMIN_STATE_ENABLED;
++		pw_status->c33_pw_status =
++			ETHTOOL_C33_PSE_PW_D_STATUS_DELIVERING;
+ 	else
+-		status->c33_admin_state = ETHTOOL_C33_PSE_ADMIN_STATE_DISABLED;
++		pw_status->c33_pw_status =
++			ETHTOOL_C33_PSE_PW_D_STATUS_DISABLED;
+ 
+ 	return 0;
+ }
+@@ -627,7 +685,8 @@ static const struct pse_controller_ops t
+ 	.pi_enable = tps23881_pi_enable,
+ 	.pi_disable = tps23881_pi_disable,
+ 	.pi_is_enabled = tps23881_pi_is_enabled,
+-	.ethtool_get_status = tps23881_ethtool_get_status,
++	.pi_get_admin_state = tps23881_pi_get_admin_state,
++	.pi_get_pw_status = tps23881_pi_get_pw_status,
+ };
+ 
+ static const char fw_parity_name[] = "ti/tps23881/tps23881-parity-14.bin";
+--- a/drivers/net/pse-pd/pse_regulator.c
++++ b/drivers/net/pse-pd/pse_regulator.c
+@@ -60,9 +60,19 @@ pse_reg_pi_is_enabled(struct pse_control
+ }
+ 
+ static int
+-pse_reg_ethtool_get_status(struct pse_controller_dev *pcdev, unsigned long id,
+-			   struct netlink_ext_ack *extack,
+-			   struct pse_control_status *status)
++pse_reg_pi_get_admin_state(struct pse_controller_dev *pcdev, int id,
++			   struct pse_admin_state *admin_state)
++{
++	struct pse_reg_priv *priv = to_pse_reg(pcdev);
++
++	admin_state->podl_admin_state = priv->admin_state;
++
++	return 0;
++}
++
++static int
++pse_reg_pi_get_pw_status(struct pse_controller_dev *pcdev, int id,
++			 struct pse_pw_status *pw_status)
+ {
+ 	struct pse_reg_priv *priv = to_pse_reg(pcdev);
+ 	int ret;
+@@ -72,18 +82,18 @@ pse_reg_ethtool_get_status(struct pse_co
+ 		return ret;
+ 
+ 	if (!ret)
+-		status->podl_pw_status = ETHTOOL_PODL_PSE_PW_D_STATUS_DISABLED;
++		pw_status->podl_pw_status =
++			ETHTOOL_PODL_PSE_PW_D_STATUS_DISABLED;
+ 	else
+-		status->podl_pw_status =
++		pw_status->podl_pw_status =
+ 			ETHTOOL_PODL_PSE_PW_D_STATUS_DELIVERING;
+ 
+-	status->podl_admin_state = priv->admin_state;
+-
+ 	return 0;
+ }
+ 
+ static const struct pse_controller_ops pse_reg_ops = {
+-	.ethtool_get_status = pse_reg_ethtool_get_status,
++	.pi_get_admin_state = pse_reg_pi_get_admin_state,
++	.pi_get_pw_status = pse_reg_pi_get_pw_status,
+ 	.pi_enable = pse_reg_pi_enable,
+ 	.pi_is_enabled = pse_reg_pi_is_enabled,
+ 	.pi_disable = pse_reg_pi_disable,
+--- a/net/ethtool/pse-pd.c
++++ b/net/ethtool/pse-pd.c
+@@ -19,7 +19,7 @@ struct pse_req_info {
+ 
+ struct pse_reply_data {
+ 	struct ethnl_reply_data	base;
+-	struct pse_control_status status;
++	struct ethtool_pse_control_status status;
+ };
+ 
+ #define PSE_REPDATA(__reply_base) \
+@@ -75,7 +75,7 @@ static int pse_reply_size(const struct e
+ 			  const struct ethnl_reply_data *reply_base)
+ {
+ 	const struct pse_reply_data *data = PSE_REPDATA(reply_base);
+-	const struct pse_control_status *st = &data->status;
++	const struct ethtool_pse_control_status *st = &data->status;
+ 	int len = 0;
+ 
+ 	if (st->podl_admin_state > 0)
+@@ -109,7 +109,7 @@ static int pse_reply_size(const struct e
+ }
+ 
+ static int pse_put_pw_limit_ranges(struct sk_buff *skb,
+-				   const struct pse_control_status *st)
++				   const struct ethtool_pse_control_status *st)
+ {
+ 	const struct ethtool_c33_pse_pw_limit_range *pw_limit_ranges;
+ 	int i;
+@@ -141,7 +141,7 @@ static int pse_fill_reply(struct sk_buff
+ 			  const struct ethnl_reply_data *reply_base)
+ {
+ 	const struct pse_reply_data *data = PSE_REPDATA(reply_base);
+-	const struct pse_control_status *st = &data->status;
++	const struct ethtool_pse_control_status *st = &data->status;
+ 
+ 	if (st->podl_admin_state > 0 &&
+ 	    nla_put_u32(skb, ETHTOOL_A_PODL_PSE_ADMIN_STATE,

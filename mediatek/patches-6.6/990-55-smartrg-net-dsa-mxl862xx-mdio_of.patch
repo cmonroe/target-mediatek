@@ -21,8 +21,8 @@ Signed-off-by: Piotr Kubik <piotr.kubik@adtran.com>
  #include <linux/phy.h>
  #include <net/dsa.h>
  #include <linux/dsa/8021q.h>
-@@ -1280,7 +1281,20 @@ mxl862xx_setup_mdio(struct dsa_switch *ds)
- 	bus->phy_mask = ~ds->phys_mii_mask;
+@@ -1280,7 +1281,20 @@ mxl862xx_setup_mdio(struct dsa_switch *d
+ 		 bus->phy_mask |= 0xff00;
  
  #if (KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE)
 +#if IS_ENABLED(CONFIG_OF_MDIO)
@@ -42,6 +42,3 @@ Signed-off-by: Piotr Kubik <piotr.kubik@adtran.com>
  #else
  	ret = mdiobus_register(bus);
  #endif
--- 
-2.43.0
-
