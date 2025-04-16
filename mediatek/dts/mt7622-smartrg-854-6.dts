@@ -8,6 +8,7 @@
 /dts-v1/;
 #include <dt-bindings/input/input.h>
 #include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/leds/common.h>
 
 #include "mt7622.dtsi"
 #include "mt6380.dtsi"
@@ -73,8 +74,9 @@
 			default-state = "on";
 		};
 
-		sfp {
-			label = "sfp";
+		sfp_green {
+			function = "sfp";
+			color = <LED_COLOR_ID_GREEN>;
 			gpios = <&pio 95 GPIO_ACTIVE_LOW>;
 			default-state = "off";
 		};
@@ -91,10 +93,10 @@
 			linux,default-trigger = "phy1radio";
 		};
 
-		wan {
-			label = "wan";
+		wan_green {
+			function = "wan";
+			color = <LED_COLOR_ID_GREEN>;
 			gpios = <&pio 98 GPIO_ACTIVE_LOW>;
-			linux,default-trigger = "netdev";
 		};
 
 		wps {
