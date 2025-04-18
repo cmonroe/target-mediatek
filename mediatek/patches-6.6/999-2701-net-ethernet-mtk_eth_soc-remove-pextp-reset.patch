@@ -76,7 +76,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: remove pextp reset
  	return 0;
  }
  
-@@ -5043,17 +5017,6 @@ static int mtk_add_mac(struct mtk_eth *e
+@@ -5036,17 +5010,6 @@ static int mtk_add_mac(struct mtk_eth *e
  		}
  	}
  
@@ -96,7 +96,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: remove pextp reset
  
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.h
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.h
-@@ -1456,7 +1456,6 @@ struct mtk_mac {
+@@ -1451,7 +1451,6 @@ struct mtk_mac {
  	struct phylink_config		phylink_config;
  	struct phylink_pcs		*sgmii_pcs;
  	struct phylink_pcs		*usxgmii_pcs;

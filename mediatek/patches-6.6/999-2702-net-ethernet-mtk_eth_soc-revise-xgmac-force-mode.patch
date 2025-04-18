@@ -79,7 +79,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: revise xgmac force mode
  	.mac_link_up = mtk_mac_link_up,
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.h
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.h
-@@ -485,7 +485,8 @@
+@@ -480,7 +480,8 @@
  
  /* XMAC status registers */
  #define MTK_XGMAC_STS(x)	(((x) == MTK_GMAC3_ID) ? 0x1001C : 0x1000C)
