@@ -1,9 +1,9 @@
 From: Chad Monroe <chad@monroe.io>
 Date: Wed, 30 Oct 2024 19:51:06 -0700
-Subject: [PATCH] net: ethernet: mediatek: add PPE roaming workaround  
+Subject: [PATCH] net: ethernet: mediatek: add PPE roaming workaround
 
 if neighbor info for a LAN client changes, such as when it moves from one
-physical port to another, flush any related PPE entries.	
+physical port to another, flush any related PPE entries.
 
 this will cause the affected flows to revert to software path where the
 new neighbor info can be learned.
@@ -107,7 +107,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  static int
  mtk_flow_entry_match_len(struct mtk_eth *eth, struct mtk_foe_entry *entry)
  {
-@@ -1116,3 +1140,162 @@ int mtk_ppe_stop(struct mtk_ppe *ppe)
+@@ -1116,3 +1140,169 @@ int mtk_ppe_stop(struct mtk_ppe *ppe)
  
  	return 0;
  }
@@ -220,7 +220,8 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 +	}
 +
 +out:
-+	schedule_work(&eth->ppe_roam_work);
++	if (!work_pending(&eth->ppe_roam_work))
++		schedule_work(&eth->ppe_roam_work);
 +}
 +
 +int mtk_ppe_roaming_start(struct mtk_eth *eth)
@@ -232,18 +233,23 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 +	INIT_WORK(&eth->ppe_roam_work, mtk_ppe_roam_handler);
 +
 +	ret = sock_create_kern(&init_net, AF_NETLINK, SOCK_RAW, NETLINK_ROUTE, &sock);
-+	if (ret < 0)
++	if (ret < 0) {
++		dev_warn(eth->dev, "mtk_ppe: roaming work is unable to create socket");
 +		goto out;
-+
-+	eth->ppe_roam_sock = sock;
++	}
 +
 +	addr.nl_family = AF_NETLINK;
 +	addr.nl_pad = 0;
 +	addr.nl_pid = 65534;
 +	addr.nl_groups = 1 << (RTNLGRP_NEIGH - 1);
 +	ret = kernel_bind(sock, (struct sockaddr *)&addr, sizeof(addr));
-+	if (ret < 0)
++	if (ret < 0) {
++		dev_warn(eth->dev, "mtk_ppe: roaming work is unable to bind socket");
 +		goto out;
++	}
++
++	eth->ppe_roam_sock = sock;
++	eth->ppe_roam_sock->sk->sk_rcvtimeo = msecs_to_jiffies(100);
 +
 +	schedule_work(&eth->ppe_roam_work);
 +
@@ -263,6 +269,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 +	if (!eth->ppe_roam_sock)
 +		return -ENOENT;
 +
++	cancel_work_sync(&eth->ppe_roam_work);
 +	sock_release(eth->ppe_roam_sock);
 +	eth->ppe_roam_sock = NULL;
 +
