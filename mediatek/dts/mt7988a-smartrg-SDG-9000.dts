@@ -935,6 +935,8 @@
 
 		marvell,mdi-cfg-order = <0>;
 		marvell,led-config = <0x80 0x60 0xC000>;
+		marvell,hwmon_temp_high = <90000>;
+		marvell,hwmon_temp_crit = <100000>;
 
 		leds {
 			#address-cells = <1>;
@@ -971,6 +973,8 @@
 
 		marvell,mdi-cfg-order = <0>;
 		marvell,led-config = <0x80 0x60 0xC000>;
+		marvell,hwmon_temp_high = <90000>;
+		marvell,hwmon_temp_crit = <100000>;
 
 		leds {
 			#address-cells = <1>;
