@@ -1,0 +1,88 @@
+From: Piotr Kubik <piotr.kubik@adtran.com>
+Date: Wed, 23 Apr 2025 14:53:46 +0200
+Subject: [PATCH] net: phy: aquantia: hwmon default temperature hack
+
+This patch allows to override the default, stored in firmware,
+hwmon temperature thresholds temp1_max, temp1_crit
+with values from DT, on a driver level.
+---
+ drivers/net/phy/aquantia/aquantia_hwmon.c | 49 +++++++++++++++++++++++++++++++-
+ 1 file changed, 48 insertions(+), 1 deletion(-)
+
+--- a/drivers/net/phy/aquantia/aquantia_hwmon.c
++++ b/drivers/net/phy/aquantia/aquantia_hwmon.c
+@@ -10,6 +10,7 @@
+ #include <linux/device.h>
+ #include <linux/ctype.h>
+ #include <linux/hwmon.h>
++#include <linux/of.h>
+ 
+ #include "aquantia.h"
+ 
+@@ -207,12 +208,51 @@ static const struct hwmon_chip_info aqr_
+ 	.info = aqr_hwmon_info,
+ };
+ 
++static int aqr_hwmon_fix_temp_thresholds(struct device *dev)
++{
++	long value;
++	int of_temp;
++	int ret;
++
++	if (!of_property_read_u32(dev->of_node, "marvell,hwmon_temp_high",
++				  &of_temp)) {
++		ret = aqr_hwmon_read(dev, hwmon_temp, hwmon_temp_max, 0,
++				     &value);
++		if (ret < 0)
++			return ret;
++
++		if (value != of_temp) {
++			ret = aqr_hwmon_write(dev, hwmon_temp, hwmon_temp_max,
++					      0, of_temp);
++			if (ret < 0)
++				return ret;
++		}
++	}
++
++	if (!of_property_read_u32(dev->of_node, "marvell,hwmon_temp_crit",
++				  &of_temp)) {
++		ret = aqr_hwmon_read(dev, hwmon_temp, hwmon_temp_crit, 0,
++				     &value);
++		if (ret < 0)
++			return ret;
++
++		if (value != of_temp) {
++			ret = aqr_hwmon_write(dev, hwmon_temp, hwmon_temp_crit,
++					      0, of_temp);
++			if (ret < 0)
++				return ret;
++		}
++	}
++
++	return 0;
++}
++
+ int aqr_hwmon_probe(struct phy_device *phydev)
+ {
+ 	struct device *dev = &phydev->mdio.dev;
+ 	struct device *hwmon_dev;
+ 	char *hwmon_name;
+-	int i, j;
++	int i, j, ret;
+ 
+ 	hwmon_name = devm_kstrdup(dev, dev_name(dev), GFP_KERNEL);
+ 	if (!hwmon_name)
+@@ -230,6 +270,13 @@ int aqr_hwmon_probe(struct phy_device *p
+ 	hwmon_dev = devm_hwmon_device_register_with_info(dev, hwmon_name,
+ 					phydev, &aqr_hwmon_chip_info, NULL);
+ 
++	if (!IS_ERR_OR_NULL(hwmon_dev))
++		ret = aqr_hwmon_fix_temp_thresholds(hwmon_dev);
++
++	if (ret < 0)
++		dev_err(hwmon_dev, "Fixing temp thresholds failed, err:%d\n",
++			ret);
++
+ 	return PTR_ERR_OR_ZERO(hwmon_dev);
+ }
+ 
