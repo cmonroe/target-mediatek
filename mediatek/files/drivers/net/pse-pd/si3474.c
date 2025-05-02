@@ -52,7 +52,7 @@ struct si3474_port_desc {
 };
 
 struct si3474_priv {
-	struct i2c_client *client;
+	struct i2c_client *client[2];
 	struct pse_controller_dev pcdev;
 	struct device_node *np;
 	struct si3474_port_desc port[SI3474_MAX_CHANS];
@@ -67,10 +67,21 @@ static int si3474_pi_get_admin_state(struct pse_controller_dev *pcdev, int id,
 				     struct pse_admin_state *admin_state)
 {
 	struct si3474_priv *priv = to_si3474_priv(pcdev);
-	struct i2c_client *client = priv->client;
+	struct i2c_client *client;
 	bool enabled = false;
 	u8 chan0, chan1;
 	s32 ret;
+
+	if (id >= SI3474_MAX_CHANS)
+		return -ERANGE;
+
+	chan0 = priv->port[id].chan[0];
+	chan1 = priv->port[id].chan[1];
+
+	if (chan0 < 4)
+		client = priv->client[0];
+	else
+		client = priv->client[1];
 
 	ret = i2c_smbus_read_byte_data(client, POWER_STATUS_REG);
 	if (ret < 0) {
@@ -79,11 +90,7 @@ static int si3474_pi_get_admin_state(struct pse_controller_dev *pcdev, int id,
 		return ret;
 	}
 
-	chan0 = priv->port[id].chan[0];
-	chan1 = priv->port[id].chan[1];
-
-	if (chan0 < 4 && chan1 < 4)
-		enabled = (ret & (BIT(chan0) | BIT(chan1))) != 0;
+	enabled = (ret & (BIT(chan0 % 4) | BIT(chan1 % 4))) != 0;
 
 	if (enabled)
 		admin_state->c33_admin_state =
@@ -99,10 +106,21 @@ static int si3474_pi_get_pw_status(struct pse_controller_dev *pcdev, int id,
 				   struct pse_pw_status *pw_status)
 {
 	struct si3474_priv *priv = to_si3474_priv(pcdev);
-	struct i2c_client *client = priv->client;
+	struct i2c_client *client;
 	bool delivering = false;
 	u8 chan0, chan1;
 	s32 ret;
+
+	if (id >= SI3474_MAX_CHANS)
+		return -ERANGE;
+
+	chan0 = priv->port[id].chan[0];
+	chan1 = priv->port[id].chan[1];
+
+	if (chan0 < 4)
+		client = priv->client[0];
+	else
+		client = priv->client[1];
 
 	ret = i2c_smbus_read_byte_data(client, POWER_STATUS_REG);
 	if (ret < 0) {
@@ -110,11 +128,7 @@ static int si3474_pi_get_pw_status(struct pse_controller_dev *pcdev, int id,
 		return ret;
 	}
 
-	chan0 = priv->port[id].chan[0];
-	chan1 = priv->port[id].chan[1];
-
-	if (chan0 < 4 && chan1 < 4)
-		delivering = (ret & (BIT(chan0 + 4) | BIT(chan1 + 4))) != 0;
+	delivering = (ret & (BIT((chan0 % 4) + 4) | BIT((chan1 % 4) + 4))) != 0;
 
 	if (delivering)
 		pw_status->c33_pw_status =
@@ -136,7 +150,7 @@ static int si3474_get_of_channels(struct si3474_priv *priv)
 
 	pse_node = of_get_child_by_name(priv->np, "pse-pis");
 	if (!pse_node) {
-		dev_warn(&priv->client->dev,
+		dev_warn(&priv->client[0]->dev,
 			 "Unable to parse DT PSE port-matrix, no pse-pis node\n");
 		return -EINVAL;
 	}
@@ -147,13 +161,13 @@ static int si3474_get_of_channels(struct si3474_priv *priv)
 
 		ret = of_property_read_u32(node, "reg", &port_no);
 		if (ret) {
-			dev_err(&priv->client->dev,
+			dev_err(&priv->client[0]->dev,
 				"Failed to read pse-pi reg property\n");
 			ret = -EINVAL;
 			goto out;
 		}
 		if (port_no >= SI3474_MAX_CHANS) {
-			dev_err(&priv->client->dev, "Invalid port number %u\n",
+			dev_err(&priv->client[0]->dev, "Invalid port number %u\n",
 				port_no);
 			ret = -EINVAL;
 			goto out;
@@ -162,7 +176,7 @@ static int si3474_get_of_channels(struct si3474_priv *priv)
 		pairset_cnt = of_property_count_elems_of_size(node, "pairsets",
 							      sizeof(u32));
 		if (!pairset_cnt) {
-			dev_err(&priv->client->dev,
+			dev_err(&priv->client[0]->dev,
 				"Failed to get pairsets property\n");
 			ret = -EINVAL;
 			goto out;
@@ -170,7 +184,7 @@ static int si3474_get_of_channels(struct si3474_priv *priv)
 
 		pi = &priv->pcdev.pi[port_no];
 		if (!pi->pairset[0].np) {
-			dev_err(&priv->client->dev,
+			dev_err(&priv->client[0]->dev,
 				"Missing pairset reference, port: %u\n",
 				port_no);
 			ret = -EINVAL;
@@ -179,7 +193,7 @@ static int si3474_get_of_channels(struct si3474_priv *priv)
 
 		ret = of_property_read_u32(pi->pairset[0].np, "reg", &chan_id);
 		if (ret) {
-			dev_err(&priv->client->dev,
+			dev_err(&priv->client[0]->dev,
 				"Failed to read channel reg property, ret:%d\n",
 				ret);
 			ret = -EINVAL;
@@ -190,7 +204,7 @@ static int si3474_get_of_channels(struct si3474_priv *priv)
 
 		if (pairset_cnt == 2) {
 			if (!pi->pairset[1].np) {
-				dev_err(&priv->client->dev,
+				dev_err(&priv->client[0]->dev,
 					"Missing pairset reference, port: %u\n",
 					port_no);
 				ret = -EINVAL;
@@ -200,7 +214,7 @@ static int si3474_get_of_channels(struct si3474_priv *priv)
 			ret = of_property_read_u32(pi->pairset[1].np, "reg",
 						   &chan_id);
 			if (ret) {
-				dev_err(&priv->client->dev,
+				dev_err(&priv->client[0]->dev,
 					"Failed to read channel reg property\n");
 				ret = -EINVAL;
 				goto out;
@@ -208,7 +222,7 @@ static int si3474_get_of_channels(struct si3474_priv *priv)
 			priv->port[port_no].chan[1] = chan_id;
 			priv->port[port_no].is_4p = TRUE;
 		} else {
-			dev_err(&priv->client->dev,
+			dev_err(&priv->client[0]->dev,
 				"Number of pairsets incorrect - only 4p configurations supported\n");
 			ret = -EINVAL;
 			goto out;
@@ -228,7 +242,7 @@ static int si3474_setup_pi_matrix(struct pse_controller_dev *pcdev)
 
 	ret = si3474_get_of_channels(priv);
 	if (ret < 0) {
-		dev_warn(&priv->client->dev,
+		dev_warn(&priv->client[0]->dev,
 			 "Unable to parse DT PSE port-matrix\n");
 	}
 	return ret;
@@ -237,7 +251,7 @@ static int si3474_setup_pi_matrix(struct pse_controller_dev *pcdev)
 static int si3474_pi_enable(struct pse_controller_dev *pcdev, int id)
 {
 	struct si3474_priv *priv = to_si3474_priv(pcdev);
-	struct i2c_client *client = priv->client;
+	struct i2c_client *client;
 	u8 chan0, chan1;
 	u16 val = 0;
 	s32 ret;
@@ -248,10 +262,12 @@ static int si3474_pi_enable(struct pse_controller_dev *pcdev, int id)
 	chan0 = priv->port[id].chan[0];
 	chan1 = priv->port[id].chan[1];
 
-	if (chan0 >= 4 || chan1 >= 4)
-		return -ERANGE;
+	if (chan0 < 4)
+		client = priv->client[0];
+	else
+		client = priv->client[1];
 
-	val = (BIT(chan0) | BIT(chan1));
+	val = (BIT(chan0 % 4) | BIT(chan1 % 4));
 	ret = i2c_smbus_write_word_data(client, PB_POWER_ENABLE_REG, val);
 
 	if (ret)
@@ -263,7 +279,7 @@ static int si3474_pi_enable(struct pse_controller_dev *pcdev, int id)
 static int si3474_pi_disable(struct pse_controller_dev *pcdev, int id)
 {
 	struct si3474_priv *priv = to_si3474_priv(pcdev);
-	struct i2c_client *client = priv->client;
+	struct i2c_client *client;
 	u8 chan0, chan1;
 	u16 val = 0;
 	s32 ret;
@@ -274,10 +290,12 @@ static int si3474_pi_disable(struct pse_controller_dev *pcdev, int id)
 	chan0 = priv->port[id].chan[0];
 	chan1 = priv->port[id].chan[1];
 
-	if (chan0 >= 4 || chan1 >= 4)
-		return -ERANGE;
+	if (chan0 < 4)
+		client = priv->client[0];
+	else
+		client = priv->client[1];
 
-	val = (BIT(chan0 + 4) | BIT(chan1 + 4));
+	val = (BIT((chan0 % 4) + 4) | BIT((chan1 % 4) + 4));
 	ret = i2c_smbus_write_word_data(client, PB_POWER_ENABLE_REG, val);
 
 	if (ret)
@@ -289,31 +307,42 @@ static int si3474_pi_disable(struct pse_controller_dev *pcdev, int id)
 static int si3474_pi_is_enabled(struct pse_controller_dev *pcdev, int id)
 {
 	struct si3474_priv *priv = to_si3474_priv(pcdev);
-	struct i2c_client *client = priv->client;
+	struct i2c_client *client;
 	bool enabled = false;
 	u8 chan0, chan1;
 	s32 ret;
+
+	if (id >= SI3474_MAX_CHANS)
+		return -ERANGE;
+
+	chan0 = priv->port[id].chan[0];
+	chan1 = priv->port[id].chan[1];
+
+	if (chan0 < 4)
+		client = priv->client[0];
+	else
+		client = priv->client[1];
 
 	ret = i2c_smbus_read_byte_data(client, POWER_STATUS_REG);
 	if (ret < 0)
 		return ret;
 
-	chan0 = priv->port[id].chan[0];
-	chan1 = priv->port[id].chan[1];
-
-	if (chan0 < 4 && chan1 < 4) {
-		enabled = (ret & (BIT(chan0) | BIT(chan1))) != 0;
-	}
+	enabled = (ret & (BIT(chan0 % 4) | BIT(chan1 % 4))) != 0;
 
 	return enabled;
 }
 
 static int si3474_pi_get_chan_current(struct si3474_priv *priv, u8 chan)
 {
-	struct i2c_client *client = priv->client;
+	struct i2c_client *client;
 	s32 ret;
 	u8 reg;
 	u64 tmp_64;
+
+	if (chan < 4)
+		client = priv->client[0];
+	else
+		client = priv->client[1];
 
 	/* Registers 0x30 to 0x3d */
 	reg = PORT1_CURRENT_LSB_REG + (chan % 4) * 4;
@@ -331,10 +360,15 @@ static int si3474_pi_get_chan_current(struct si3474_priv *priv, u8 chan)
 
 static int si3474_pi_get_chan_voltage(struct si3474_priv *priv, u8 chan)
 {
-	struct i2c_client *client = priv->client;
+	struct i2c_client *client;
 	s32 ret;
 	u8 reg;
 	u32 val;
+
+	if (chan < 4)
+		client = priv->client[0];
+	else
+		client = priv->client[1];
 
 	/* Registers 0x32 to 0x3f */
 	reg = PORT1_VOLTAGE_LSB_REG + (chan % 4) * 4;
@@ -351,13 +385,17 @@ static int si3474_pi_get_chan_voltage(struct si3474_priv *priv, u8 chan)
 static int si3474_pi_get_voltage(struct pse_controller_dev *pcdev, int id)
 {
 	struct si3474_priv *priv = to_si3474_priv(pcdev);
-	struct i2c_client *client = priv->client;
-
+	struct i2c_client *client;
 	u8 chan0, chan1;
 	s32 ret;
 
 	chan0 = priv->port[id].chan[0];
 	chan1 = priv->port[id].chan[1];
+
+	if (chan0 < 4)
+		client = priv->client[0];
+	else
+		client = priv->client[1];
 
 	/* Check which channels are enabled*/
 	ret = i2c_smbus_read_byte_data(client, POWER_STATUS_REG);
@@ -365,7 +403,7 @@ static int si3474_pi_get_voltage(struct pse_controller_dev *pcdev, int id)
 		return ret;
 
 	/* Take voltage from the first enabled channel */
-	if (ret & BIT(chan0))
+	if (ret & BIT(chan0 % 4))
 		ret = si3474_pi_get_chan_voltage(priv, chan0);
 	else if (ret & BIT(chan1))
 		ret = si3474_pi_get_chan_voltage(priv, chan1);
@@ -383,6 +421,9 @@ static int si3474_pi_get_actual_pw(struct pse_controller_dev *pcdev, int id)
 	u32 uV, uA;
 	u64 tmp_64;
 	u8 chan0, chan1;
+
+	if (id >= SI3474_MAX_CHANS)
+		return -ERANGE;
 
 	ret = si3474_pi_get_voltage(&priv->pcdev, id);
 	if (ret < 0)
@@ -456,15 +497,33 @@ static int si3474_i2c_probe(struct i2c_client *client)
 	dev_info(&client->dev, "Chip revision: 0x%x, firmware version: 0x%x\n",
 		 ret, fw_version);
 
-	priv->client = client;
+	priv->client[0] = client;
 	i2c_set_clientdata(client, priv);
-	priv->np = dev->of_node;
 
+	priv->client[1] = i2c_new_ancillary_device(priv->client[0], "slave",
+						priv->client[0]->addr+1);
+	if (IS_ERR(priv->client[1]))
+		return PTR_ERR(priv->client[1]);
+
+	ret = i2c_smbus_read_byte_data(priv->client[1], VENDOR_IC_ID_REG);
+	if (ret < 0) {
+		dev_err(&priv->client[1]->dev, "Cannot access slave PSE controller\n");
+		goto out_err_slave;
+	}
+
+	if (ret != SI3474_DEVICE_ID) {
+		dev_err(&priv->client[1]->dev, "Wrong device ID for slave PSE controller: 0x%x\n", ret);
+		ret = -ENXIO;
+		goto out_err_slave;
+	}
+
+	priv->np = dev->of_node;
 	priv->pcdev.owner = THIS_MODULE;
 	priv->pcdev.ops = &si3474_ops;
 	priv->pcdev.dev = dev;
 	priv->pcdev.types = ETHTOOL_PSE_C33;
 	priv->pcdev.nr_lines = SI3474_MAX_CHANS;
+
 	ret = devm_pse_controller_register(dev, &priv->pcdev);
 	if (ret) {
 		return dev_err_probe(dev, ret,
@@ -472,6 +531,17 @@ static int si3474_i2c_probe(struct i2c_client *client)
 	}
 
 	return ret;
+
+out_err_slave:
+	i2c_unregister_device(priv->client[1]);
+	return ret;
+
+}
+
+static void si3474_i2c_remove(struct i2c_client *client)
+{
+	struct si3474_priv *priv = i2c_get_clientdata(client);
+	i2c_unregister_device(priv->client[1]);
 }
 
 static const struct i2c_device_id si3474_id[] = {{"si3474"}, {}};
@@ -487,6 +557,7 @@ MODULE_DEVICE_TABLE(of, si3474_of_match);
 
 static struct i2c_driver si3474_driver = {
 	.probe = si3474_i2c_probe,
+	.remove = si3474_i2c_remove,
 	.id_table = si3474_id,
 	.driver = {
 		.name = "si3474",

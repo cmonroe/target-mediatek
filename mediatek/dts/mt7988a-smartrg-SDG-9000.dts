@@ -654,23 +654,36 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c1_pins>;
 	status = "okay";
-	ethernet-pse@27 {
+	ethernet-pse@26 {
 		compatible = "skyworks,si3474";
-		reg = <0x27>;
+		reg-names = "main", "slave";
+		reg = <0x26>, <0x27>;
 		channels {
 			#address-cells = <1>;
 			#size-cells = <0>;
-			phys0_4: channel@0 {
+			phys0_0: channel@0 {
 				reg = <0>;
 			};
-			phys0_5: channel@1 {
+			phys0_1: channel@1 {
 				reg = <1>;
 			};
-			phys0_6: channel@2 {
+			phys0_2: channel@2 {
 				reg = <2>;
 			};
-			phys0_7: channel@3 {
+			phys0_3: channel@3 {
 				reg = <3>;
+			};
+			phys0_4: channel@4 {
+				reg = <4>;
+			};
+			phys0_5: channel@5 {
+				reg = <5>;
+			};
+			phys0_6: channel@6 {
+				reg = <6>;
+			};
+			phys0_7: channel@7 {
+				reg = <7>;
 			};
 		};
 		pse-pis {
@@ -692,30 +705,6 @@
 				polarity-supported = "MDI-X", "S";
 				vpwr-supply = <&reg_pse>;
 			};
-		};
-	};
-	ethernet-pse@26 {
-		compatible = "skyworks,si3474";
-		reg = <0x26>;
-		channels {
-			#address-cells = <1>;
-			#size-cells = <0>;
-			phys0_0: channel@0 {
-				reg = <0>;
-			};
-			phys0_1: channel@1 {
-				reg = <1>;
-			};
-			phys0_2: channel@2 {
-				reg = <2>;
-			};
-			phys0_3: channel@3 {
-				reg = <3>;
-			};
-		};
-		pse-pis {
-			#address-cells = <1>;
-			#size-cells = <0>;
 			pse_pi2: pse-pi@2 {
 				reg = <2>;
 				#pse-cells = <0>;
@@ -736,7 +725,8 @@
 	};
 	ethernet-pse@36 {
 		compatible = "skyworks,si3474";
-		reg = <0x36>;
+		reg-names = "main", "slave";
+		reg = <0x36>, <0x37>;
 		channels {
 			#address-cells = <1>;
 			#size-cells = <0>;
@@ -751,6 +741,18 @@
 			};
 			phys1_3: channel@3 {
 				reg = <3>;
+			};
+			phys1_4: channel@4 {
+				reg = <4>;
+			};
+			phys1_5: channel@5 {
+				reg = <5>;
+			};
+			phys1_6: channel@6 {
+				reg = <6>;
+			};
+			phys1_7: channel@7 {
+				reg = <7>;
 			};
 		};
 		pse-pis {
@@ -772,30 +774,6 @@
 				polarity-supported = "MDI-X", "S";
 				vpwr-supply = <&reg_pse>;
 			};
-		};
-	};
-	ethernet-pse@37 {
-		compatible = "skyworks,si3474";
-		reg = <0x37>;
-		channels {
-			#address-cells = <1>;
-			#size-cells = <0>;
-			phys1_4: channel@0 {
-				reg = <0>;
-			};
-			phys1_5: channel@1 {
-				reg = <1>;
-			};
-			phys1_6: channel@2 {
-				reg = <2>;
-			};
-			phys1_7: channel@3 {
-				reg = <3>;
-			};
-		};
-		pse-pis {
-			#address-cells = <1>;
-			#size-cells = <0>;
 			pse_pi6: pse-pi@6 {
 				reg = <6>;
 				#pse-cells = <0>;
