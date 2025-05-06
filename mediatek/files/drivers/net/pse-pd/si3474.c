@@ -4,7 +4,7 @@
  *
  */
 
-#include <linux/bitfield.h>
+
 #include <linux/delay.h>
 #include <linux/i2c.h>
 #include <linux/module.h>
@@ -26,6 +26,7 @@
 
 /* Main status registers */
 #define POWER_STATUS_REG 0x10
+#define PORT_MODE_REG 0x12
 #define PB_POWER_ENABLE_REG 0x19
 
 /* PORTn Current */
@@ -68,7 +69,7 @@ static int si3474_pi_get_admin_state(struct pse_controller_dev *pcdev, int id,
 {
 	struct si3474_priv *priv = to_si3474_priv(pcdev);
 	struct i2c_client *client;
-	bool enabled = false;
+	bool is_enabled = false;
 	u8 chan0, chan1;
 	s32 ret;
 
@@ -83,16 +84,18 @@ static int si3474_pi_get_admin_state(struct pse_controller_dev *pcdev, int id,
 	else
 		client = priv->client[1];
 
-	ret = i2c_smbus_read_byte_data(client, POWER_STATUS_REG);
+	ret = i2c_smbus_read_byte_data(client, PORT_MODE_REG);
 	if (ret < 0) {
 		admin_state->c33_admin_state =
 		    ETHTOOL_C33_PSE_ADMIN_STATE_UNKNOWN;
 		return ret;
 	}
 
-	enabled = (ret & (BIT(chan0 % 4) | BIT(chan1 % 4))) != 0;
 
-	if (enabled)
+	is_enabled = ((ret & (0x03 << (2 * (chan0 % 4)))) |
+		      (ret & (0x03 << (2 * (chan1 % 4))))) != 0;
+	
+	if (is_enabled)
 		admin_state->c33_admin_state =
 		    ETHTOOL_C33_PSE_ADMIN_STATE_ENABLED;
 	else
@@ -253,7 +256,7 @@ static int si3474_pi_enable(struct pse_controller_dev *pcdev, int id)
 	struct si3474_priv *priv = to_si3474_priv(pcdev);
 	struct i2c_client *client;
 	u8 chan0, chan1;
-	u16 val = 0;
+	u8 val = 0;
 	s32 ret;
 
 	if (id >= SI3474_MAX_CHANS)
@@ -267,11 +270,25 @@ static int si3474_pi_enable(struct pse_controller_dev *pcdev, int id)
 	else
 		client = priv->client[1];
 
-	val = (BIT(chan0 % 4) | BIT(chan1 % 4));
-	ret = i2c_smbus_write_word_data(client, PB_POWER_ENABLE_REG, val);
+	/* Release port from shutdown */
+	ret = i2c_smbus_read_byte_data(client, PORT_MODE_REG);
+	if (ret < 0)
+		return ret;
 
+	val = (u8)ret;
+	val |= (0x03 << (2 * (chan0 % 4)));
+	val |= (0x03 << (2 * (chan1 % 4)));
+
+	ret = i2c_smbus_write_byte_data(client, PORT_MODE_REG, val);
 	if (ret)
 		return ret;
+
+	/* Give time for transition to complete */
+	ssleep(1);
+
+	/* Trigger port to power up */
+	val = (BIT(chan0 % 4) | BIT(chan1 % 4));
+	ret = i2c_smbus_write_byte_data(client, PB_POWER_ENABLE_REG, val);
 
 	return 0;
 }
@@ -281,7 +298,7 @@ static int si3474_pi_disable(struct pse_controller_dev *pcdev, int id)
 	struct si3474_priv *priv = to_si3474_priv(pcdev);
 	struct i2c_client *client;
 	u8 chan0, chan1;
-	u16 val = 0;
+	u8 val = 0;
 	s32 ret;
 
 	if (id >= SI3474_MAX_CHANS)
@@ -295,9 +312,20 @@ static int si3474_pi_disable(struct pse_controller_dev *pcdev, int id)
 	else
 		client = priv->client[1];
 
+	/* Trigger port to power down */
 	val = (BIT((chan0 % 4) + 4) | BIT((chan1 % 4) + 4));
-	ret = i2c_smbus_write_word_data(client, PB_POWER_ENABLE_REG, val);
+	ret = i2c_smbus_write_byte_data(client, PB_POWER_ENABLE_REG, val);
 
+	/* Shutdown port */
+	ret = i2c_smbus_read_byte_data(client, PORT_MODE_REG);
+	if (ret < 0)
+		return ret;
+
+	val = (u8)ret;
+	val &= ~(0x03 << (2 * (chan0 % 4)));
+	val &= ~(0x03 << (2 * (chan1 % 4)));
+
+	ret = i2c_smbus_write_byte_data(client, PORT_MODE_REG, val);
 	if (ret)
 		return ret;
 
