@@ -332,34 +332,6 @@ static int si3474_pi_disable(struct pse_controller_dev *pcdev, int id)
 	return 0;
 }
 
-static int si3474_pi_is_enabled(struct pse_controller_dev *pcdev, int id)
-{
-	struct si3474_priv *priv = to_si3474_priv(pcdev);
-	struct i2c_client *client;
-	bool enabled = false;
-	u8 chan0, chan1;
-	s32 ret;
-
-	if (id >= SI3474_MAX_CHANS)
-		return -ERANGE;
-
-	chan0 = priv->port[id].chan[0];
-	chan1 = priv->port[id].chan[1];
-
-	if (chan0 < 4)
-		client = priv->client[0];
-	else
-		client = priv->client[1];
-
-	ret = i2c_smbus_read_byte_data(client, POWER_STATUS_REG);
-	if (ret < 0)
-		return ret;
-
-	enabled = (ret & (BIT(chan0 % 4) | BIT(chan1 % 4))) != 0;
-
-	return enabled;
-}
-
 static int si3474_pi_get_chan_current(struct si3474_priv *priv, u8 chan)
 {
 	struct i2c_client *client;
@@ -483,7 +455,6 @@ static const struct pse_controller_ops si3474_ops = {
 	.pi_disable = si3474_pi_disable,
 	.pi_get_actual_pw = si3474_pi_get_actual_pw,
 	.pi_get_voltage = si3474_pi_get_voltage,
-	.pi_is_enabled = si3474_pi_is_enabled,
 	.pi_get_admin_state = si3474_pi_get_admin_state,
 	.pi_get_pw_status = si3474_pi_get_pw_status,
 };
