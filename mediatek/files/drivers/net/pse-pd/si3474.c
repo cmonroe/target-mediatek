@@ -2,8 +2,89 @@
 /*
  * Driver for the Skyworks Si3474 PoE PSE Controller
  *
+ * Chip Architecture & Terminology:
+ *
+ * The Si3474 is a single-chip PoE PSE controller managing 8 physical power
+ * delivery channels. Internally, it's structured into two logical "Quads".
+ *
+ * Quad 0: Manages physical channels ('ports' in datasheet) 0, 1, 2, 3
+ * Quad 1: Manages physical channels ('ports' in datasheet) 4, 5, 6, 7
+ *
+ * Each Quad is accessed via a separate I2C address. The base address range is
+ * set by hardware pins A1-A4, and the specific address selects Quad 0 (usually
+ * the lower/even address) or Quad 1 (usually the higher/odd address).
+ * See datasheet Table 2.2 for the address mapping.
+ *
+ * While the Quads manage channel-specific operations, the Si3474 package has
+ * several resources shared across the entire chip:
+ * - Single RESETb input pin.
+ * - Single INTb output pin (signals interrupts from *either* Quad).
+ * - Single OSS input pin (Emergency Shutdown).
+ * - Global I2C Address (0x7F) used for firmware updates.
+ * - Global status monitoring (Temperature, VDD/VPWR Undervoltage Lockout).
+ *
+ * Driver Architecture:
+ *
+ * To handle the mix of per-Quad access and shared resources correctly, this
+ * driver treats the entire Si3474 package as one logical device. The driver
+ * instance associated with the primary I2C address (Quad 0) takes ownership.
+ * It discovers and manages the I2C client for the secondary address (Quad 1).
+ * This primary instance handles shared resources like IRQ management and
+ * registers a single PSE controller device representing all logical PIs.
+ * Internal functions route I2C commands to the appropriate Quad's i2c_client
+ * based on the target channel or PI.
+ *
+ * Terminology Mapping:
+ *
+ * - "PI" (Power Interface): Refers to the logical PSE port as defined by
+ * IEEE 802.3 (typically corresponds to an RJ45 connector). This is the
+ * `id` (0-7) used in the pse_controller_ops.
+ * - "Channel": Refers to one of the 8 physical power control paths within
+ * the Si3474 chip itself (hardware channels 0-7). This terminology is
+ * used internally within the driver to avoid confusion with 'ports'.
+ * - "Quad": One of the two internal 4-channel management units within the
+ * Si3474, each accessed via its own I2C address.
+ *
+ * Relationship:
+ * - A 2-Pair PoE PI uses 1 Channel.
+ * - A 4-Pair PoE PI uses 2 Channels.
+ *
+ * ASCII Schematic:
+ *
+ * +-----------------------------------------------------+
+ * |                    Si3474 Chip                      |
+ * |                                                     |
+ * | +---------------------+     +---------------------+ |
+ * | |      Quad 0         |     |      Quad 1         | |
+ * | | Channels 0, 1, 2, 3 |     | Channels 4, 5, 6, 7 | |
+ * | +----------^----------+     +-------^-------------+ |
+ * | I2C Addr 0 |                        | I2C Addr 1    |
+ * |            +------------------------+               |
+ * | (Primary Driver Instance) (Managed by Primary)      |
+ * |                                                     |
+ * | Shared Resources (affect whole chip):               |
+ * |  - Single INTb Output -> Handled by Primary         |
+ * |  - Single RESETb Input                              |
+ * |  - Single OSS Input   -> Handled by Primary         |
+ * |  - Global I2C Addr (0x7F) for Firmware Update       |
+ * |  - Global Status (Temp, VDD/VPWR UVLO)              |
+ * +-----------------------------------------------------+
+ *        |   |   |   |        |   |   |   |
+ *        Ch0 Ch1 Ch2 Ch3      Ch4 Ch5 Ch6 Ch7  (Physical Channels)
+ *
+ * Example Mapping (Logical PI to Physical Channel(s)):
+ * * 2-Pair Mode (8 PIs):
+ * PI 0 -> Ch 0
+ * PI 1 -> Ch 1
+ * ...
+ * PI 7 -> Ch 7
+ * * 4-Pair Mode (4 PIs):
+ * PI 0 -> Ch 0 + Ch 1  (Managed via Quad 0 Addr)
+ * PI 1 -> Ch 2 + Ch 3  (Managed via Quad 0 Addr)
+ * PI 2 -> Ch 4 + Ch 5  (Managed via Quad 1 Addr)
+ * PI 3 -> Ch 6 + Ch 7  (Managed via Quad 1 Addr)
+ * (Note: Actual mapping depends on Device Tree and PORT_REMAP config)
  */
-
 
 #include <linux/delay.h>
 #include <linux/i2c.h>
@@ -47,7 +128,7 @@
 /* 60 * (( VPWR_MSB << 8) + VPWR_LSB) / 16384 */
 #define SI3474_UV_STEP (1000 * 1000 * 60 / 16384)
 
-struct si3474_port_desc {
+struct si3474_pi_desc {
 	u8 chan[2];
 	bool is_4p;
 };
@@ -56,7 +137,7 @@ struct si3474_priv {
 	struct i2c_client *client[2];
 	struct pse_controller_dev pcdev;
 	struct device_node *np;
-	struct si3474_port_desc port[SI3474_MAX_CHANS];
+	struct si3474_pi_desc pi[SI3474_MAX_CHANS];
 };
 
 static struct si3474_priv *to_si3474_priv(struct pse_controller_dev *pcdev)
@@ -76,8 +157,8 @@ static int si3474_pi_get_admin_state(struct pse_controller_dev *pcdev, int id,
 	if (id >= SI3474_MAX_CHANS)
 		return -ERANGE;
 
-	chan0 = priv->port[id].chan[0];
-	chan1 = priv->port[id].chan[1];
+	chan0 = priv->pi[id].chan[0];
+	chan1 = priv->pi[id].chan[1];
 
 	if (chan0 < 4)
 		client = priv->client[0];
@@ -87,20 +168,19 @@ static int si3474_pi_get_admin_state(struct pse_controller_dev *pcdev, int id,
 	ret = i2c_smbus_read_byte_data(client, PORT_MODE_REG);
 	if (ret < 0) {
 		admin_state->c33_admin_state =
-		    ETHTOOL_C33_PSE_ADMIN_STATE_UNKNOWN;
+			ETHTOOL_C33_PSE_ADMIN_STATE_UNKNOWN;
 		return ret;
 	}
 
-
 	is_enabled = ((ret & (0x03 << (2 * (chan0 % 4)))) |
 		      (ret & (0x03 << (2 * (chan1 % 4))))) != 0;
-	
+
 	if (is_enabled)
 		admin_state->c33_admin_state =
-		    ETHTOOL_C33_PSE_ADMIN_STATE_ENABLED;
+			ETHTOOL_C33_PSE_ADMIN_STATE_ENABLED;
 	else
 		admin_state->c33_admin_state =
-		    ETHTOOL_C33_PSE_ADMIN_STATE_DISABLED;
+			ETHTOOL_C33_PSE_ADMIN_STATE_DISABLED;
 
 	return 0;
 }
@@ -117,8 +197,8 @@ static int si3474_pi_get_pw_status(struct pse_controller_dev *pcdev, int id,
 	if (id >= SI3474_MAX_CHANS)
 		return -ERANGE;
 
-	chan0 = priv->port[id].chan[0];
-	chan1 = priv->port[id].chan[1];
+	chan0 = priv->pi[id].chan[0];
+	chan1 = priv->pi[id].chan[1];
 
 	if (chan0 < 4)
 		client = priv->client[0];
@@ -135,7 +215,7 @@ static int si3474_pi_get_pw_status(struct pse_controller_dev *pcdev, int id,
 
 	if (delivering)
 		pw_status->c33_pw_status =
-		    ETHTOOL_C33_PSE_PW_D_STATUS_DELIVERING;
+			ETHTOOL_C33_PSE_PW_D_STATUS_DELIVERING;
 	else
 		pw_status->c33_pw_status = ETHTOOL_C33_PSE_PW_D_STATUS_DISABLED;
 
@@ -147,14 +227,15 @@ static int si3474_get_of_channels(struct si3474_priv *priv)
 {
 	struct device_node *pse_node, *node;
 	struct pse_pi *pi;
-	u32 port_no, chan_id;
+	u32 pi_no, chan_id;
 	s8 pairset_cnt;
 	s32 ret = 0;
 
 	pse_node = of_get_child_by_name(priv->np, "pse-pis");
 	if (!pse_node) {
-		dev_warn(&priv->client[0]->dev,
-			 "Unable to parse DT PSE port-matrix, no pse-pis node\n");
+		dev_warn(
+			&priv->client[0]->dev,
+			"Unable to parse DT PSE power interface matrix, no pse-pis node\n");
 		return -EINVAL;
 	}
 
@@ -162,16 +243,16 @@ static int si3474_get_of_channels(struct si3474_priv *priv)
 		if (!of_node_name_eq(node, "pse-pi"))
 			continue;
 
-		ret = of_property_read_u32(node, "reg", &port_no);
+		ret = of_property_read_u32(node, "reg", &pi_no);
 		if (ret) {
 			dev_err(&priv->client[0]->dev,
 				"Failed to read pse-pi reg property\n");
 			ret = -EINVAL;
 			goto out;
 		}
-		if (port_no >= SI3474_MAX_CHANS) {
-			dev_err(&priv->client[0]->dev, "Invalid port number %u\n",
-				port_no);
+		if (pi_no >= SI3474_MAX_CHANS) {
+			dev_err(&priv->client[0]->dev,
+				"Invalid power interface number %u\n", pi_no);
 			ret = -EINVAL;
 			goto out;
 		}
@@ -185,11 +266,11 @@ static int si3474_get_of_channels(struct si3474_priv *priv)
 			goto out;
 		}
 
-		pi = &priv->pcdev.pi[port_no];
+		pi = &priv->pcdev.pi[pi_no];
 		if (!pi->pairset[0].np) {
 			dev_err(&priv->client[0]->dev,
-				"Missing pairset reference, port: %u\n",
-				port_no);
+				"Missing pairset reference, power interface: %u\n",
+				pi_no);
 			ret = -EINVAL;
 			goto out;
 		}
@@ -202,14 +283,14 @@ static int si3474_get_of_channels(struct si3474_priv *priv)
 			ret = -EINVAL;
 			goto out;
 		}
-		priv->port[port_no].chan[0] = chan_id;
-		priv->port[port_no].is_4p = FALSE;
+		priv->pi[pi_no].chan[0] = chan_id;
+		priv->pi[pi_no].is_4p = FALSE;
 
 		if (pairset_cnt == 2) {
 			if (!pi->pairset[1].np) {
 				dev_err(&priv->client[0]->dev,
-					"Missing pairset reference, port: %u\n",
-					port_no);
+					"Missing pairset reference, power interface: %u\n",
+					pi_no);
 				ret = -EINVAL;
 				goto out;
 			}
@@ -222,8 +303,8 @@ static int si3474_get_of_channels(struct si3474_priv *priv)
 				ret = -EINVAL;
 				goto out;
 			}
-			priv->port[port_no].chan[1] = chan_id;
-			priv->port[port_no].is_4p = TRUE;
+			priv->pi[pi_no].chan[1] = chan_id;
+			priv->pi[pi_no].is_4p = TRUE;
 		} else {
 			dev_err(&priv->client[0]->dev,
 				"Number of pairsets incorrect - only 4p configurations supported\n");
@@ -246,7 +327,7 @@ static int si3474_setup_pi_matrix(struct pse_controller_dev *pcdev)
 	ret = si3474_get_of_channels(priv);
 	if (ret < 0) {
 		dev_warn(&priv->client[0]->dev,
-			 "Unable to parse DT PSE port-matrix\n");
+			 "Unable to parse DT PSE power interface matrix\n");
 	}
 	return ret;
 }
@@ -262,15 +343,15 @@ static int si3474_pi_enable(struct pse_controller_dev *pcdev, int id)
 	if (id >= SI3474_MAX_CHANS)
 		return -ERANGE;
 
-	chan0 = priv->port[id].chan[0];
-	chan1 = priv->port[id].chan[1];
+	chan0 = priv->pi[id].chan[0];
+	chan1 = priv->pi[id].chan[1];
 
 	if (chan0 < 4)
 		client = priv->client[0];
 	else
 		client = priv->client[1];
 
-	/* Release port from shutdown */
+	/* Release pi from shutdown */
 	ret = i2c_smbus_read_byte_data(client, PORT_MODE_REG);
 	if (ret < 0)
 		return ret;
@@ -286,7 +367,7 @@ static int si3474_pi_enable(struct pse_controller_dev *pcdev, int id)
 	/* Give time for transition to complete */
 	ssleep(1);
 
-	/* Trigger port to power up */
+	/* Trigger pi to power up */
 	val = (BIT(chan0 % 4) | BIT(chan1 % 4));
 	ret = i2c_smbus_write_byte_data(client, PB_POWER_ENABLE_REG, val);
 
@@ -304,19 +385,19 @@ static int si3474_pi_disable(struct pse_controller_dev *pcdev, int id)
 	if (id >= SI3474_MAX_CHANS)
 		return -ERANGE;
 
-	chan0 = priv->port[id].chan[0];
-	chan1 = priv->port[id].chan[1];
+	chan0 = priv->pi[id].chan[0];
+	chan1 = priv->pi[id].chan[1];
 
 	if (chan0 < 4)
 		client = priv->client[0];
 	else
 		client = priv->client[1];
 
-	/* Trigger port to power down */
+	/* Trigger pi to power down */
 	val = (BIT((chan0 % 4) + 4) | BIT((chan1 % 4) + 4));
 	ret = i2c_smbus_write_byte_data(client, PB_POWER_ENABLE_REG, val);
 
-	/* Shutdown port */
+	/* Shutdown pi */
 	ret = i2c_smbus_read_byte_data(client, PORT_MODE_REG);
 	if (ret < 0)
 		return ret;
@@ -389,8 +470,8 @@ static int si3474_pi_get_voltage(struct pse_controller_dev *pcdev, int id)
 	u8 chan0, chan1;
 	s32 ret;
 
-	chan0 = priv->port[id].chan[0];
-	chan1 = priv->port[id].chan[1];
+	chan0 = priv->pi[id].chan[0];
+	chan1 = priv->pi[id].chan[1];
 
 	if (chan0 < 4)
 		client = priv->client[0];
@@ -430,8 +511,8 @@ static int si3474_pi_get_actual_pw(struct pse_controller_dev *pcdev, int id)
 		return ret;
 	uV = ret;
 
-	chan0 = priv->port[id].chan[0];
-	chan1 = priv->port[id].chan[1];
+	chan0 = priv->pi[id].chan[0];
+	chan1 = priv->pi[id].chan[1];
 
 	ret = si3474_pi_get_chan_current(priv, chan0);
 	if (ret < 0)
@@ -493,14 +574,14 @@ static int si3474_i2c_probe(struct i2c_client *client)
 	if (ret < 0)
 		return ret;
 
-	dev_info(&client->dev, "Chip revision: 0x%x, firmware version: 0x%x\n",
+	dev_info(dev, "Chip revision: 0x%x, firmware version: 0x%x\n",
 		 ret, fw_version);
 
 	priv->client[0] = client;
 	i2c_set_clientdata(client, priv);
 
 	priv->client[1] = i2c_new_ancillary_device(priv->client[0], "slave",
-						priv->client[0]->addr+1);
+						   priv->client[0]->addr + 1);
 	if (IS_ERR(priv->client[1]))
 		return PTR_ERR(priv->client[1]);
 
@@ -543,7 +624,10 @@ static void si3474_i2c_remove(struct i2c_client *client)
 	i2c_unregister_device(priv->client[1]);
 }
 
-static const struct i2c_device_id si3474_id[] = {{"si3474"}, {}};
+static const struct i2c_device_id si3474_id[] = {
+	{ "si3474" },
+	{}
+};
 MODULE_DEVICE_TABLE(i2c, si3474_id);
 
 static const struct of_device_id si3474_of_match[] = {

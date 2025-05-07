@@ -28,9 +28,9 @@ Signed-off-by: Piotr Kubik <piotr.kubik@adtran.com>
  endif
 --- a/drivers/net/pse-pd/Makefile
 +++ b/drivers/net/pse-pd/Makefile
-@@ -6,3 +6,4 @@ obj-$(CONFIG_PSE_CONTROLLER) += pse_core
+@@ -5,4 +5,5 @@ obj-$(CONFIG_PSE_CONTROLLER) += pse_core
+ 
  obj-$(CONFIG_PSE_REGULATOR) += pse_regulator.o
  obj-$(CONFIG_PSE_PD692X0) += pd692x0.o
- obj-$(CONFIG_PSE_TPS23881) += tps23881.o
 +obj-$(CONFIG_PSE_SI3474) += si3474.o
-\ No newline at end of file
+ obj-$(CONFIG_PSE_TPS23881) += tps23881.o
