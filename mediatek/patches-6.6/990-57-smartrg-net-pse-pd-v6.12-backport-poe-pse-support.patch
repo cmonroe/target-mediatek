@@ -19,7 +19,7 @@ Signed-off-by: Piotr Kubik <piotr.kubik@adtran.com>
 
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -17282,6 +17282,14 @@ F:	include/net/psample.h
+@@ -17284,6 +17284,14 @@ F:	include/net/psample.h
  F:	include/uapi/linux/psample.h
  F:	net/psample
  
@@ -5130,7 +5130,7 @@ Signed-off-by: Piotr Kubik <piotr.kubik@adtran.com>
  static struct i2c_driver mlxsw_m_i2c_driver = {
 --- a/drivers/net/mctp/mctp-i2c.c
 +++ b/drivers/net/mctp/mctp-i2c.c
-@@ -1045,8 +1045,8 @@ static struct notifier_block mctp_i2c_no
+@@ -1050,8 +1050,8 @@ static struct notifier_block mctp_i2c_no
  };
  
  static const struct i2c_device_id mctp_i2c_id[] = {
@@ -5211,7 +5211,7 @@ Signed-off-by: Piotr Kubik <piotr.kubik@adtran.com>
  static void upload_err_inject_error(struct test_firmware_upload *tst,
 --- a/drivers/regulator/core.c
 +++ b/drivers/regulator/core.c
-@@ -2277,6 +2277,17 @@ struct regulator *_regulator_get(struct
+@@ -2287,6 +2287,17 @@ struct regulator *_regulator_get(struct
  		if (ret > 0) {
  			rdev->use_count = 1;
  			regulator->enable_count = 1;

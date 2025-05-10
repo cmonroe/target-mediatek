@@ -1,6 +1,6 @@
 --- a/drivers/net/phy/sfp.c
 +++ b/drivers/net/phy/sfp.c
-@@ -2320,12 +2320,11 @@ static int sfp_sm_mod_probe(struct sfp *
+@@ -2333,12 +2333,11 @@ static int sfp_sm_mod_probe(struct sfp *
  				 "EEPROM base structure checksum failure (0x%02x != 0x%02x)\n",
  				 check, id.base.cc_base);
  		} else {
@@ -14,7 +14,7 @@
  		}
  	}
  
-@@ -2349,12 +2348,11 @@ static int sfp_sm_mod_probe(struct sfp *
+@@ -2362,12 +2361,11 @@ static int sfp_sm_mod_probe(struct sfp *
  				 "EEPROM extended structure checksum failure (0x%02x != 0x%02x)\n",
  				 check, id.ext.cc_ext);
  		} else {
