@@ -233,9 +233,8 @@ static int si3474_get_of_channels(struct si3474_priv *priv)
 
 	pse_node = of_get_child_by_name(priv->np, "pse-pis");
 	if (!pse_node) {
-		dev_warn(
-			&priv->client[0]->dev,
-			"Unable to parse DT PSE power interface matrix, no pse-pis node\n");
+		dev_warn(&priv->client[0]->dev,
+			 "Unable to parse DT PSE power interface matrix, no pse-pis node\n");
 		return -EINVAL;
 	}
 
@@ -592,7 +591,8 @@ static int si3474_i2c_probe(struct i2c_client *client)
 	}
 
 	if (ret != SI3474_DEVICE_ID) {
-		dev_err(&priv->client[1]->dev, "Wrong device ID for slave PSE controller: 0x%x\n", ret);
+		dev_err(&priv->client[1]->dev,
+			"Wrong device ID for slave PSE controller: 0x%x\n", ret);
 		ret = -ENXIO;
 		goto out_err_slave;
 	}
@@ -615,12 +615,12 @@ static int si3474_i2c_probe(struct i2c_client *client)
 out_err_slave:
 	i2c_unregister_device(priv->client[1]);
 	return ret;
-
 }
 
 static void si3474_i2c_remove(struct i2c_client *client)
 {
 	struct si3474_priv *priv = i2c_get_clientdata(client);
+
 	i2c_unregister_device(priv->client[1]);
 }
 
