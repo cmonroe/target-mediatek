@@ -87,13 +87,14 @@
  */
 
 #include <linux/delay.h>
+#include <linux/device.h>
 #include <linux/i2c.h>
 #include <linux/module.h>
 #include <linux/of.h>
 #include <linux/platform_device.h>
 #include <linux/pse-pd/pse.h>
 
-#define SI3474_MAX_CHANS 8
+#include "si3474.h"
 
 #define MANUFACTURER_ID 0x08
 #define IC_ID 0x05
@@ -101,7 +102,6 @@
 
 /* Misc registers */
 #define VENDOR_IC_ID_REG 0x1B
-#define TEMPERATURE_REG 0x2C
 #define FIRMWARE_REVISION_REG 0x41
 #define CHIP_REVISION_REG 0x43
 
@@ -127,18 +127,6 @@
 /* VPWR Voltage [V], return in [uV] */
 /* 60 * (( VPWR_MSB << 8) + VPWR_LSB) / 16384 */
 #define SI3474_UV_STEP (1000 * 1000 * 60 / 16384)
-
-struct si3474_pi_desc {
-	u8 chan[2];
-	bool is_4p;
-};
-
-struct si3474_priv {
-	struct i2c_client *client[2];
-	struct pse_controller_dev pcdev;
-	struct device_node *np;
-	struct si3474_pi_desc pi[SI3474_MAX_CHANS];
-};
 
 static struct si3474_priv *to_si3474_priv(struct pse_controller_dev *pcdev)
 {
@@ -610,7 +598,11 @@ static int si3474_i2c_probe(struct i2c_client *client)
 				     "Failed to register PSE controller\n");
 	}
 
-	return ret;
+	ret = si3474_hwmon_probe(dev, priv);
+	if (ret < 0)
+		dev_err(dev, "Hwmon probe failed: 0x%x\n", ret);
+
+	return 0;
 
 out_err_slave:
 	i2c_unregister_device(priv->client[1]);
