@@ -13,7 +13,7 @@ Signed-off-by: Piotr Kubik <piotr.kubik@adtran.com>
 
 --- a/drivers/net/dsa/mxl862xx/mxl862xx.c
 +++ b/drivers/net/dsa/mxl862xx/mxl862xx.c
-@@ -28,6 +28,7 @@
+@@ -15,6 +15,7 @@
  #include <linux/module.h>
  #include <linux/netdevice.h>
  #include <linux/of_device.h>
@@ -21,14 +21,14 @@ Signed-off-by: Piotr Kubik <piotr.kubik@adtran.com>
  #include <linux/phy.h>
  #include <net/dsa.h>
  #include <linux/dsa/8021q.h>
-@@ -1280,7 +1281,20 @@ mxl862xx_setup_mdio(struct dsa_switch *d
- 		 bus->phy_mask |= 0xff00;
+@@ -2904,7 +2905,20 @@ static int mxl862xx_setup_mdio(struct ds
+ 	bus->parent = dev;
+ 	bus->phy_mask = ~ds->phys_mii_mask;
  
- #if (KERNEL_VERSION(5, 9, 0) <= LINUX_VERSION_CODE)
 +#if IS_ENABLED(CONFIG_OF_MDIO)
 +	struct device_node *mdio_np;
 +
-+	mdio_np = of_get_child_by_name(priv->dev->of_node, "mdio");
++	mdio_np = of_get_child_by_name(dev->of_node, "mdio");
 +	if (!mdio_np) {
 +		dev_err(dev, "no MDIO bus node\n");
 +		of_node_put(mdio_np);
@@ -39,6 +39,6 @@ Signed-off-by: Piotr Kubik <piotr.kubik@adtran.com>
 +#else
  	ret = devm_mdiobus_register(dev, bus);
 +#endif
- #else
- 	ret = mdiobus_register(bus);
- #endif
+ 	if (ret)
+ 		dev_err(dev, "failed to register MDIO bus: %d\n", ret);
+ 

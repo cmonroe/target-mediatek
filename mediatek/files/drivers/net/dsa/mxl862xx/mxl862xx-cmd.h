@@ -1,31 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0 */
-/*
- * drivers/net/dsa/host_api/mxl862xx_mmd_apis.h - Header file for DSA Driver for MaxLinear Mxl862xx switch chips family
- *
- * Copyright (C) 2024 MaxLinear Inc.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- *
- */
-
-#ifndef _MXL862XX_MMD_APIS_H_
-#define _MXL862XX_MMD_APIS_H_
-
-#include "mxl862xx_api.h"
-#include "mxl862xx_mdio_relay.h"
-
 #define MXL862XX_MMD_DEV 30
 #define MXL862XX_MMD_REG_CTRL 0
 #define MXL862XX_MMD_REG_LEN_RET 1
@@ -33,32 +5,6 @@
 #define MXL862XX_MMD_REG_DATA_LAST 95
 #define MXL862XX_MMD_REG_DATA_MAX_SIZE \
 	(MXL862XX_MMD_REG_DATA_LAST - MXL862XX_MMD_REG_DATA_FIRST + 1)
-
-typedef union mmd_api_data {
-	uint16_t data[MXL862XX_MMD_REG_DATA_MAX_SIZE * 3]; //Maximum data size is GSW_PCE_rule_t (508)
-	mxl862xx_register_mod_t mxl862xx_register_mod_t_data;
-	mxl862xx_cpu_port_cfg_t mxl862xx_cpu_port_cfg_t_data;
-	mxl862xx_port_link_cfg_t mxl862xx_port_link_cfg_t_data;
-	mxl862xx_port_cfg_t mxl862xx_port_cfg_t_data;
-	mxl862xx_bridge_alloc_t mxl862xx_bridge_alloc_t_data;
-	mxl862xx_bridge_port_config_t mxl862xx_bridge_port_config_t_data;
-	mxl862xx_debug_rmon_port_cnt_t mxl862xx_debug_rmon_port_cnt_t_data;
-	mxl862xx_mac_table_clear_cond_t mxl862xx_mac_table_clear_cond_t_data;
-	mxl862xx_mac_table_read_t mxl862xx_mac_table_read_t_data;
-	mxl862xx_mac_table_add_t mxl862xx_mac_table_add_t_data;
-	mxl862xx_mac_table_remove_t mxl862xx_mac_table_remove_t_data;
-	mxl862xx_stp_port_cfg_t mxl862xx_stp_port_cfg_t_data;
-	mxl862xx_ss_sp_tag_t mxl862xx_ss_sp_tag_t_data;
-	mxl862xx_monitor_port_cfg_t mxl862xx_monitor_port_cfg_t_data;
-	mxl862xx_ctp_port_config_t mxl862xx_ctp_port_config_t_data;
-
-	struct mdio_relay_data mdio_relay_data;
-	struct mdio_relay_mod_data mdio_relay_mod_data;
-	struct sys_fw_image_version img_ver_data;
-#ifdef CONFIG_SENSOR_MXL
-	struct sys_sensor_value pvt_sensor_data;
-#endif
-} mmd_api_data_t;
 
 #define MXL862XX_COMMON_MAGIC 0x100
 #define MXL862XX_TFLOW_MAGIC 0x200
@@ -83,9 +29,6 @@ typedef union mmd_api_data {
 
 #define SYS_MISC_MAGIC 0x1900
 
-#ifdef MMD_API_TEST
-#define MMD_API_SIMPLE_TEST (0x0 + 0x1)
-#endif
 #define MMD_API_SET_DATA_0 (0x0 + 0x2)
 #define MMD_API_SET_DATA_1 (0x0 + 0x3)
 #define MMD_API_SET_DATA_2 (0x0 + 0x4)
@@ -270,33 +213,4 @@ typedef union mmd_api_data {
 #define SYS_MISC_PVT_TEMP (SYS_MISC_MAGIC + 0x03)
 #define SYS_MISC_PVT_VOLTAGE (SYS_MISC_MAGIC + 0x04)
 
-#define MMD_API_ID_MASK		0x1FFF
-#define MMD_API_ID_MAX		MMD_API_ID_MASK
-
-#define MMD_API_CRC_CHK		(1UL << 14)
-
-#define MMD_API_CTRL_BUSY	(1UL << 15)
-
-#define MMD_API_RET_LSB_MSK	0x03FF
-#define MMD_API_RET_LSB_BITS	10
-#define MMD_API_PARAM_LEN_MSK	MMD_API_RET_LSB_MSK
-
-#define MMD_API_RET_MSB_MSK	(1UL << 14)
-
-#define MMD_API_RET_MSK		(MMD_API_RET_MSB_MSK | MMD_API_RET_LSB_MSK)
-
-#define MMD_API_RET_MIN		MMD_API_CRC6_ERR
-#define MMD_API_CRC6_ERR	-1024 /* Ctrl and Length/Return CRC error */
-#define MMD_API_CRC16_ERR	-1023 /* data CRC error */
-#define MMD_API_MDIO_BUS_ERR	-1022 /* MDIO bus error */
-#define MMD_API_RET_UNDERFLOW	-1021 /* error code underflow */
-#define MMD_API_RET_OVERFLOW	1023  /* return value overflow */
-#define MMD_API_RET_MAX		MMD_API_RET_OVERFLOW
-
-int mxl862xx_read(const mxl862xx_device_t *dev, uint32_t regaddr);
-int mxl862xx_write(const mxl862xx_device_t *dev, uint32_t regaddr, uint16_t data);
-
-int mxl862xx_api_crc_chk_en(const mxl862xx_device_t *dev, bool enable,
-			    unsigned int msecs);
-
-#endif /* _MXL862XX_MMD_APIS_H_ */
+#define MMD_API_MAXIMUM_ID 0x7FFF

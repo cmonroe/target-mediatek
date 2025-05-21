@@ -1064,8 +1064,7 @@
 				label = "cpu";
 				phy-mode = "usxgmii";
 				ethernet = <&gmac1>;
-				dsa-tag-protocol = "mxl862";
-				/* dsa-tag-protocol = "mxl862_8021q"; */
+				dsa-tag-protocol = "mxl862_8021q";
 
 				fixed-link {
 					speed = <10000>;

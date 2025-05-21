@@ -6,8 +6,8 @@ Add PHY driver support for Maxlinear 86252 and 86282 switches
 
 Signed-off-by: Chad Monroe <chad@monroe.io>
 ---
- drivers/net/phy/mxl-gpy.c |   28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
+ drivers/net/phy/mxl-gpy.c |   72 +++++++++++++++++++++++++++++++++---
+ 1 file changed, 67 insertions(+), 5 deletions(-)
 
 --- a/drivers/net/phy/mxl-gpy.c
 +++ b/drivers/net/phy/mxl-gpy.c
@@ -27,18 +27,81 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  
  #define PHY_CTL1		0x13
  #define PHY_CTL1_MDICD		BIT(3)
-@@ -228,6 +230,10 @@ static int gpy_hwmon_register(struct phy
+@@ -200,6 +202,29 @@ static int gpy_hwmon_read(struct device
+ 	return 0;
+ }
+ 
++static int mxl862xx_hwmon_read(struct device *dev,
++			  enum hwmon_sensor_types type,
++			  u32 attr, int channel, long *value)
++{
++	struct phy_device *phydev = dev_get_drvdata(dev);
++	long tmp;
++	int ret;
++
++	ret = phy_read_mmd(phydev, MDIO_MMD_VEND1, VSPEC1_TEMP_STA);
++	if (ret < 0)
++		return ret;
++	if (!ret)
++		return -ENODATA;
++
++	tmp = (s16)ret;
++	tmp *= 78125;
++	tmp /= 10000;
++
++	*value = tmp;
++
++	return 0;
++}
++
+ static umode_t gpy_hwmon_is_visible(const void *data,
+ 				    enum hwmon_sensor_types type,
+ 				    u32 attr, int channel)
+@@ -217,14 +242,25 @@ static const struct hwmon_ops gpy_hwmon_
+ 	.read		= gpy_hwmon_read,
+ };
+ 
++static const struct hwmon_ops mxl862xx_hwmon_hwmon_ops = {
++	.is_visible	= gpy_hwmon_is_visible,
++	.read		= mxl862xx_hwmon_read,
++};
++
+ static const struct hwmon_chip_info gpy_hwmon_chip_info = {
+ 	.ops		= &gpy_hwmon_hwmon_ops,
+ 	.info		= gpy_hwmon_info,
+ };
+ 
++static const struct hwmon_chip_info mxl862xx_hwmon_chip_info = {
++	.ops		= &mxl862xx_hwmon_hwmon_ops,
++	.info		= gpy_hwmon_info,
++};
++
+ static int gpy_hwmon_register(struct phy_device *phydev)
+ {
+ 	struct device *dev = &phydev->mdio.dev;
++	const struct hwmon_chip_info *info;
  	struct device *hwmon_dev;
  	char *hwmon_name;
  
-+	/* MXL862XX temp senors behave differently, skip for now */
-+	if (phy_id_compare(phydev->phy_id, PHY_ID_MXL862XX, PHY_ID_MXL862XX_MASK))
-+		return 0;
-+
- 	hwmon_name = devm_hwmon_sanitize_name(dev, dev_name(dev));
+@@ -232,11 +268,13 @@ static int gpy_hwmon_register(struct phy
  	if (IS_ERR(hwmon_name))
  		return PTR_ERR(hwmon_name);
-@@ -632,7 +638,7 @@ static int gpy_update_interface(struct p
+ 
+-	hwmon_dev = devm_hwmon_device_register_with_info(dev, hwmon_name,
+-							 phydev,
+-							 &gpy_hwmon_chip_info,
+-							 NULL);
++	if ((phydev->phy_id & PHY_ID_MXL862XX_MASK) == PHY_ID_MXL862XX)
++		info = &mxl862xx_hwmon_chip_info;
++	else
++		info = &gpy_hwmon_chip_info;
+ 
++	hwmon_dev = devm_hwmon_device_register_with_info(dev, hwmon_name, phydev, info,
++ 							 NULL);
+ 	return PTR_ERR_OR_ZERO(hwmon_dev);
+ }
+ #else
+@@ -632,7 +670,7 @@ static int gpy_update_interface(struct p
  	/* Interface mode is fixed for USXGMII and integrated PHY */
  	if (phydev->interface == PHY_INTERFACE_MODE_USXGMII ||
  	    phydev->interface == PHY_INTERFACE_MODE_INTERNAL)
@@ -47,23 +110,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  
  	/* Automatically switch SERDES interface between SGMII and 2500-BaseX
  	 * according to speed. Disable ANEG in 2500-BaseX mode.
-@@ -1097,6 +1103,15 @@ static int gpy_led_polarity_set(struct p
- 	unreachable();
- }
- 
-+static int gpy_c45_pma_read_abilities(struct phy_device *phydev)
-+{
-+	phydev->c45_ids.devices_in_package  |= MDIO_DEVS_AN;
-+
-+	genphy_c45_pma_read_abilities(phydev);
-+
-+	return 0;
-+}
-+
- static struct phy_driver gpy_drivers[] = {
- 	{
- 		PHY_ID_MATCH_MODEL(PHY_ID_GPY2xx),
-@@ -1363,6 +1378,22 @@ static struct phy_driver gpy_drivers[] =
+@@ -1363,6 +1401,29 @@ static struct phy_driver gpy_drivers[] =
  		.set_loopback	= gpy_loopback,
  		.link_change_notify	= gpy_link_change_notify,
  	},
@@ -71,7 +118,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 +		.phy_id		= PHY_ID_MXL862XX,
 +		.phy_id_mask	= PHY_ID_MXL862XX_MASK,
 +		.name		= "MaxLinear Ethernet MxL862XX",
-+		.get_features	= gpy_c45_pma_read_abilities,
++		.get_features	= genphy_c45_pma_read_abilities,
 +		.config_init	= gpy_config_init,
 +		.probe		= gpy_probe,
 +		.suspend	= genphy_suspend,
@@ -81,12 +128,19 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 +		.read_status	= gpy_read_status,
 +		.config_intr	= gpy_config_intr,
 +		.handle_interrupt = gpy_handle_interrupt,
++		.set_wol	= gpy_set_wol,
++		.get_wol	= gpy_get_wol,
 +		.set_loopback	= gpy_loopback,
++		.led_brightness_set = gpy_led_brightness_set,
++		.led_hw_is_supported = gpy_led_hw_is_supported,
++		.led_hw_control_get = gpy_led_hw_control_get,
++		.led_hw_control_set = gpy_led_hw_control_set,
++		.led_polarity_set = gpy_led_polarity_set,
 +	},
  };
  module_phy_driver(gpy_drivers);
  
-@@ -1379,6 +1410,7 @@ static struct mdio_device_id __maybe_unu
+@@ -1379,6 +1440,7 @@ static struct mdio_device_id __maybe_unu
  	{PHY_ID_MATCH_MODEL(PHY_ID_GPY241B)},
  	{PHY_ID_MATCH_MODEL(PHY_ID_GPY241BM)},
  	{PHY_ID_MATCH_MODEL(PHY_ID_GPY245B)},

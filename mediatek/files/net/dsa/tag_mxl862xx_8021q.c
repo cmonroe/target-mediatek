@@ -27,16 +27,8 @@
 #endif
 
 #include <linux/dsa/8021q.h>
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(6, 1, 0))
 #include "tag_8021q.h"
-#endif
-#include <net/dsa.h>
-
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 2, 0))
-#include "dsa_priv.h"
-#else
 #include "tag.h"
-#endif
 
 
 #define MXL862_NAME	"mxl862xx"
@@ -53,58 +45,6 @@
 
 /* special tag in TX path header */
 
-/* The mxl862_8021q 4-byte tagging is not yet supported in
- * kernels >= 5.16 due to differences in DSA 8021q tagging handlers.
- * DSA tx/rx vid functions are not avaliable, so dummy
- * functions are here to make the code compilable. */
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION (5, 16, 0))
-static u16 dsa_8021q_rx_vid(struct dsa_switch *ds, int port)
-{
-   return 0;
-}
-
-static u16 dsa_8021q_tx_vid(struct dsa_switch *ds, int port)
-{
-	return 0;
-}
-#endif
-
-#if (LINUX_VERSION_CODE < KERNEL_VERSION (5, 14, 0))
-static void dsa_8021q_rcv(struct sk_buff *skb, int *source_port, int *switch_id)
-{
-	u16 vid, tci;
-
-	skb_push_rcsum(skb, ETH_HLEN);
-	if (skb_vlan_tag_present(skb)) {
-		tci = skb_vlan_tag_get(skb);
-		__vlan_hwaccel_clear_tag(skb);
-	} else {
-		__skb_vlan_pop(skb, &tci);
-	}
-	skb_pull_rcsum(skb, ETH_HLEN);
-
-	vid = tci & VLAN_VID_MASK;
-
-	*source_port = dsa_8021q_rx_source_port(vid);
-	*switch_id = dsa_8021q_rx_switch_id(vid);
-	skb->priority = (tci & VLAN_PRIO_MASK) >> VLAN_PRIO_SHIFT;
-}
-
-/* If the ingress port offloads the bridge, we mark the frame as autonomously
- * forwarded by hardware, so the software bridge doesn't forward in twice, back
- * to us, because we already did. However, if we're in fallback mode and we do
- * software bridging, we are not offloading it, therefore the dp->bridge_dev
- * pointer is not populated, and flooding needs to be done by software (we are
- * effectively operating in standalone ports mode).
- */
-static inline void dsa_default_offload_fwd_mark(struct sk_buff *skb)
-{
-	struct dsa_port *dp = dsa_slave_to_port(skb->dev);
-
-	skb->offload_fwd_mark = !!(dp->bridge_dev);
-}
-#endif
-
 static struct sk_buff *mxl862_8021q_tag_xmit(struct sk_buff *skb,
 				      struct net_device *dev)
 {
@@ -113,12 +53,10 @@ static struct sk_buff *mxl862_8021q_tag_xmit(struct sk_buff *skb,
 #else
 	struct dsa_port *dp = dsa_user_to_port(dev);
 #endif
-	unsigned int port = dp->index ;
 
-	u16 tx_vid = dsa_8021q_tx_vid(dp->ds, port);
+	u16 tx_vid = dsa_tag_8021q_standalone_vid(dp);
 	u16 queue_mapping = skb_get_queue_mapping(skb);
 	u8 pcp = netdev_txq_to_tc(dev, queue_mapping);
-
 
 	dsa_8021q_xmit(skb, dev, ETH_P_8021Q,
 			      ((pcp << VLAN_PRIO_SHIFT) | tx_vid));
@@ -126,35 +64,32 @@ static struct sk_buff *mxl862_8021q_tag_xmit(struct sk_buff *skb,
 	return skb;
 }
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 15, 0))
-static struct sk_buff *mxl862_8021q_tag_rcv(struct sk_buff *skb,
-				      struct net_device *dev,
-				      struct packet_type *pt)
-#else
 static struct sk_buff *mxl862_8021q_tag_rcv(struct sk_buff *skb,
 				      struct net_device *dev)
-#endif
 {
-	uint16_t vlan = ntohs(*(uint16_t*)(skb->data));
-	int port = dsa_8021q_rx_source_port(vlan);
 	int src_port = -1;
 	int switch_id = -1;
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 7, 0))
-	skb->dev = dsa_master_find_slave(dev, 0, port);
+	/* removes Outer VLAN tag */
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 11, 0))
+	dsa_8021q_rcv(skb, &src_port, &switch_id, NULL);
 #else
-	skb->dev = dsa_conduit_find_user(dev, 0, port);
+	dsa_8021q_rcv(skb, &src_port, &switch_id, NULL, NULL);
 #endif
-	if (!skb->dev) {
-		dev_warn_ratelimited(&dev->dev,"Dropping packet due to invalid source port:%d\n", port);
+	if (src_port == -1 || switch_id == -1) {
+		dev_warn_ratelimited(&dev->dev, "Dropping packet due to invalid outer 802.1Q tag: switch %d port %d\n", switch_id, src_port);
 		return NULL;
 	}
-	/* removes Outer VLAN tag */
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0))
-	dsa_8021q_rcv(skb, &src_port, &switch_id);
+
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 7, 0))
+	skb->dev = dsa_master_find_slave(dev, switch_id, src_port);
 #else
-	dsa_8021q_rcv(skb, &src_port, &switch_id, NULL);
+	skb->dev = dsa_conduit_find_user(dev, switch_id, src_port);
 #endif
+	if (!skb->dev) {
+		dev_warn_ratelimited(&dev->dev, "Dropping packet due to invalid source port: %d\n", src_port);
+		return NULL;
+	}
 
 	dsa_default_offload_fwd_mark(skb);
 
@@ -166,11 +101,7 @@ static const struct dsa_device_ops mxl862_8021q_netdev_ops = {
 	.proto = DSA_TAG_PROTO_MXL862_8021Q,
 	.xmit = mxl862_8021q_tag_xmit,
 	.rcv = mxl862_8021q_tag_rcv,
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 14, 0))
-	.overhead = VLAN_HLEN,
-#else
 	.needed_headroom	= VLAN_HLEN,
-#endif
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 7, 0) && \
 	 LINUX_VERSION_CODE > KERNEL_VERSION(5, 10, 0))
 	.promisc_on_master	= true,
@@ -181,10 +112,5 @@ static const struct dsa_device_ops mxl862_8021q_netdev_ops = {
 
 
 MODULE_LICENSE("GPL");
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 2, 0))
-MODULE_ALIAS_DSA_TAG_DRIVER(DSA_TAG_PROTO_MXL862_8021Q);
-#else
 MODULE_ALIAS_DSA_TAG_DRIVER(DSA_TAG_PROTO_MXL862_8021Q, MXL862_NAME);
-#endif
-
 module_dsa_tag_driver(mxl862_8021q_netdev_ops);
