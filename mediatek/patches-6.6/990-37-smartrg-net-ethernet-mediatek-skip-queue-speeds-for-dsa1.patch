@@ -22,7 +22,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  		return NOTIFY_DONE;
  
 +	switch (mac->id) {
-+	case MTK_GMAC2_ID:
++	case MTK_GMAC1_ID:
 +		if (strcmp(netdev_name(dev), "dsa1"))
 +			return NOTIFY_DONE;
 +	default:
