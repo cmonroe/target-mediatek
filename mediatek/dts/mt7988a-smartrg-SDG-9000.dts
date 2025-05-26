@@ -174,7 +174,7 @@
 		pse1_reset {
 			gpio-export,name = "pse1-reset";
 			gpio-export,output = <1>;
-			gpios = <&pio 26 GPIO_ACTIVE_LOW>;
+			gpios = <&pio 61 GPIO_ACTIVE_LOW>;
 		};
 
 		watchdog_enable {
