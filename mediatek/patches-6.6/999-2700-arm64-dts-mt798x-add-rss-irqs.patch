@@ -1,6 +1,6 @@
 --- a/arch/arm64/boot/dts/mediatek/mt7986a.dtsi
 +++ b/arch/arm64/boot/dts/mediatek/mt7986a.dtsi
-@@ -530,7 +530,11 @@
+@@ -531,7 +531,11 @@
  		eth: ethernet@15100000 {
  			compatible = "mediatek,mt7986-eth";
  			reg = <0 0x15100000 0 0x80000>;
@@ -13,8 +13,8 @@
  				     <GIC_SPI 197 IRQ_TYPE_LEVEL_HIGH>,
  				     <GIC_SPI 198 IRQ_TYPE_LEVEL_HIGH>,
  				     <GIC_SPI 199 IRQ_TYPE_LEVEL_HIGH>;
---- a/arch/arm64/boot/dts/mediatek/mt7981.dtsi
-+++ b/arch/arm64/boot/dts/mediatek/mt7981.dtsi
+--- a/arch/arm64/boot/dts/mediatek/mt7981b.dtsi
++++ b/arch/arm64/boot/dts/mediatek/mt7981b.dtsi
 @@ -605,7 +605,11 @@
  		eth: ethernet@15100000 {
  			compatible = "mediatek,mt7981-eth";
