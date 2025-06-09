@@ -6,7 +6,7 @@
 
 /dts-v1/;
 #include "mt7988a.dtsi"
-#include "SDG-9000-thermal.dtsi"
+#include "mt798x-smartrg-common.dtsi"
 
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/input/input.h>
@@ -395,22 +395,34 @@
 	thermal-zones {
 		cpu_thermal: cpu-thermal {
 			thermal-sensors = <&lvts 0>;
-			SDG_CPU_THERMAL_MAP(cpu_thermal, &fan, &fan2);
+			SDG_2FAN_THERMAL_MAP(cpu_thermal, &fan, &fan2,
+					     125000, 120000,
+					     110000, 80000,
+					     60000, 40000);
 		};
 
 		aqr_lan_thermal: aqr-lan-thermal {
 			thermal-sensors = <&phy0>;
-			SDG_PHY_THERMAL_MAP(aqr_lan_thermal, &fan, &fan2);
+			SDG_2FAN_THERMAL_MAP(aqr_lan_thermal, &fan, &fan2,
+					     108000, 104000,
+					     100000, 80000,
+					     60000, 40000);
 		};
 
 		aqr_wan_thermal: aqr-wan-thermal {
 			thermal-sensors = <&phy8>;
-			SDG_PHY_THERMAL_MAP(aqr_wan_thermal, &fan, &fan2);
+			SDG_2FAN_THERMAL_MAP(aqr_wan_thermal, &fan, &fan2,
+					     108000, 104000,
+					     100000, 80000,
+					     60000, 40000);
 		};
 
 		mxl_thermal: mxl-thermal {
 			thermal-sensors = <&swphy0>;
-			SDG_SW_THERMAL_MAP(mxl_thermal, &fan, &fan2);
+			SDG_2FAN_THERMAL_MAP(mxl_thermal, &fan, &fan2,
+					     110000, 105000,
+					     100000, 80000,
+					     60000, 40000);
 		};
 	};
 };
