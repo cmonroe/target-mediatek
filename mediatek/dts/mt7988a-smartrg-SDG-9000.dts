@@ -6,11 +6,14 @@
 
 /dts-v1/;
 #include "mt7988a.dtsi"
+#include "SDG-9000-thermal.dtsi"
+
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/input/input.h>
 #include <dt-bindings/leds/common.h>
 #include <dt-bindings/pinctrl/mt65xx.h>
 #include <dt-bindings/regulator/richtek,rt5190a-regulator.h>
+#include <dt-bindings/thermal/thermal.h>
 
 / {
 	model = "SmartRG SDG-9000";
@@ -388,6 +391,28 @@
 		tx-fault-gpios = <&pio 37 GPIO_ACTIVE_HIGH>;
 		maximum-power-milliwatt = <4000>;
 	};
+
+	thermal-zones {
+		cpu_thermal: cpu-thermal {
+			thermal-sensors = <&lvts 0>;
+			SDG_CPU_THERMAL_MAP(cpu_thermal, &fan, &fan2);
+		};
+
+		aqr_lan_thermal: aqr-lan-thermal {
+			thermal-sensors = <&phy0>;
+			SDG_PHY_THERMAL_MAP(aqr_lan_thermal, &fan, &fan2);
+		};
+
+		aqr_wan_thermal: aqr-wan-thermal {
+			thermal-sensors = <&phy8>;
+			SDG_PHY_THERMAL_MAP(aqr_wan_thermal, &fan, &fan2);
+		};
+
+		mxl_thermal: mxl-thermal {
+			thermal-sensors = <&swphy0>;
+			SDG_SW_THERMAL_MAP(mxl_thermal, &fan, &fan2);
+		};
+	};
 };
 
 &cpu0 {
@@ -408,75 +433,6 @@
 
 &cci {
 	proc-supply = <&rt5190_buck3>;
-};
-
-&cpu_thermal {
-	/delete-node/cooling-maps;
-	/delete-node/trips;
-
-	trips {
-		cpu_trip_crit: crit {
-			temperature = <125000>;
-			hysteresis = <4000>;
-			type = "critical";
-		};
-
-		cpu_trip_hot: hot {
-			temperature = <120000>;
-			hysteresis = <4000>;
-			type = "hot";
-		};
-
-		cpu_trip_active_high: active-high {
-			temperature = <110000>;
-			hysteresis = <4000>;
-			type = "active";
-		};
-
-		cpu_trip_active_med: active-med {
-			temperature = <80000>;
-			hysteresis = <4000>;
-			type = "active";
-		};
-
-		cpu_trip_active_low: active-low {
-			temperature = <60000>;
-			hysteresis = <4000>;
-			type = "active";
-		};
-
-		cpu_trip_active_silent: active-silent {
-			temperature = <40000>;
-			hysteresis = <4000>;
-			type = "active";
-		};
-	};
-
-	cooling-maps {
-		cpu-active-high {
-			/* active: set fan to cooling level 3 */
-			cooling-device = <&fan 3 3>, <&fan2 3 3>;
-			trip = <&cpu_trip_active_high>;
-		};
-
-		cpu-active-med {
-			/* active: set fan to cooling level 2 */
-			cooling-device = <&fan 2 2>, <&fan2 2 2>;
-			trip = <&cpu_trip_active_med>;
-		};
-
-		cpu-active-low {
-			/* active: set fan to cooling level 1 */
-			cooling-device = <&fan 1 1>, <&fan2 1 1>;
-			trip = <&cpu_trip_active_low>;
-		};
-
-		cpu-active-silent {
-			/* active: set fan to cooling level 0 */
-			cooling-device = <&fan 0 0>, <&fan2 0 0>;
-			trip = <&cpu_trip_active_silent>;
-		};
-	};
 };
 
 &fan {
@@ -906,6 +862,7 @@
 		/* CUX3410 - LAN */
 		compatible = "ethernet-phy-ieee802.3-c45";
 		reg = <0>;
+		#thermal-sensor-cells = <0>;
 
 		reset-gpios = <&pio 68 GPIO_ACTIVE_LOW>;
 		reset-assert-us = <100000>;
@@ -944,6 +901,7 @@
 		/* CUX3410 - WAN */
 		compatible = "ethernet-phy-ieee802.3-c45";
 		reg = <8>;
+		#thermal-sensor-cells = <0>;
 
 		reset-gpios = <&pio 0 GPIO_ACTIVE_LOW>;
 		reset-assert-us = <100000>;
@@ -1087,6 +1045,7 @@
 
 			swphy0: swphy@0 {
 				reg = <0>;
+				#thermal-sensor-cells = <0>;
 				pses = <&pse_pi0>;
 			};
 			swphy1: swphy@1 {
