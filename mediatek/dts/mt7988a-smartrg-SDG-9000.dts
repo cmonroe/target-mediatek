@@ -451,6 +451,7 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pwm0_fan_pins>;
 	pwms = <&pwm 0 40000 0>;
+	fan-name = "mainboard";
 
 	/**
 	 * set fan speed
@@ -475,6 +476,7 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pwm1_fan_pins>;
 	pwms = <&pwm 1 40000 0>;
+	fan-name = "psu";
 
 	cooling-levels = <77 102 128 152>;
 
