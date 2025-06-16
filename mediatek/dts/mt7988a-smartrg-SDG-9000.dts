@@ -405,16 +405,16 @@
 			thermal-sensors = <&phy0>;
 			SDG_2FAN_THERMAL_MAP(aqr_lan_thermal, &fan, &fan2,
 					     108000, 104000,
-					     100000, 80000,
-					     60000, 40000);
+					     100000, 90000,
+					     80000, 40000);
 		};
 
 		aqr_wan_thermal: aqr-wan-thermal {
 			thermal-sensors = <&phy8>;
 			SDG_2FAN_THERMAL_MAP(aqr_wan_thermal, &fan, &fan2,
 					     108000, 104000,
-					     100000, 80000,
-					     60000, 40000);
+					     100000, 90000,
+					     80000, 40000);
 		};
 
 		mxl_thermal: mxl-thermal {
