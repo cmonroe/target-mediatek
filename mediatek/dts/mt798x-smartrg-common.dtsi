@@ -2,6 +2,7 @@
 #define SDG_2FAN_THERMAL_MAP(_cname, _fan0, _fan1, _crit, _hot, _high, _med, _low, _silent)	\
 	polling-delay-passive = <0>;								\
 	polling-delay = <1000>;									\
+	critical-action = "reboot";								\
 												\
 	/delete-node/cooling-maps;								\
 	/delete-node/trips;									\
