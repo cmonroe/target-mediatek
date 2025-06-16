@@ -1,0 +1,59 @@
+From 87f67d1747bc3ce8ace14be99b47d7731041ff03 Mon Sep 17 00:00:00 2001
+From: Fabio Estevam <festevam@denx.de>
+Date: Wed, 29 Nov 2023 09:43:27 -0300
+Subject: [PATCH] dt-bindings: thermal-zones: Document critical-action
+
+Document the critical-action property to describe the thermal action
+the OS should perform after the critical temperature is reached.
+
+The possible values are "shutdown" and "reboot".
+
+The motivation for introducing the critical-action property is that
+different systems may need different thermal actions when the critical
+temperature is reached.
+
+For example, in a desktop PC, it is desired that a shutdown happens
+after the critical temperature is reached.
+
+However, in some embedded cases, such behavior does not suit well,
+as the board may be unattended in the field and rebooting may be a
+better approach.
+
+The bootloader may also benefit from this new property as it can check
+the SoC temperature and in case the temperature is above the critical
+point, it can trigger a shutdown or reboot accordingly.
+
+Signed-off-by: Fabio Estevam <festevam@denx.de>
+Reviewed-by: Krzysztof Kozlowski <krzysztof.kozlowski@linaro.org>
+Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+Link: https://lore.kernel.org/r/20231129124330.519423-1-festevam@gmail.com
+Signed-off-by: Piotr Kubik <piotr.kubik@adtran.com>
+---
+ .../bindings/thermal/thermal-zones.yaml          | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+--- a/Documentation/devicetree/bindings/thermal/thermal-zones.yaml
++++ b/Documentation/devicetree/bindings/thermal/thermal-zones.yaml
+@@ -78,6 +78,22 @@ patternProperties:
+           framework and assumes that the thermal sensors in this zone
+           support interrupts.
+ 
++      critical-action:
++        $ref: /schemas/types.yaml#/definitions/string
++        description: |
++          The action the OS should perform after the critical temperature is reached.
++          By default the system will shutdown as a safe action to prevent damage
++          to the hardware, if the property is not set.
++          The shutdown action should be always the default and preferred one.
++          Choose 'reboot' with care, as the hardware may be in thermal stress,
++          thus leading to infinite reboots that may cause damage to the hardware.
++          Make sure the firmware/bootloader will act as the last resort and take
++          over the thermal control.
++
++        enum:
++          - shutdown
++          - reboot
++
+       thermal-sensors:
+         $ref: /schemas/types.yaml#/definitions/phandle-array
+         maxItems: 1
