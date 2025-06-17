@@ -21,3 +21,11 @@
 	phy-connection-type = "usxgmii";
 	phy = <&phy0>;
 };
+
+&aqr_wan_thermal {
+	thermal-sensors = <&phy0>;
+};
+
+&aqr_lan_thermal {
+	thermal-sensors = <&phy8>;
+};

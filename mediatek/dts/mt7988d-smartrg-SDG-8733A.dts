@@ -162,3 +162,9 @@
 &xphy {
 	status = "disabled";
 };
+
+/delete-node/ &aqr_lan_thermal;
+
+&aqr_wan_thermal {
+	thermal-sensors = <&phy8>;
+};

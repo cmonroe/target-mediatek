@@ -58,3 +58,9 @@
 	sfp = <&sfp1>;
 	managed = "in-band-status";
 };
+
+/delete-node/ &aqr_wan_thermal;
+
+&aqr_lan_thermal {
+	thermal-sensors = <&phy8>;
+};
