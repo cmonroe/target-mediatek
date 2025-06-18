@@ -1,0 +1,11 @@
+--- a/drivers/net/phy/aquantia/aquantia_hwmon.c
++++ b/drivers/net/phy/aquantia/aquantia_hwmon.c
+@@ -104,7 +104,7 @@ static int aqr_hwmon_read(struct device
+ 		if (reg < 0)
+ 			return reg;
+ 		if (!reg)
+-			return -EBUSY;
++			return -EAGAIN;
+ 
+ 		return aqr_hwmon_get(phydev, VEND1_THERMAL_STAT1, value);
+ 
