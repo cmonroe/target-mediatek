@@ -106,11 +106,9 @@
 	};
 };
 
-/*
 &pcie0 {
 	wifi-reset-gpios = <&pio 9 GPIO_ACTIVE_HIGH>;
 };
-*/
 
 &pcie1 {
 	status = "disabled";
