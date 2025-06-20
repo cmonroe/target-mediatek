@@ -173,7 +173,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  #if IS_ENABLED(CONFIG_OF_MDIO)
  	struct device_node *mdio_np;
  
-@@ -2968,9 +2983,15 @@ static int mxl862xx_setup(struct dsa_swi
+@@ -2968,10 +2983,16 @@ static int mxl862xx_setup(struct dsa_swi
  	for (i = 0; i < MAX_VLANS; i++)
  		priv->port_info[cpu_port].vlan.egress_vlan_block_info.vlans[i].untagged = true;
  
@@ -183,14 +183,14 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 +			continue;
 +
  		priv->port_info[i].vlan.filtering_mode_locked = false;
--		priv->port_info[i].isolated = true;
-+		priv->port_info[i].isolated = false;
-+
+ 		priv->port_info[i].isolated = true;
+ 
 +		if (dsa_is_cpu_port(ds, i))
 +			continue;
- 
++
  		mxl862xx_port_state(ds, i, false);
  		mxl862xx_isolate_port(ds, i);
+ 		mxl862xx_port_fast_age(ds, i);
 @@ -3028,10 +3049,14 @@ static void mxl862xx_phylink_get_caps(st
  
  	if (port >= 0 && port < priv->hw_info->phy_ports) {
