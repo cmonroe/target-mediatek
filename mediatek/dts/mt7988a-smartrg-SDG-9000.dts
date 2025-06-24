@@ -1265,7 +1265,7 @@
 		};
 
 		port@3 {
-			label = "management";
+			label = "aux";
 		};
 	};
 };
