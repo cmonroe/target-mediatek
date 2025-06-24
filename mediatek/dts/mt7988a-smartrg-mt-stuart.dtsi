@@ -194,15 +194,15 @@
 		aqr_lan_thermal: aqr-lan-thermal {
 			SDG_1FAN_THERMAL_MAP(aqr_lan_thermal, &fan,
 					     108000, 104000,
-					     100000, 80000,
-					     60000, 40000);
+					     100000, 90000,
+					     80000, 40000);
 		};
 
 		aqr_wan_thermal: aqr-wan-thermal {
 			SDG_1FAN_THERMAL_MAP(aqr_wan_thermal, &fan,
 					     108000, 104000,
-					     100000, 80000,
-					     60000, 40000);
+					     100000, 90000,
+					     80000, 40000);
 		};
 	};
 };
