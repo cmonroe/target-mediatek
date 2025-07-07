@@ -1,0 +1,180 @@
+// SPDX-License-Identifier: (GPL-2.0 OR MIT)
+/*
+ * Copyright (C) 2025 SmartRG Inc.
+ * Author: Chad Monroe <chad.monroe@smartrg.com>
+ */
+
+#include "mt7988a-smartrg-mt-stuart.dtsi"
+#include "mt7988a-smartrg-mt-stuart-voice.dtsi"
+
+/ {
+	model = "SmartRG SDG-8713v";
+	compatible = "smartrg,sdg-8713v", "mediatek,mt7988a";
+
+	/delete-node/ thermal-zones;
+	thermal-zones {
+		cpu_thermal: cpu-thermal {
+			polling-delay-passive = <1000>;
+			polling-delay = <1000>;
+			thermal-sensors = <&lvts 0>;
+
+			trips {
+				cpu_trip_crit: crit {
+					temperature = <125000>;
+					hysteresis = <2000>;
+					type = "critical";
+				};
+			};
+		};
+	};
+};
+
+/delete-node/ &fan;
+/delete-node/ &phy0;
+/delete-node/ &phy8;
+/delete-node/ &radio0;
+
+&gmac1 {
+	label = "lan1";
+	phy-connection-type = "usxgmii";
+	phy = <&phy28>;
+};
+
+&gmac2 {
+	label = "wan";
+	phy = <&phy29>;
+};
+
+&mdio_bus {
+	/* Make PHY Firmware Download Great Again */
+	/* clock-frequency = <10500000>; */
+
+	phy28: ethernet-phy@1c {
+		/* Aeonsemi AS21010 */
+		compatible = "ethernet-phy-ieee802.3-c45";
+		reg = <0x1c>;
+		#thermal-sensor-cells = <0>;
+
+		firmware-name = "as21x1x_fw.bin";
+
+		reset-gpios = <&pio 62 GPIO_ACTIVE_LOW>;
+		reset-assert-us = <200000>;
+		reset-deassert-us = <350000>;
+
+		leds {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			led@0 {
+				reg = <0>;
+				function = LED_FUNCTION_LAN;
+				color = <LED_COLOR_ID_WHITE>;
+				active-low;
+			};
+
+			led@1 {
+				reg = <3>;
+				function = LED_FUNCTION_LAN;
+				color = <LED_COLOR_ID_ORANGE>;
+			};
+
+			led@2 {
+				reg = <4>;
+				function = LED_FUNCTION_LAN;
+				color = <LED_COLOR_ID_GREEN>;
+			};
+		};
+	};
+
+	phy29: ethernet-phy@1d {
+		/* Aeonsemi AS21010 */
+		compatible = "ethernet-phy-ieee802.3-c45";
+		reg = <0x1d>;
+		#thermal-sensor-cells = <0>;
+
+		firmware-name = "as21x1x_fw.bin";
+
+		reset-gpios = <&pio 71 GPIO_ACTIVE_LOW>;
+		reset-assert-us = <200000>;
+		reset-deassert-us = <350000>;
+
+		leds {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			led@0 {
+				reg = <0>;
+				function = LED_FUNCTION_WAN;
+				color = <LED_COLOR_ID_WHITE>;
+				active-low;
+			};
+
+			led@1 {
+				reg = <3>;
+				function = LED_FUNCTION_WAN;
+				color = <LED_COLOR_ID_ORANGE>;
+			};
+
+			led@2 {
+				reg = <4>;
+				function = LED_FUNCTION_WAN;
+				color = <LED_COLOR_ID_GREEN>;
+			};
+		};
+	};
+};
+
+&pcie0 {
+	status = "disabled";
+};
+
+&pcie1 {
+	wifi-reset-gpios = <&pio 7 GPIO_ACTIVE_HIGH>;
+	wifi-reset-msleep = <100>;
+	status = "okay";
+
+	pcie@0,0 {
+		reg = <0x0000 0 0 0 0>;
+
+		radio0: mt7996@0,0 {
+			reg = <0x0000 0 0 0 0>;
+			nvmem-cells = <&eeprom_factory_0>, <&precal_factory_1e10>;
+			nvmem-cell-names = "eeprom", "precal";
+			ieee80211-freq-limit = <2400000 2500000>, <5170000 5835000>;
+
+			band@0 {
+				/* 2.4 GHz */
+				reg = <0>;
+				nvmem-cells = <&macaddr 0x4>;
+				nvmem-cell-names = "mac-address";
+			};
+
+			band@1 {
+				/* 5 GHz */
+				reg = <1>;
+				nvmem-cells = <&macaddr 0xa>;
+				nvmem-cell-names = "mac-address";
+			};
+		};
+	};
+};
+
+&ssusb1 {
+	status = "disabled";
+};
+
+&tphy {
+	status = "disabled";
+};
+
+&uart1 {
+	status = "disabled";
+};
+
+&uart2 {
+	status = "disabled";
+};
+
+&xphy {
+	status = "disabled";
+};
