@@ -21,7 +21,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  #define IDX_INVAL (-1)
  
  #define INGRESS_FINAL_RULES 5
-@@ -190,19 +190,14 @@ static int mxl862xx_update_bridge_conf_port(struct dsa_switch *ds, u8 port,
+@@ -190,19 +190,14 @@ static int mxl862xx_update_bridge_conf_p
  					    struct net_device *bridge, int action)
  {
  	struct mxl862xx_priv *priv = ds->priv;
@@ -43,7 +43,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  
  		if (action)
  			priv->bridge_portmap[bridge_id] |= BIT(DSA_MXL_PORT(port));
-@@ -212,7 +207,7 @@ static int mxl862xx_update_bridge_conf_port(struct dsa_switch *ds, u8 port,
+@@ -212,7 +207,7 @@ static int mxl862xx_update_bridge_conf_p
  
  	/* Update switch according to local bridge port map */
  	/* Add this port to the port maps of other ports skiping it's own map */
@@ -52,7 +52,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  		struct mxl862xx_bridge_port_config br_port_cfg = { };
  		int bridge_id = priv->port_info[i].bridge_id;
  
-@@ -222,7 +217,7 @@ static int mxl862xx_update_bridge_conf_port(struct dsa_switch *ds, u8 port,
+@@ -222,7 +217,7 @@ static int mxl862xx_update_bridge_conf_p
  		/* Case for standalone bridges assigned only to single user and CPU ports.
  		 * Used only for initial ports isolation
  		 */
@@ -61,7 +61,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  			continue;
  
  		/* Do not reconfigure any standalone bridge if this is bridge join scenario */
-@@ -2551,14 +2547,14 @@ static void mxl862xx_deisolate_port(struct dsa_switch *ds, u8 port)
+@@ -2551,14 +2546,14 @@ static void mxl862xx_deisolate_port(stru
  
  	ret = mxl862xx_update_bridge_conf_port(ds, port, NULL, 0);
  	if (ret) {
@@ -78,7 +78,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  		return;
  	}
  
-@@ -2609,10 +2605,16 @@ static int mxl862xx_find_bridge_id(struct dsa_switch *ds, struct net_device *bri
+@@ -2609,10 +2604,16 @@ static int mxl862xx_find_bridge_id(struc
  	struct mxl862xx_priv *priv = ds->priv;
  	u8 i;
  
@@ -99,7 +99,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  
  	return 0;
  }
-@@ -2649,17 +2651,17 @@ static void mxl862xx_set_vlan_filter_limits(struct dsa_switch *ds)
+@@ -2649,17 +2650,17 @@ static void mxl862xx_set_vlan_filter_lim
  	/* The calculation of the max number of simultaneously supported VLANS (priv->max_vlans)
  	 * comes from the equation:
  	 *
@@ -122,7 +122,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  		/* 2 entries per each vlan and 2 entries for fixed rules */
  		cpu_egress_entries = priv->max_vlans * 2 + 2;
  
-@@ -2671,9 +2673,9 @@ static void mxl862xx_set_vlan_filter_limits(struct dsa_switch *ds)
+@@ -2671,9 +2672,9 @@ static void mxl862xx_set_vlan_filter_lim
  		user_ingress_entries = INGRESS_FINAL_RULES + INGRESS_VID_RULES * priv->max_vlans;
  		user_egress_entries = EGRESS_FINAL_RULES + EGRESS_VID_RULES * priv->max_vlans;
  	} else {
@@ -134,7 +134,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  		/* 1 entry for fixed rule */
  		cpu_ingress_entries =  1;
  		/* 2 entries per each vlan  */
-@@ -2694,7 +2696,11 @@ static void mxl862xx_set_vlan_filter_limits(struct dsa_switch *ds)
+@@ -2694,7 +2695,11 @@ static void mxl862xx_set_vlan_filter_lim
  		vlan->egress_vlan_block_info.filters_max - 1;
  
  	/* Set limits and indexes required for processing VLAN rules for user ports */
@@ -147,7 +147,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  		vlan = &priv->port_info[i].vlan;
  		vlan->ingress_vlan_block_info.entries_per_vlan = INGRESS_VID_RULES;
  		vlan->ingress_vlan_block_info.filters_max = user_ingress_entries;
-@@ -2706,9 +2712,9 @@ static void mxl862xx_set_vlan_filter_limits(struct dsa_switch *ds)
+@@ -2706,9 +2711,9 @@ static void mxl862xx_set_vlan_filter_lim
  		vlan->egress_vlan_block_info.final_filters_idx =
  			vlan->egress_vlan_block_info.filters_max - 1;
  	}
@@ -159,7 +159,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  		 cpu_egress_entries, user_ingress_entries, INGRESS_VID_RULES);
  }
  
-@@ -2843,14 +2849,14 @@ static void mxl862xx_port_bridge_leave(struct dsa_switch *ds, int port,
+@@ -2843,14 +2848,14 @@ static void mxl862xx_port_bridge_leave(s
  	bridge_id = mxl862xx_find_bridge_id(ds, bridge.dev);
  	ret = mxl862xx_update_bridge_conf_port(ds, port, bridge.dev, 0);
  	if (ret) {
@@ -176,7 +176,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  			return;
  		}
  	}
-@@ -2885,6 +2891,7 @@ static int mxl862xx_phy_write_c45_mii_bus(struct mii_bus *bus, int port,
+@@ -2885,6 +2890,7 @@ static int mxl862xx_phy_write_c45_mii_bu
  
  static int mxl862xx_setup_mdio(struct dsa_switch *ds)
  {
@@ -184,7 +184,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	struct device *dev = ds->dev;
  	struct mii_bus *bus;
  	static int idx;
-@@ -2905,6 +2912,10 @@ static int mxl862xx_setup_mdio(struct dsa_switch *ds)
+@@ -2905,6 +2911,10 @@ static int mxl862xx_setup_mdio(struct ds
  	bus->parent = dev;
  	bus->phy_mask = ~ds->phys_mii_mask;
  
@@ -195,7 +195,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  #if IS_ENABLED(CONFIG_OF_MDIO)
  	struct device_node *mdio_np;
  
-@@ -2968,10 +2979,16 @@ static int mxl862xx_setup(struct dsa_switch *ds)
+@@ -2968,10 +2978,16 @@ static int mxl862xx_setup(struct dsa_swi
  	for (i = 0; i < MAX_VLANS; i++)
  		priv->port_info[cpu_port].vlan.egress_vlan_block_info.vlans[i].untagged = true;
  
@@ -213,7 +213,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  		mxl862xx_port_state(ds, i, false);
  		mxl862xx_isolate_port(ds, i);
  		mxl862xx_port_fast_age(ds, i);
-@@ -3028,10 +3045,14 @@ static void mxl862xx_phylink_get_caps(struct dsa_switch *ds, int port,
+@@ -3028,10 +3044,14 @@ static void mxl862xx_phylink_get_caps(st
  
  	if (port >= 0 && port < priv->hw_info->phy_ports) {
  		__set_bit(PHY_INTERFACE_MODE_INTERNAL, config->supported_interfaces);
@@ -230,7 +230,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  		__set_bit(PHY_INTERFACE_MODE_NA, config->supported_interfaces);
  	}
  }
-@@ -3044,6 +3065,7 @@ static void mxl862xx_phylink_mac_config(struct phylink_config *config, unsigned
+@@ -3044,6 +3064,7 @@ static void mxl862xx_phylink_mac_config(
  	switch (state->interface) {
  	case PHY_INTERFACE_MODE_INTERNAL:
  	case PHY_INTERFACE_MODE_SGMII:
@@ -238,7 +238,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	case PHY_INTERFACE_MODE_USXGMII:
  		return;
  	default:
-@@ -3256,7 +3278,6 @@ static void mxl862xx_port_mirror_del(struct dsa_switch *ds, int port,
+@@ -3256,7 +3277,6 @@ static void mxl862xx_port_mirror_del(str
  		.mask = MXL862XX_CTP_PORT_CONFIG_LOOPBACK_AND_MIRROR,
  	};
  	struct mxl862xx_priv *priv = ds->priv;
@@ -246,7 +246,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	int active_mirrors = 0;
  	int ret, i;
  
-@@ -3271,10 +3292,14 @@ static void mxl862xx_port_mirror_del(struct dsa_switch *ds, int port,
+@@ -3271,10 +3291,14 @@ static void mxl862xx_port_mirror_del(str
  		return;
  	}
  
@@ -262,7 +262,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  
  	if (!active_mirrors) {
  		struct mxl862xx_monitor_port_cfg monitor_port = { };
-@@ -3298,7 +3323,10 @@ static int mxl862xx_port_fdb_add(struct dsa_switch *ds, int port,
+@@ -3298,7 +3322,10 @@ static int mxl862xx_port_fdb_add(struct
  
  	memcpy(param.mac, addr, ETH_ALEN);
  
@@ -274,7 +274,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  		if (!dsa_is_cpu_port(ds, port) && i != port)
  			continue;
  
-@@ -3328,7 +3356,10 @@ static int mxl862xx_port_fdb_del(struct dsa_switch *ds, int port,
+@@ -3328,7 +3355,10 @@ static int mxl862xx_port_fdb_del(struct
  
  	memcpy(param.mac, addr, ETH_ALEN);
  
@@ -286,7 +286,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  		if (!dsa_is_cpu_port(ds, port) && i != port)
  			continue;
  
-@@ -3547,14 +3578,18 @@ static void mxl862xx_remove(struct mdio_device *mdiodev)
+@@ -3547,14 +3577,18 @@ static void mxl862xx_remove(struct mdio_
  }
  
  static const struct mxl862xx_hw_info mxl86282_data = {
