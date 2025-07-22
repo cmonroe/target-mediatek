@@ -70,6 +70,13 @@
 			groups = "pcm";
 		};
 	};
+
+	spi1_pins: spi1-pins {
+		mux {
+			function = "spi";
+			groups = "spi1";
+		};
+	};
 };
 
 &spi1 {

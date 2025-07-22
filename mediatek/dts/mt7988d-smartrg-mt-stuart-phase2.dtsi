@@ -14,7 +14,7 @@
 
 / {
 	aliases {
-		serial0 = &uart0;
+		serial0 = &serial0;
 		label-mac-device = &gmac1;
 		led-boot = &led_sys_green;
 		led-failsafe = &led_sys_blue;
@@ -23,7 +23,7 @@
 	};
 
 	chosen {
-		stdout-path = &uart0;
+		stdout-path = &serial0;
 		bootargs = "console=ttyS0,115200n1 loglevel=8 pci=pcie_bus_perf";
 	};
 
@@ -332,6 +332,46 @@
 		mediatek,pull-down-adv = <0>; /* bias-disable */
 	};
 
+	gbe1_led0_pins: gbe1-led0-pins {
+		mux {
+			function = "led";
+			groups = "gbe1_led0";
+		};
+	};
+
+	i2c0_pins: i2c0-g0-pins {
+		mux {
+			function = "i2c";
+			groups = "i2c0_1";
+		};
+	};
+
+	i2c1_pins: i2c1-g0-pins {
+		mux {
+			function = "i2c";
+			groups = "i2c1_0";
+		};
+	};
+
+	mdio0_pins: mdio0-pins {
+		mux {
+			function = "eth";
+			groups = "mdc_mdio0";
+		};
+
+		conf {
+			groups = "mdc_mdio0";
+			drive-strength = <MTK_DRIVE_8mA>;
+		};
+	};
+
+	mmc0_pins_emmc_51: mmc0-emmc-51-pins {
+		mux {
+			function = "flash";
+			groups = "emmc_51";
+		};
+	};
+
 	pcie3_1_pins: pcie3-pins-g1 {
 		mux {
 			function = "pcie";
@@ -344,7 +384,7 @@
 	status = "disabled";
 };
 
-&uart0 {
+&serial0 {
 	status = "okay";
 };
 

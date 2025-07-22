@@ -20,7 +20,7 @@
 	compatible = "smartrg,sdg-9000", "mediatek,mt7988a";
 
 	aliases {
-		serial0 = &uart0;
+		serial0 = &serial0;
 		label-mac-device = &gmac2;
 		led-boot = &led_sys_green;
 		led-failsafe = &led_sys_blue;
@@ -29,7 +29,7 @@
 	};
 
 	chosen {
-		stdout-path = &uart0;
+		stdout-path = &serial0;
 		bootargs = "console=ttyS0,115200n1 loglevel=8 pci=pcie_bus_perf";
 	};
 
@@ -92,11 +92,52 @@
 		regulator-always-on;
 	};
 
+	fan: pwm-fan {
+		compatible = "pwm-fan";
+		#cooling-cells = <2>;
+		#thermal-sensor-cells = <1>;
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&pwm0_fan_pins>;
+		pwms = <&pwm 0 40000 0>;
+		label = "mainboard";
+
+		/**
+		 * set fan speed
+		 *
+		 * 0 = off
+		 * 77 = 30% duty cycle
+		 * 102 = 40% duty cycle
+		 * 128 - 50% duty cycle
+		 * 152 - 60% duty cycle
+		 * 255 = 100% duty cycle
+		 */
+		cooling-levels = <77 102 128 152>;
+
+		interrupt-parent = <&pio>;
+		interrupts = <51 IRQ_TYPE_EDGE_FALLING>;
+		pulses-per-revolution = <2>;
+
+		status = "okay";
+	};
+
 	fan2: pwm-fan2 {
 		compatible = "pwm-fan";
 		#cooling-cells = <2>;
 		#thermal-sensor-cells = <1>;
-		status = "disabled";
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&pwm1_fan_pins>;
+		pwms = <&pwm 1 40000 0>;
+		label = "psu";
+
+		cooling-levels = <77 102 128 152>;
+
+		interrupt-parent = <&pio>;
+		interrupts = <50 IRQ_TYPE_EDGE_FALLING>;
+		pulses-per-revolution = <2>;
+
+		status = "okay";
 	};
 
 	backlight: backlight-lcd0 {
@@ -445,46 +486,6 @@
 
 &cci {
 	proc-supply = <&rt5190_buck3>;
-};
-
-&fan {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pwm0_fan_pins>;
-	pwms = <&pwm 0 40000 0>;
-	label = "mainboard";
-
-	/**
-	 * set fan speed
-	 *
-	 * 0 = off
-	 * 77 = 30% duty cycle
-	 * 102 = 40% duty cycle
-	 * 128 - 50% duty cycle
-	 * 152 - 60% duty cycle
-	 * 255 = 100% duty cycle
-	 */
-	cooling-levels = <77 102 128 152>;
-
-	interrupt-parent = <&pio>;
-	interrupts = <51 IRQ_TYPE_EDGE_FALLING>;
-	pulses-per-revolution = <2>;
-
-	status = "okay";
-};
-
-&fan2 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pwm1_fan_pins>;
-	pwms = <&pwm 1 40000 0>;
-	label = "psu";
-
-	cooling-levels = <77 102 128 152>;
-
-	interrupt-parent = <&pio>;
-	interrupts = <50 IRQ_TYPE_EDGE_FALLING>;
-	pulses-per-revolution = <2>;
-
-	status = "okay";
 };
 
 &gmac0 {
@@ -1159,6 +1160,46 @@
 		mediatek,pull-down-adv = <0>; /* bias-disable */
 	};
 
+	i2c0_pins: i2c0-g0-pins {
+		mux {
+			function = "i2c";
+			groups = "i2c0_1";
+		};
+	};
+
+	i2c1_pins: i2c1-g0-pins {
+		mux {
+			function = "i2c";
+			groups = "i2c1_0";
+		};
+	};
+
+	i2c2_1_pins: i2c2-pins-g1 {
+		mux {
+			function = "i2c";
+			groups = "i2c2_1";
+		};
+	};
+
+	mdio0_pins: mdio0-pins {
+		mux {
+			function = "eth";
+			groups = "mdc_mdio0";
+		};
+
+		conf {
+			groups = "mdc_mdio0";
+			drive-strength = <MTK_DRIVE_8mA>;
+		};
+	};
+
+	mmc0_pins_emmc_51: mmc0-emmc-51-pins {
+		mux {
+			function = "flash";
+			groups = "emmc_51";
+		};
+	};
+
 /*
 	mxl86282_reset: mxl86282-reset-hog {
 		gpio-hog;
@@ -1274,7 +1315,7 @@
 	status = "okay";
 };
 
-&uart0 {
+&serial0 {
 	status = "okay";
 };
 
@@ -1282,6 +1323,6 @@
 	status = "okay";
 };
 
-&xphy {
+&xsphy {
 	status = "okay";
 };

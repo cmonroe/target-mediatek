@@ -166,14 +166,14 @@
 	status = "disabled";
 };
 
-&uart1 {
+&serial1 {
 	status = "disabled";
 };
 
-&uart2 {
+&serial2 {
 	status = "disabled";
 };
 
-&xphy {
+&xsphy {
 	status = "disabled";
 };

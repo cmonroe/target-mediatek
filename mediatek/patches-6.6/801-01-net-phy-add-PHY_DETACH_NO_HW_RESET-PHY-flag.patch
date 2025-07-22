@@ -24,7 +24,7 @@ Signed-off-by: Christian Marangi <ansuelsmth@gmail.com>
 
 --- a/drivers/net/phy/phy_device.c
 +++ b/drivers/net/phy/phy_device.c
-@@ -1946,7 +1946,8 @@ void phy_detach(struct phy_device *phyde
+@@ -1948,7 +1948,8 @@ void phy_detach(struct phy_device *phyde
  		device_release_driver(&phydev->mdio.dev);
  
  	/* Assert the reset signal */

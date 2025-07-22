@@ -16,7 +16,7 @@
 
 / {
 	aliases {
-		serial0 = &uart0;
+		serial0 = &serial0;
 		label-mac-device = &gmac1;
 		led-boot = &led_sys_green;
 		led-failsafe = &led_sys_blue;
@@ -25,7 +25,7 @@
 	};
 
 	chosen {
-		stdout-path = &uart0;
+		stdout-path = &serial0;
 		bootargs = "console=ttyS0,115200n1 loglevel=8 pci=pcie_bus_perf";
 	};
 
@@ -137,6 +137,32 @@
 		};
 	};
 
+	fan: pwm-fan {
+		compatible = "pwm-fan";
+		#cooling-cells = <2>;
+		#thermal-sensor-cells = <1>;
+
+		pwms = <&pwm 0 40000 0>;
+
+		/**
+		 * set fan speed
+		 *
+		 * 0 = off
+		 * 61 = 24% duty cycle
+		 * 77 = 30% duty cycle
+		 * 102 = 40% duty cycle
+		 * 128 - 50% duty cycle
+		 * 255 = 100% duty cycle
+		 */
+		cooling-levels = <61 77 102 128>;
+
+		interrupt-parent = <&pio>;
+		interrupts = <21 IRQ_TYPE_EDGE_FALLING>;
+		pulses-per-revolution = <2>;
+
+		status = "okay";
+	};
+
 	leds: gpio-leds {
 		compatible = "gpio-leds";
 
@@ -230,28 +256,6 @@
 &eth {
 	pinctrl-0 = <&mdio0_pins>;
 	pinctrl-names = "default";
-	status = "okay";
-};
-
-&fan {
-	pwms = <&pwm 0 40000 0>;
-
-	/**
-	 * set fan speed
-	 *
-	 * 0 = off
-	 * 61 = 24% duty cycle
-	 * 77 = 30% duty cycle
-	 * 102 = 40% duty cycle
-	 * 128 - 50% duty cycle
-	 * 255 = 100% duty cycle
-	 */
-	cooling-levels = <61 77 102 128>;
-
-	interrupt-parent = <&pio>;
-	interrupts = <21 IRQ_TYPE_EDGE_FALLING>;
-	pulses-per-revolution = <2>;
-
 	status = "okay";
 };
 
@@ -576,6 +580,39 @@
 		mediatek,pull-down-adv = <0>; /* bias-disable */
 	};
 
+	i2c0_pins: i2c0-g0-pins {
+		mux {
+			function = "i2c";
+			groups = "i2c0_1";
+		};
+	};
+
+	i2c1_pins: i2c1-g0-pins {
+		mux {
+			function = "i2c";
+			groups = "i2c1_0";
+		};
+	};
+
+	mdio0_pins: mdio0-pins {
+		mux {
+			function = "eth";
+			groups = "mdc_mdio0";
+		};
+
+		conf {
+			groups = "mdc_mdio0";
+			drive-strength = <MTK_DRIVE_8mA>;
+		};
+	};
+
+	mmc0_pins_emmc_51: mmc0-emmc-51-pins {
+		mux {
+			function = "flash";
+			groups = "emmc_51";
+		};
+	};
+
 	pcie0_1_pins: pcie0-pins-g1 {
 		mux {
 			function = "pcie";
@@ -659,11 +696,11 @@
 	status = "okay";
 };
 
-&uart0 {
+&serial0 {
 	status = "okay";
 };
 
-&uart1 {
+&serial1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&uart1_pins>;
 	status = "okay";
@@ -671,7 +708,7 @@
 	/* Airoha AG3352 GPS */
 };
 
-&uart2 {
+&serial2 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&uart2_pins>;
 	status = "okay";
@@ -683,6 +720,6 @@
 	status = "okay";
 };
 
-&xphy {
+&xsphy {
 	status = "okay";
 };

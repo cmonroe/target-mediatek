@@ -62,7 +62,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  int mtk_foe_entry_set_pppoe(struct mtk_eth *eth, struct mtk_foe_entry *entry,
 --- a/drivers/net/ethernet/mediatek/mtk_ppe_offload.c
 +++ b/drivers/net/ethernet/mediatek/mtk_ppe_offload.c
-@@ -186,7 +186,7 @@ mtk_flow_get_dsa_port(struct net_device
+@@ -188,7 +188,7 @@ mtk_flow_get_dsa_port(struct net_device
  static int
  mtk_flow_set_output_device(struct mtk_eth *eth, struct mtk_foe_entry *foe,
  			   struct net_device *dev, const u8 *dest_mac,
@@ -71,7 +71,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  {
  	struct mtk_wdma_info info = {};
  	int pse_port, dsa_port, queue;
-@@ -236,6 +236,7 @@ mtk_flow_set_output_device(struct mtk_et
+@@ -238,6 +238,7 @@ mtk_flow_set_output_device(struct mtk_et
  
  out:
  	mtk_foe_entry_set_pse_port(eth, foe, pse_port);
@@ -79,7 +79,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  
  	return 0;
  }
-@@ -254,6 +255,7 @@ mtk_flow_offload_replace(struct mtk_eth
+@@ -256,6 +257,7 @@ mtk_flow_offload_replace(struct mtk_eth
  	int wed_index = -1;
  	u16 addr_type = 0;
  	u8 l4proto = 0;
@@ -87,7 +87,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	int err = 0;
  	int i;
  
-@@ -297,6 +299,15 @@ mtk_flow_offload_replace(struct mtk_eth
+@@ -299,6 +301,15 @@ mtk_flow_offload_replace(struct mtk_eth
  		return -EOPNOTSUPP;
  	}
  
@@ -351,7 +351,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  #ifdef CONFIG_NF_CONNTRACK_EVENTS
  	NF_SYSCTL_CT_EVENTS,
  #endif
-@@ -719,6 +737,15 @@ static struct ctl_table nf_ct_sysctl_tab
+@@ -723,6 +741,15 @@ static struct ctl_table nf_ct_sysctl_tab
  		.maxlen		= sizeof(u8),
  		.mode		= 0644,
  		.proc_handler	= proc_dou8vec_minmax,
