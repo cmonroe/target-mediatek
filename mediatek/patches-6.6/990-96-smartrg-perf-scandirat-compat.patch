@@ -1,5 +1,3 @@
-diff --git a/tools/perf/util/print-events.c b/tools/perf/util/print-events.c
-index 9e47712507cc..0dc70b87d609 100644
 --- a/tools/perf/util/print-events.c
 +++ b/tools/perf/util/print-events.c
 @@ -28,6 +28,7 @@
@@ -10,7 +8,7 @@ index 9e47712507cc..0dc70b87d609 100644
  
  #define MAX_NAME_LEN 100
  
-@@ -63,6 +64,8 @@ void print_tracepoint_events(const struct print_callbacks *print_cb __maybe_unus
+@@ -63,6 +64,8 @@ void print_tracepoint_events(const struc
  {
  	char *events_path = get_tracing_file("events");
  	int events_fd = open(events_path, O_PATH);
@@ -19,7 +17,7 @@ index 9e47712507cc..0dc70b87d609 100644
  
  	put_tracing_file(events_path);
  	if (events_fd < 0) {
-@@ -70,10 +73,7 @@ void print_tracepoint_events(const struct print_callbacks *print_cb __maybe_unus
+@@ -70,10 +73,7 @@ void print_tracepoint_events(const struc
  		return;
  	}
  
@@ -31,7 +29,7 @@ index 9e47712507cc..0dc70b87d609 100644
  
  	for (int i = 0; i < sys_items; i++) {
  		struct dirent *sys_dirent = sys_namelist[i];
-@@ -130,11 +130,6 @@ void print_tracepoint_events(const struct print_callbacks *print_cb __maybe_unus
+@@ -130,11 +130,6 @@ next_sys:
  	}
  
  	free(sys_namelist);
@@ -43,8 +41,6 @@ index 9e47712507cc..0dc70b87d609 100644
  	close(events_fd);
  }
  
-diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
-index c1fd9ba6d697..4f561e5e4162 100644
 --- a/tools/perf/util/util.c
 +++ b/tools/perf/util/util.c
 @@ -552,3 +552,22 @@ int sched_getcpu(void)
@@ -70,8 +66,6 @@ index c1fd9ba6d697..4f561e5e4162 100644
 +	return err;
 +}
 +#endif
-diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
-index 7c8915d92dca..9966c21aaf04 100644
 --- a/tools/perf/util/util.h
 +++ b/tools/perf/util/util.h
 @@ -6,6 +6,7 @@
@@ -82,7 +76,7 @@ index 7c8915d92dca..9966c21aaf04 100644
  #include <fcntl.h>
  #include <stdbool.h>
  #include <stddef.h>
-@@ -56,6 +57,13 @@ int perf_tip(char **strp, const char *dirpath);
+@@ -56,6 +57,13 @@ int perf_tip(char **strp, const char *di
  int sched_getcpu(void);
  #endif
  

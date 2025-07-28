@@ -23,7 +23,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 
 --- a/net/bridge/br_switchdev.c
 +++ b/net/bridge/br_switchdev.c
-@@ -81,8 +81,7 @@ bool nbp_switchdev_allowed_egress(const
+@@ -84,8 +84,7 @@ bool nbp_switchdev_allowed_egress(const
  
  /* Flags that can be offloaded to hardware */
  #define BR_PORT_FLAGS_HW_OFFLOAD (BR_LEARNING | BR_FLOOD | BR_PORT_MAB | \

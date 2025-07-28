@@ -235,7 +235,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  #include <net/netfilter/nf_conntrack_ecache.h>
  #include <net/netfilter/nf_conntrack_zones.h>
  #include <net/netfilter/nf_conntrack_timestamp.h>
-@@ -1738,6 +1739,7 @@ init_conntrack(struct net *net, struct n
+@@ -1752,6 +1753,7 @@ init_conntrack(struct net *net, struct n
  				      GFP_ATOMIC);
  
  	nf_ct_acct_ext_add(ct, GFP_ATOMIC);
@@ -243,7 +243,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	nf_ct_tstamp_ext_add(ct, GFP_ATOMIC);
  	nf_ct_labels_ext_add(ct);
  
-@@ -2800,6 +2802,7 @@ int nf_conntrack_init_net(struct net *ne
+@@ -2814,6 +2816,7 @@ int nf_conntrack_init_net(struct net *ne
  		goto err_expect;
  
  	nf_conntrack_acct_pernet_init(net);
