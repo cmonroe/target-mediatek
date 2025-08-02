@@ -16,6 +16,20 @@
 	compatible = "smartrg,sdg-9712o", "mediatek,mt7988a";
 };
 
+&pcie0 {
+	pinctrl-0 = <&pcie0_1_pins>;
+	wifi-reset-gpios = <&pio 7 GPIO_ACTIVE_HIGH>;
+};
+
+&pio {
+	pcie0_1_pins: pcie0-pins-g1 {
+		mux {
+			function = "pcie";
+			groups = "pcie_2l_0_pereset", "pcie_clk_req_n0_0";
+		};
+	};
+};
+
 &radio0 {
 	ieee80211-freq-limit = <2400000 2500000>, <5170000 5835000>;
 };
