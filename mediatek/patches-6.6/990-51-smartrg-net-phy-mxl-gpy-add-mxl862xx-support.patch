@@ -19,15 +19,15 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  #define PHY_ID_GPY2xx		0x67C9DC00
  #define PHY_ID_GPY115B		0x67C9DF00
  #define PHY_ID_GPY115C		0x67C9DF10
-@@ -31,6 +32,7 @@
- #define PHY_ID_GPY241B		0x67C9DE40
+@@ -32,6 +33,7 @@
  #define PHY_ID_GPY241BM		0x67C9DE80
  #define PHY_ID_GPY245B		0x67C9DEC0
+ #define PHY_ID_MXL86211C		0xC1335400
 +#define PHY_ID_MXL862XX		0xC1335500
  
  #define PHY_CTL1		0x13
  #define PHY_CTL1_MDICD		BIT(3)
-@@ -200,6 +202,29 @@ static int gpy_hwmon_read(struct device
+@@ -201,6 +203,29 @@ static int gpy_hwmon_read(struct device
  	return 0;
  }
  
@@ -57,7 +57,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  static umode_t gpy_hwmon_is_visible(const void *data,
  				    enum hwmon_sensor_types type,
  				    u32 attr, int channel)
-@@ -217,14 +242,25 @@ static const struct hwmon_ops gpy_hwmon_
+@@ -218,14 +243,25 @@ static const struct hwmon_ops gpy_hwmon_
  	.read		= gpy_hwmon_read,
  };
  
@@ -83,7 +83,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	struct device *hwmon_dev;
  	char *hwmon_name;
  
-@@ -232,11 +268,13 @@ static int gpy_hwmon_register(struct phy
+@@ -233,11 +269,13 @@ static int gpy_hwmon_register(struct phy
  	if (IS_ERR(hwmon_name))
  		return PTR_ERR(hwmon_name);
  
@@ -101,7 +101,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	return PTR_ERR_OR_ZERO(hwmon_dev);
  }
  #else
-@@ -632,7 +670,7 @@ static int gpy_update_interface(struct p
+@@ -633,7 +671,7 @@ static int gpy_update_interface(struct p
  	/* Interface mode is fixed for USXGMII and integrated PHY */
  	if (phydev->interface == PHY_INTERFACE_MODE_USXGMII ||
  	    phydev->interface == PHY_INTERFACE_MODE_INTERNAL)
@@ -110,9 +110,9 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  
  	/* Automatically switch SERDES interface between SGMII and 2500-BaseX
  	 * according to speed. Disable ANEG in 2500-BaseX mode.
-@@ -1363,6 +1401,29 @@ static struct phy_driver gpy_drivers[] =
- 		.set_loopback	= gpy_loopback,
- 		.link_change_notify	= gpy_link_change_notify,
+@@ -1387,6 +1425,29 @@ static struct phy_driver gpy_drivers[] =
+ 		.led_polarity_set = gpy_led_polarity_set,
+ 		.link_change_notify = gpy_link_change_notify,
  	},
 +	{
 +		.phy_id		= PHY_ID_MXL862XX,
@@ -140,7 +140,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  };
  module_phy_driver(gpy_drivers);
  
-@@ -1379,6 +1440,7 @@ static struct mdio_device_id __maybe_unu
+@@ -1403,6 +1464,7 @@ static struct mdio_device_id __maybe_unu
  	{PHY_ID_MATCH_MODEL(PHY_ID_GPY241B)},
  	{PHY_ID_MATCH_MODEL(PHY_ID_GPY241BM)},
  	{PHY_ID_MATCH_MODEL(PHY_ID_GPY245B)},
