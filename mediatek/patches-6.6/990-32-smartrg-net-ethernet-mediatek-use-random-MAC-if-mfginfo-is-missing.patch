@@ -1,0 +1,27 @@
+From: Chad Monroe <chad@monroe.io>
+Date: Wed, 06 Aug 2025 09:49:17 -0700
+Subject: [PATCH] net: ethernet: mediatek: fall back to random MAC
+
+fall back to using a random MAC if one can’t be found via OF. for
+Adtran hardware, mfginfo should always be available on production
+units via nvmem. for development boards we have an initramfs
+image which formats the flash and loads SmartOS.. during this
+stage we need network access but mfginfo is not populated. 
+
+Signed-off-by: Chad Monroe <chad@monroe.io>
+---
+ drivers/net/ethernet/mediatek/mtk_eth_soc.c |    3 ---
+ 1 file changed, 3 deletions(-)
+
+--- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
++++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
+@@ -5246,9 +5246,6 @@ static int mtk_mac_assign_address(struct
+ {
+ 	int err = of_get_ethdev_address(eth->mac[i]->of_node, eth->netdev[i]);
+ 
+-	if (err == -EPROBE_DEFER)
+-		return err;
+-
+ 	if (test_defer_only)
+ 		return 0;
+ 
