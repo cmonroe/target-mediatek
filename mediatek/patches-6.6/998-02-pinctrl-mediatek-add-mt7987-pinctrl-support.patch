@@ -10,11 +10,9 @@ Subject: [PATCH] pinctrl: mediatek: add mt7987 pinctrl support
  3 files changed, 759 insertions(+)
  create mode 100644 drivers/pinctrl/mediatek/pinctrl-mt7987.c
 
-diff --git a/drivers/pinctrl/mediatek/Kconfig b/drivers/pinctrl/mediatek/Kconfig
-index 2d15af6be27628..52a4feb23f8b0f 100644
 --- a/drivers/pinctrl/mediatek/Kconfig
 +++ b/drivers/pinctrl/mediatek/Kconfig
-@@ -212,6 +212,12 @@ config PINCTRL_MT7986
+@@ -187,6 +187,12 @@ config PINCTRL_MT7986
  	default ARM64 && ARCH_MEDIATEK
  	select PINCTRL_MTK_MOORE
  
@@ -27,11 +25,9 @@ index 2d15af6be27628..52a4feb23f8b0f 100644
  config PINCTRL_MT7988
  	bool "Mediatek MT7988 pin control"
  	depends on OF
-diff --git a/drivers/pinctrl/mediatek/Makefile b/drivers/pinctrl/mediatek/Makefile
-index 7518980fba5960..7dcce6101c3df5 100644
 --- a/drivers/pinctrl/mediatek/Makefile
 +++ b/drivers/pinctrl/mediatek/Makefile
-@@ -29,6 +29,7 @@ obj-$(CONFIG_PINCTRL_MT7623)		+= pinctrl-mt7623.o
+@@ -27,6 +27,7 @@ obj-$(CONFIG_PINCTRL_MT7623)		+= pinctrl
  obj-$(CONFIG_PINCTRL_MT7629)		+= pinctrl-mt7629.o
  obj-$(CONFIG_PINCTRL_MT7981)		+= pinctrl-mt7981.o
  obj-$(CONFIG_PINCTRL_MT7986)		+= pinctrl-mt7986.o
@@ -39,9 +35,6 @@ index 7518980fba5960..7dcce6101c3df5 100644
  obj-$(CONFIG_PINCTRL_MT7988)		+= pinctrl-mt7988.o
  obj-$(CONFIG_PINCTRL_MT8167)		+= pinctrl-mt8167.o
  obj-$(CONFIG_PINCTRL_MT8173)		+= pinctrl-mt8173.o
-diff --git a/drivers/pinctrl/mediatek/pinctrl-mt7987.c b/drivers/pinctrl/mediatek/pinctrl-mt7987.c
-new file mode 100644
-index 00000000000000..d6fdc8ea6e5ce5
 --- /dev/null
 +++ b/drivers/pinctrl/mediatek/pinctrl-mt7987.c
 @@ -0,0 +1,752 @@

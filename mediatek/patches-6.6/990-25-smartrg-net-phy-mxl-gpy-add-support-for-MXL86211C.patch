@@ -11,7 +11,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 
 --- a/drivers/net/phy/mxl-gpy.c
 +++ b/drivers/net/phy/mxl-gpy.c
-@@ -31,6 +31,7 @@
+@@ -30,6 +30,7 @@
  #define PHY_ID_GPY241B		0x67C9DE40
  #define PHY_ID_GPY241BM		0x67C9DE80
  #define PHY_ID_GPY245B		0x67C9DEC0
@@ -19,7 +19,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  
  #define PHY_CTL1		0x13
  #define PHY_CTL1_MDICD		BIT(3)
-@@ -1363,6 +1364,29 @@ static struct phy_driver gpy_drivers[] =
+@@ -1333,6 +1334,29 @@ static struct phy_driver gpy_drivers[] =
  		.set_loopback	= gpy_loopback,
  		.link_change_notify	= gpy_link_change_notify,
  	},

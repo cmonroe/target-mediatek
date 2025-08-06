@@ -16,7 +16,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
-@@ -5347,6 +5347,9 @@ static int mtk_sgmii_init(struct mtk_eth
+@@ -5344,6 +5344,9 @@ static int mtk_sgmii_init(struct mtk_eth
  		if (of_property_read_bool(np, "mediatek,pnswap"))
  			flags |= MTK_SGMII_FLAG_PN_SWAP;
  

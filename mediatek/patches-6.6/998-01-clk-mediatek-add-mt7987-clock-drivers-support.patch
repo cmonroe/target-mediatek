@@ -22,11 +22,9 @@ Subject: [PATCH] clk: mediatek: add mt7987 clock drivers support
  create mode 100644 include/dt-bindings/clock/mediatek,mt7987-clk.h
  create mode 100644 include/dt-bindings/reset/mediatek,mt7987-resets.h
 
-diff --git a/drivers/clk/mediatek/Kconfig b/drivers/clk/mediatek/Kconfig
-index 5f8e6d68fa148d..90c4667d1be789 100644
 --- a/drivers/clk/mediatek/Kconfig
 +++ b/drivers/clk/mediatek/Kconfig
-@@ -460,6 +460,15 @@ config COMMON_CLK_MT7986_ETHSYS
+@@ -423,6 +423,15 @@ config COMMON_CLK_MT7986_ETHSYS
  	  This driver adds support for clocks for Ethernet and SGMII
  	  required on MediaTek MT7986 SoC.
  
@@ -42,11 +40,9 @@ index 5f8e6d68fa148d..90c4667d1be789 100644
  config COMMON_CLK_MT7988
  	tristate "Clock driver for MediaTek MT7988"
  	depends on ARCH_MEDIATEK || COMPILE_TEST
-diff --git a/drivers/clk/mediatek/Makefile b/drivers/clk/mediatek/Makefile
-index 6efec95406bd5c..e088c06cd440f1 100644
 --- a/drivers/clk/mediatek/Makefile
 +++ b/drivers/clk/mediatek/Makefile
-@@ -67,6 +67,11 @@ obj-$(CONFIG_COMMON_CLK_MT7986) += clk-mt7986-apmixed.o
+@@ -62,6 +62,11 @@ obj-$(CONFIG_COMMON_CLK_MT7986) += clk-m
  obj-$(CONFIG_COMMON_CLK_MT7986) += clk-mt7986-topckgen.o
  obj-$(CONFIG_COMMON_CLK_MT7986) += clk-mt7986-infracfg.o
  obj-$(CONFIG_COMMON_CLK_MT7986_ETHSYS) += clk-mt7986-eth.o
@@ -58,9 +54,6 @@ index 6efec95406bd5c..e088c06cd440f1 100644
  obj-$(CONFIG_COMMON_CLK_MT7988) += clk-mt7988-apmixed.o
  obj-$(CONFIG_COMMON_CLK_MT7988) += clk-mt7988-topckgen.o
  obj-$(CONFIG_COMMON_CLK_MT7988) += clk-mt7988-infracfg.o
-diff --git a/drivers/clk/mediatek/clk-mt7987-apmixed.c b/drivers/clk/mediatek/clk-mt7987-apmixed.c
-new file mode 100644
-index 00000000000000..7855a45c4230b9
 --- /dev/null
 +++ b/drivers/clk/mediatek/clk-mt7987-apmixed.c
 @@ -0,0 +1,116 @@
@@ -180,9 +173,6 @@ index 00000000000000..7855a45c4230b9
 +};
 +builtin_platform_driver(clk_mt7987_apmixed_drv);
 +MODULE_LICENSE("GPL");
-diff --git a/drivers/clk/mediatek/clk-mt7987-eth.c b/drivers/clk/mediatek/clk-mt7987-eth.c
-new file mode 100644
-index 00000000000000..bd5636c4a52782
 --- /dev/null
 +++ b/drivers/clk/mediatek/clk-mt7987-eth.c
 @@ -0,0 +1,94 @@
@@ -280,9 +270,6 @@ index 00000000000000..bd5636c4a52782
 +
 +MODULE_DESCRIPTION("MediaTek MT7987 Ethernet clocks driver");
 +MODULE_LICENSE("GPL");
-diff --git a/drivers/clk/mediatek/clk-mt7987-infracfg.c b/drivers/clk/mediatek/clk-mt7987-infracfg.c
-new file mode 100644
-index 00000000000000..964458dc4aa7e5
 --- /dev/null
 +++ b/drivers/clk/mediatek/clk-mt7987-infracfg.c
 @@ -0,0 +1,325 @@
@@ -611,9 +598,6 @@ index 00000000000000..964458dc4aa7e5
 +};
 +module_platform_driver(clk_mt7987_infracfg_drv);
 +MODULE_LICENSE("GPL");
-diff --git a/drivers/clk/mediatek/clk-mt7987-mcusys.c b/drivers/clk/mediatek/clk-mt7987-mcusys.c
-new file mode 100644
-index 00000000000000..8cd259211d26dd
 --- /dev/null
 +++ b/drivers/clk/mediatek/clk-mt7987-mcusys.c
 @@ -0,0 +1,47 @@
@@ -664,9 +648,6 @@ index 00000000000000..8cd259211d26dd
 +};
 +module_platform_driver(clk_mt7987_mcusys_drv);
 +MODULE_LICENSE("GPL");
-diff --git a/drivers/clk/mediatek/clk-mt7987-topckgen.c b/drivers/clk/mediatek/clk-mt7987-topckgen.c
-new file mode 100644
-index 00000000000000..d5b4d90805ebd2
 --- /dev/null
 +++ b/drivers/clk/mediatek/clk-mt7987-topckgen.c
 @@ -0,0 +1,311 @@
@@ -981,9 +962,6 @@ index 00000000000000..d5b4d90805ebd2
 +};
 +module_platform_driver(clk_mt7987_topckgen_drv);
 +MODULE_LICENSE("GPL");
-diff --git a/include/dt-bindings/clock/mediatek,mt7987-clk.h b/include/dt-bindings/clock/mediatek,mt7987-clk.h
-new file mode 100644
-index 00000000000000..c7472ef9ebb56f
 --- /dev/null
 +++ b/include/dt-bindings/clock/mediatek,mt7987-clk.h
 @@ -0,0 +1,206 @@
@@ -1193,9 +1171,6 @@ index 00000000000000..c7472ef9ebb56f
 +
 +#endif /* _DT_BINDINGS_CLK_MT7987_H */
 +
-diff --git a/include/dt-bindings/reset/mediatek,mt7987-resets.h b/include/dt-bindings/reset/mediatek,mt7987-resets.h
-new file mode 100644
-index 00000000000000..33c9ef741af0f4
 --- /dev/null
 +++ b/include/dt-bindings/reset/mediatek,mt7987-resets.h
 @@ -0,0 +1,12 @@
