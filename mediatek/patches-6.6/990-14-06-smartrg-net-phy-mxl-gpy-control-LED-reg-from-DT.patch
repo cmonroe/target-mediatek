@@ -31,7 +31,7 @@ Signed-off-by: David Bauer <mail@david-bauer.net>
  #include <linux/phy.h>
  #include <linux/polynomial.h>
  #include <linux/property.h>
-@@ -309,10 +310,39 @@ static int gpy_soft_reset(struct phy_dev
+@@ -347,10 +348,39 @@ static int gpy_soft_reset(struct phy_dev
  	return ret;
  }
  
