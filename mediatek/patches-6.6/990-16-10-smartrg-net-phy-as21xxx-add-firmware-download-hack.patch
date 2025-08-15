@@ -1,0 +1,63 @@
+From 6da9b90d0493d01ef16a4f2c373ea6da42dc52e8 Mon Sep 17 00:00:00 2001
+From: Christian Marangi <ansuelsmth@gmail.com>
+Date: Fri, 30 May 2025 11:20:25 +0200
+Subject: [PATCH] net: phy: as21xxx: add firmware download hack 
+
+Signed-off-by: Christian Marangi <ansuelsmth@gmail.com>
+---
+ drivers/net/phy/as21xxx.c | 32 +++++++++++++++++++++++++++++---
+ 1 file changed, 29 insertions(+), 3 deletions(-)
+
+--- a/drivers/net/phy/as21xxx.c
++++ b/drivers/net/phy/as21xxx.c
+@@ -298,6 +298,11 @@ static struct as21xxx_led_pattern_info a
+ 	}
+ };
+ 
++static void as21xxx_mdio_patch(struct phy_device *phydev)
++{
++	mdiobus_write(phydev->mdio.bus, 0x30, 0x1, 0x1);
++}
++
+ static int aeon_firmware_boot(struct phy_device *phydev, const u8 *data,
+ 			      size_t size)
+ {
+@@ -322,6 +327,7 @@ static int aeon_firmware_boot(struct phy
+ 
+ 	val = phy_read_mmd(phydev, MDIO_MMD_VEND1,
+ 			   VEND1_GLB_REG_MDIO_INDIRECT_STATUS);
++	as21xxx_mdio_patch(phydev);
+ 	if (val > 1) {
+ 		phydev_err(phydev, "wrong origin mdio_indirect_status: %x\n", val);
+ 		return -EINVAL;
+@@ -1013,9 +1019,11 @@ static int as21xxx_match_phy_device(stru
+ 	u32 phy_id;
+ 	int ret;
+ 
++	pr_debug("calling match for device %x\n", phydev->mdio.addr);
++
+ 	/* Skip PHY that are not AS21xxx or already have firmware loaded */
+-	if (phydev->c45_ids.device_ids[MDIO_MMD_PCS] != PHY_ID_AS21XXX)
+-		return genphy_match_phy_device(phydev, (struct phy_driver *)phydrv);
++	//if (phydev->c45_ids.device_ids[MDIO_MMD_PCS] != PHY_ID_AS21XXX)
++	//	return genphy_match_phy_device(phydev, (struct phy_driver *)phydrv);
+ 
+ 	/* Read PHY ID to handle firmware just loaded */
+ 	ret = phy_read_mmd(phydev, MDIO_MMD_PCS, MII_PHYSID1);
+@@ -1028,12 +1036,16 @@ static int as21xxx_match_phy_device(stru
+ 		return ret;
+ 	phy_id |= ret;
+ 
++	pr_debug("detected ID %x at %x\n", phy_id, phydev->mdio.addr);
++
+ 	/* With PHY ID not the generic AS21xxx one assume
+ 	 * the firmware just loaded
+ 	 */
+ 	if (phy_id != PHY_ID_AS21XXX)
+ 		return phy_id == phydrv->phy_id;
+ 
++	pr_info("loading firmware for ID %x at %x", phy_id, phydev->mdio.addr);
++
+ 	/* Allocate temp priv and load the firmware */
+ 	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
+ 	if (!priv)
