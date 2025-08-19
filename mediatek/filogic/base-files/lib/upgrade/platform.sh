@@ -146,6 +146,21 @@ platform_do_upgrade() {
 		fw_setenv sw_tryactive 0
 		nand_do_upgrade "$1"
 		;;
+	elecom,wrc-x3000gs3)
+		local bootnum="$(mstc_rw_bootnum)"
+		case "$bootnum" in
+		1|2)
+			CI_UBIPART="ubi$bootnum"
+			[ -z "$(find_mtd_index $CI_UBIPART)" ] &&
+				CI_UBIPART="ubi"
+			;;
+		*)
+			v "invalid bootnum found ($bootnum), rebooting..."
+			nand_do_upgrade_failed
+			;;
+		esac
+		nand_do_upgrade "$1"
+		;;
 	mercusys,mr80x-v3|\
 	mercusys,mr90x-v1|\
 	tplink,archer-ax80-v1|\
@@ -241,6 +256,8 @@ platform_check_image() {
 		fit_check_image "$1"
 		return $?
 		;;
+	creatlentem,clt-r30b1|\
+	creatlentem,clt-r30b1-112m|\
 	nradio,c8-668gl)
 		# tar magic `ustar`
 		magic="$(dd if="$1" bs=1 skip=257 count=5 2>/dev/null)"
@@ -269,6 +286,7 @@ platform_copy_config() {
 	bananapi,bpi-r4-2g5|\
 	bananapi,bpi-r4-poe|\
 	cmcc,rax3000m|\
+	gatonetworks,gdsp|\
 	mediatek,mt7988a-rfb)
 		if [ "$CI_METHOD" = "emmc" ]; then
 			emmc_copy_config
