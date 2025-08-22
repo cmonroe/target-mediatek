@@ -13,8 +13,8 @@ Without this patch, the PPEs are unable to learn the DSCP from SKB.
 
 Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 ---
- net/netfilter/nft_flow_offload.c | 49 +++++++++++++++++++++++++++++++-
- 1 file changed, 48 insertions(+), 1 deletion(-)
+ net/netfilter/nft_flow_offload.c | 46 +++++++++++++++++++++++++++++++-
+ 1 file changed, 45 insertions(+), 1 deletion(-)
 
 --- a/net/netfilter/nft_flow_offload.c
 +++ b/net/netfilter/nft_flow_offload.c
@@ -46,7 +46,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  static enum flow_offload_xmit_type nft_xmit_type(struct dst_entry *dst)
  {
  	if (dst_xfrm(dst))
-@@ -436,6 +450,11 @@ static void nft_flow_offload_eval(const
+@@ -472,6 +486,11 @@ static void nft_flow_offload_eval(const
  	struct flow_offload *flow;
  	enum ip_conntrack_dir dir;
  	struct nf_conn *ct;
@@ -58,7 +58,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	int ret;
  
  	if (nft_flow_offload_skip(pkt->skb, nft_pf(pkt)))
-@@ -479,10 +498,36 @@ static void nft_flow_offload_eval(const
+@@ -517,10 +536,33 @@ static void nft_flow_offload_eval(const
  	if (!nf_ct_is_confirmed(ct))
  		goto out;
  
@@ -66,6 +66,8 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 +
 +	qos = nf_conn_qos_find(ct);
 +	if (qos) {
++		struct net *net = nf_ct_net(ct);
++
 +		switch (nft_pf(pkt)) {
 +		case NFPROTO_IPV4:
 +			iph = (struct iphdr *)(skb_network_header(pkt->skb) + offset);
@@ -80,13 +82,8 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 +		qos->tos[dir].value = tos;
 +		atomic64_add(1, &qos->tos[dir].counter);
 +
-+		if (atomic64_read(&qos->tos[dir].counter) < 30)
++		if (atomic64_read(&qos->tos[dir].counter) < net->ct.sysctl_qos)
 +			goto out;
-+
-+		if (ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple.dst.protonum == IPPROTO_TCP) {
-+			if (atomic64_read(&qos->tos[!dir].counter) < 30)
-+				goto out;
-+		}
 +	}
 +
  	if (test_and_set_bit(IPS_OFFLOAD_BIT, &ct->status))
@@ -96,7 +93,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	if (nft_flow_offload_is_bridging(pkt->skb)) {
  		if (nft_flow_route_bridging(pkt, ct, &route, dir, priv->flowtable) < 0)
  			goto err_flow_route;
-@@ -499,6 +544,8 @@ static void nft_flow_offload_eval(const
+@@ -537,6 +579,8 @@ static void nft_flow_offload_eval(const
  	if (tcph)
  		flow_offload_ct_tcp(ct);
  

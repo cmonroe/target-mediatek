@@ -1,6 +1,6 @@
-From f46e00e37374ae747b3094c2d389626af8b8df48 Mon Sep 17 00:00:00 2001
+From 82b8030a6e4f5b802e74103b8b0d95684ef407f2 Mon Sep 17 00:00:00 2001
 From: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
-Date: Mon, 17 Mar 2025 23:40:37 +0800
+Date: Wed, 9 Jul 2025 09:49:53 +0800
 Subject: [PATCH] netfilter: add DSCP learning flow to xt_FLOWOFFLOAD
 
 User can use the command below to enable DSCP learning flow.
@@ -12,20 +12,22 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 ---
  drivers/net/ethernet/mediatek/mtk_ppe.c       | 11 ++++
  drivers/net/ethernet/mediatek/mtk_ppe.h       |  2 +
- .../net/ethernet/mediatek/mtk_ppe_offload.c   | 15 ++++-
+ .../net/ethernet/mediatek/mtk_ppe_offload.c   | 13 +++-
  include/net/netfilter/nf_conntrack_extend.h   |  1 +
  include/net/netfilter/nf_conntrack_qos.h      | 61 +++++++++++++++++++
  include/net/netfilter/nf_flow_table.h         |  2 +
  include/net/netns/conntrack.h                 |  1 +
  net/netfilter/Makefile                        |  2 +-
  net/netfilter/nf_conntrack_core.c             |  3 +
+ net/netfilter/nf_conntrack_extend.c           |  2 +
  net/netfilter/nf_conntrack_netlink.c          |  2 +
- net/netfilter/nf_conntrack_qos.c              | 24 ++++++++
+ net/netfilter/nf_conntrack_qos.c              | 25 ++++++++
  net/netfilter/nf_conntrack_standalone.c       | 27 ++++++++
  net/netfilter/nf_flow_table_core.c            |  2 +
+ net/netfilter/nf_flow_table_ip.c              | 10 ++++++++++
  net/netfilter/nf_flow_table_offload.c         |  7 ++-
- net/netfilter/xt_FLOWOFFLOAD.c                | 46 ++++++++++++++
- 15 files changed, 202 insertions(+), 4 deletions(-)
+ net/netfilter/xt_FLOWOFFLOAD.c                | 43 +++++++++++++
+ 17 files changed, 210 insertions(+), 4 deletions(-)
  create mode 100644 include/net/netfilter/nf_conntrack_qos.h
  create mode 100644 net/netfilter/nf_conntrack_qos.c
 
@@ -87,7 +89,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	int err = 0;
  	int i;
  
-@@ -299,6 +301,15 @@ mtk_flow_offload_replace(struct mtk_eth
+@@ -299,6 +301,13 @@ mtk_flow_offload_replace(struct mtk_eth
  		return -EOPNOTSUPP;
  	}
  
@@ -96,14 +98,12 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 +
 +		flow_rule_match_ip(rule, &match);
 +		dscp = match.key->tos;
-+	} else {
-+		return -EOPNOTSUPP;
 +	}
 +
  	switch (addr_type) {
  	case 0:
  		offload_type = MTK_PPE_PKT_TYPE_BRIDGE;
-@@ -456,7 +467,7 @@ mtk_flow_offload_replace(struct mtk_eth
+@@ -456,7 +465,7 @@ mtk_flow_offload_replace(struct mtk_eth
  		mtk_foe_entry_set_pppoe(eth, &foe, data.pppoe.sid);
  
  	err = mtk_flow_set_output_device(eth, &foe, odev, data.eth.h_dest,
@@ -164,7 +164,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 +	if (!qos)
 +		pr_debug("failed to add qos extension area");
 +
-+	memset(qos->tos, 0, sizeof(qos->tos));
++	memset(qos, 0, sizeof(struct nf_conn_qos));
 +
 +	return qos;
 +#else
@@ -179,7 +179,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 +
 +	qos = nf_ct_ext_find(ct, NF_CT_EXT_QOS);
 +	if (qos)
-+		memset(qos->tos, 0, sizeof(qos->tos));
++		memset(qos, 0, sizeof(struct nf_conn_qos));
 +#endif
 +}
 +
@@ -251,6 +251,24 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	nf_conntrack_tstamp_pernet_init(net);
  	nf_conntrack_ecache_pernet_init(net);
  	nf_conntrack_proto_pernet_init(net);
+--- a/net/netfilter/nf_conntrack_extend.c
++++ b/net/netfilter/nf_conntrack_extend.c
+@@ -23,6 +23,7 @@
+ #include <net/netfilter/nf_conntrack_labels.h>
+ #include <net/netfilter/nf_conntrack_synproxy.h>
+ #include <net/netfilter/nf_conntrack_act_ct.h>
++#include <net/netfilter/nf_conntrack_qos.h>
+ #include <net/netfilter/nf_nat.h>
+ 
+ #define NF_CT_EXT_PREALLOC	128u /* conntrack events are on by default */
+@@ -36,6 +37,7 @@ static const u8 nf_ct_ext_type_len[NF_CT
+ #endif
+ 	[NF_CT_EXT_SEQADJ] = sizeof(struct nf_conn_seqadj),
+ 	[NF_CT_EXT_ACCT] = sizeof(struct nf_conn_acct),
++	[NF_CT_EXT_QOS] = sizeof(struct nf_conn_qos),
+ #ifdef CONFIG_NF_CONNTRACK_EVENTS
+ 	[NF_CT_EXT_ECACHE] = sizeof(struct nf_conntrack_ecache),
+ #endif
 --- a/net/netfilter/nf_conntrack_netlink.c
 +++ b/net/netfilter/nf_conntrack_netlink.c
 @@ -42,6 +42,7 @@
@@ -271,7 +289,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	nf_ct_labels_ext_add(ct);
 --- /dev/null
 +++ b/net/netfilter/nf_conntrack_qos.c
-@@ -0,0 +1,24 @@
+@@ -0,0 +1,25 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +/* QoS handling for netfilter. */
 +
@@ -287,15 +305,16 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 +#include <net/netfilter/nf_conntrack_extend.h>
 +#include <net/netfilter/nf_conntrack_qos.h>
 +
-+static bool nf_ct_qos __read_mostly;
++static unsigned short nf_ct_qos __read_mostly = 3;
 +
-+module_param_named(qos, nf_ct_qos, bool, 0644);
++module_param_named(qos, nf_ct_qos, ushort, 0644);
 +MODULE_PARM_DESC(qos, "Enable connection tracking qos.");
 +
 +void nf_conntrack_qos_pernet_init(struct net *net)
 +{
 +	net->ct.sysctl_qos = nf_ct_qos;
 +}
++
 --- a/net/netfilter/nf_conntrack_standalone.c
 +++ b/net/netfilter/nf_conntrack_standalone.c
 @@ -21,6 +21,7 @@
@@ -351,22 +370,22 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  #ifdef CONFIG_NF_CONNTRACK_EVENTS
  	NF_SYSCTL_CT_EVENTS,
  #endif
-@@ -723,6 +741,15 @@ static struct ctl_table nf_ct_sysctl_tab
- 		.maxlen		= sizeof(u8),
- 		.mode		= 0644,
- 		.proc_handler	= proc_dou8vec_minmax,
-+		.extra1 	= SYSCTL_ZERO,
-+		.extra2 	= SYSCTL_ONE,
-+	},
+@@ -726,6 +744,15 @@ static struct ctl_table nf_ct_sysctl_tab
+ 		.extra1 	= SYSCTL_ZERO,
+ 		.extra2 	= SYSCTL_ONE,
+ 	},
 +	[NF_SYSCTL_CT_QOS] = {
 +		.procname	= "nf_conntrack_qos",
 +		.data		= &init_net.ct.sysctl_qos,
 +		.maxlen		= sizeof(u8),
 +		.mode		= 0644,
 +		.proc_handler	= proc_dou8vec_minmax,
- 		.extra1 	= SYSCTL_ZERO,
- 		.extra2 	= SYSCTL_ONE,
- 	},
++		.extra1 	= SYSCTL_ZERO,
++		.extra2 	= SYSCTL_TWO_HUNDRED,
++	},
+ #ifdef CONFIG_NF_CONNTRACK_EVENTS
+ 	[NF_SYSCTL_CT_EVENTS] = {
+ 		.procname	= "nf_conntrack_events",
 --- a/net/netfilter/nf_flow_table_core.c
 +++ b/net/netfilter/nf_flow_table_core.c
 @@ -9,6 +9,7 @@
@@ -385,6 +404,46 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	clear_bit(IPS_OFFLOAD_BIT, &flow->ct->status);
  	set_bit(NF_FLOW_TEARDOWN, &flow->flags);
  	flow_offload_fixup_ct(flow->ct);
+--- a/net/netfilter/nf_flow_table_ip.c
++++ b/net/netfilter/nf_flow_table_ip.c
+@@ -372,6 +372,7 @@ static int nf_flow_offload_forward(struc
+ 	struct flow_offload *flow;
+ 	unsigned int thoff, mtu;
+ 	struct iphdr *iph;
++	struct net *net;
+ 
+ 	dir = tuplehash->tuple.dir;
+ 	flow = container_of(tuplehash, struct flow_offload, tuplehash[dir]);
+@@ -393,6 +394,10 @@ static int nf_flow_offload_forward(struc
+ 	if (skb_try_make_writable(skb, thoff + ctx->hdrsize))
+ 		return -1;
+ 
++	net = nf_ct_net(flow->ct);
++	if (net->ct.sysctl_qos)
++		ipv4_change_dsfield(iph, 0u, flow->tuplehash[dir].tuple.tos);
++
+ 	flow_offload_refresh(flow_table, flow, false);
+ 
+ 	nf_flow_encap_pop(skb, tuplehash);
+@@ -651,6 +656,7 @@ static int nf_flow_offload_ipv6_forward(
+ 	struct flow_offload *flow;
+ 	unsigned int thoff, mtu;
+ 	struct ipv6hdr *ip6h;
++	struct net *net;
+ 
+ 	dir = tuplehash->tuple.dir;
+ 	flow = container_of(tuplehash, struct flow_offload, tuplehash[dir]);
+@@ -672,6 +678,10 @@ static int nf_flow_offload_ipv6_forward(
+ 	if (skb_try_make_writable(skb, thoff + ctx->hdrsize))
+ 		return -1;
+ 
++	net = nf_ct_net(flow->ct);
++	if (net->ct.sysctl_qos)
++		ipv6_change_dsfield(ip6h, 0u, flow->tuplehash[dir].tuple.tos);
++
+ 	flow_offload_refresh(flow_table, flow, false);
+ 
+ 	nf_flow_encap_pop(skb, tuplehash);
 --- a/net/netfilter/nf_flow_table_offload.c
 +++ b/net/netfilter/nf_flow_table_offload.c
 @@ -103,6 +103,7 @@ static int nf_flow_rule_match(struct nf_
@@ -440,7 +499,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  static unsigned int
  xt_flowoffload_net_hook(void *priv, struct sk_buff *skb,
  			const struct nf_hook_state *state)
-@@ -600,6 +614,11 @@ flowoffload_tg(struct sk_buff *skb, cons
+@@ -636,6 +650,11 @@ flowoffload_tg(struct sk_buff *skb, cons
  	struct net_device *devs[2] = {};
  	struct nf_conn *ct;
  	struct net *net;
@@ -452,12 +511,14 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  
  	if (xt_flowoffload_skip(skb, xt_family(par)))
  		return XT_CONTINUE;
-@@ -633,6 +652,31 @@ flowoffload_tg(struct sk_buff *skb, cons
+@@ -669,6 +688,28 @@ flowoffload_tg(struct sk_buff *skb, cons
  
  	dir = CTINFO2DIR(ctinfo);
  
 +	qos = nf_conn_qos_find(ct);
 +	if (qos) {
++		struct net *net = nf_ct_net(ct);
++
 +		switch (xt_family(par)) {
 +		case NFPROTO_IPV4:
 +			iph = (struct iphdr *)(skb_network_header(skb) + offset);
@@ -472,19 +533,14 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 +		qos->tos[dir].value = tos;
 +		atomic64_add(1, &qos->tos[dir].counter);
 +
-+		if (atomic64_read(&qos->tos[dir].counter) < 30)
++		if (atomic64_read(&qos->tos[dir].counter) < net->ct.sysctl_qos)
 +			return XT_CONTINUE;
-+
-+		if (ct->tuplehash[IP_CT_DIR_ORIGINAL].tuple.dst.protonum == IPPROTO_TCP) {
-+			if (atomic64_read(&qos->tos[!dir].counter) < 30)
-+				return XT_CONTINUE;
-+		}
 +	}
 +
  	devs[dir] = xt_out(par);
  	devs[!dir] = xt_in(par);
  
-@@ -657,6 +701,8 @@ flowoffload_tg(struct sk_buff *skb, cons
+@@ -692,6 +733,8 @@ flowoffload_tg(struct sk_buff *skb, cons
  
  	flow_offload_route_init(flow, &route);
  

@@ -13,7 +13,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 
 --- a/net/netfilter/xt_FLOWOFFLOAD.c
 +++ b/net/netfilter/xt_FLOWOFFLOAD.c
-@@ -516,10 +516,12 @@ xt_flowoffload_route_routing(struct sk_b
+@@ -559,10 +559,12 @@ xt_flowoffload_route_routing(struct sk_b
  
  	if (route->tuple[dir].xmit_type == FLOW_OFFLOAD_XMIT_NEIGH &&
  	    route->tuple[!dir].xmit_type == FLOW_OFFLOAD_XMIT_NEIGH) {
@@ -29,7 +29,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	}
  
  	return 0;
-@@ -721,6 +723,9 @@ flowoffload_tg(struct sk_buff *skb, cons
+@@ -753,6 +755,9 @@ flowoffload_tg(struct sk_buff *skb, cons
  	xt_flowoffload_check_device(table, devs[0]);
  	xt_flowoffload_check_device(table, devs[1]);
  
