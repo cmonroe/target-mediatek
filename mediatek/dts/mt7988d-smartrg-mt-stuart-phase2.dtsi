@@ -31,8 +31,9 @@
 		/delete-node/cpu@3;
 	};
 
-	memory {
+	memory@40000000 {
 		reg = <0x0 0x40000000 0x0 0x40000000>;
+		device_type = "memory";
 	};
 
 	reserved-memory {
@@ -194,9 +195,11 @@
 	pinctrl-0 = <&i2c1_pins>;
 	status = "okay";
 
-	system-leds {
+	system-leds@30 {
 		compatible = "srg,sysled";
 		reg = <0x30>;
+		#address-cells = <1>;
+		#size-cells = <0>;
 
 		led_sys_red: system_red {
 			label = "red";
@@ -289,10 +292,14 @@
 	status = "okay";
 
 	pcie@0,0 {
+		#address-cells = <3>;
+		#size-cells = <2>;
 		reg = <0x0000 0 0 0 0>;
 
 		radio0: mt7996@0,0 {
 			reg = <0x0000 0 0 0 0>;
+			#address-cells = <1>;
+			#size-cells = <0>;
 			nvmem-cells = <&eeprom_factory_0>, <&precal_factory_1e10>;
 			nvmem-cell-names = "eeprom", "precal";
 
@@ -329,7 +336,7 @@
 &pio {
 	button_pins: button-pins {
 		pins = "GPIO_RESET";
-		mediatek,pull-down-adv = <0>; /* bias-disable */
+		bias-disable;
 	};
 
 	gbe1_led0_pins: gbe1-led0-pins {

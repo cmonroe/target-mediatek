@@ -56,7 +56,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: remove pextp reset
  	.mac_finish = mtk_mac_finish,
  	.mac_link_down = mtk_mac_link_down,
  	.mac_link_up = mtk_mac_link_up,
-@@ -3597,9 +3577,6 @@ static int mtk_open(struct net_device *d
+@@ -3605,9 +3585,6 @@ static int mtk_open(struct net_device *d
  
  	ppe_num = eth->soc->ppe_num;
  
@@ -66,7 +66,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: remove pextp reset
  	err = phylink_of_phy_connect(mac->phylink, mac->of_node, 0);
  	if (err) {
  		netdev_err(dev, "%s: could not attach PHY: %d\n", __func__,
-@@ -3761,9 +3738,6 @@ static int mtk_stop(struct net_device *d
+@@ -3769,9 +3746,6 @@ static int mtk_stop(struct net_device *d
  		mtk_ppe_roaming_stop(eth);
  	}
  
@@ -76,7 +76,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: remove pextp reset
  	return 0;
  }
  
-@@ -5122,17 +5096,6 @@ static int mtk_add_mac(struct mtk_eth *e
+@@ -5130,17 +5104,6 @@ static int mtk_add_mac(struct mtk_eth *e
  		}
  	}
  

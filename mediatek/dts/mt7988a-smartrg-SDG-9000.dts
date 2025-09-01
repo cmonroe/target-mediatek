@@ -33,8 +33,9 @@
 		bootargs = "console=ttyS0,115200n1 pci=pcie_bus_perf";
 	};
 
-	memory {
+	memory@40000000 {
 		reg = <0x0 0x40000000 0x0 0x40000000>;
+		device_type = "memory";
 	};
 
 	reserved-memory {
@@ -528,7 +529,12 @@
 	status = "okay";
 
 	mux: mux-bus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
 		mux2: ethernet-mux@2 {
+			#address-cells = <1>;
+			#size-cells = <0>;
 			compatible = "mediatek,eth-mux";
 			reg = <2>;
 			label = "wan";
@@ -818,7 +824,7 @@
 		};
 	};
 
-	swled_gpio0: tca9535@32 {
+	swled_gpio0: tca9535@20 {
 		#address-cells = <1>;
 		#size-cells = <0>;
 
@@ -832,7 +838,7 @@
 		interrupts = <54 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	swled_gpio1: tca9535@34 {
+	swled_gpio1: tca9535@22 {
 		#address-cells = <1>;
 		#size-cells = <0>;
 
@@ -846,9 +852,11 @@
 		interrupts = <32 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	system-leds {
+	system-leds@30 {
 		compatible = "srg,sysled";
 		reg = <0x30>;
+		#address-cells = <1>;
+		#size-cells = <0>;
 
 		led_sys_red: system_red {
 			label = "red";
@@ -1157,7 +1165,7 @@
 &pio {
 	button_pins: button-pins {
 		pins = "GPIO_RESET";
-		mediatek,pull-down-adv = <0>; /* bias-disable */
+		bias-disable;
 	};
 
 	i2c0_pins: i2c0-g0-pins {

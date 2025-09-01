@@ -135,9 +135,13 @@
 
 	pcie@0,0 {
 		reg = <0x0000 0 0 0 0>;
+		#address-cells = <3>;
+		#size-cells = <2>;
 
 		radio0: mt7996@0,0 {
 			reg = <0x0000 0 0 0 0>;
+			#address-cells = <1>;
+			#size-cells = <0>;
 			nvmem-cells = <&eeprom_factory_0>, <&precal_factory_1e10>;
 			nvmem-cell-names = "eeprom", "precal";
 			ieee80211-freq-limit = <2400000 2500000>, <5170000 5835000>;

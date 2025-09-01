@@ -8,6 +8,7 @@
 /dts-v1/;
 #include <dt-bindings/input/input.h>
 #include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pinctrl/mt65xx.h>
 
 #include "mt7622.dtsi"
 #include "mt6380.dtsi"
@@ -76,8 +77,9 @@
 		};
 	};
 
-	memory {
+	memory@40000000 {
 		reg = <0x0 0x40000000 0x0 0x40000000>;
+		device_type = "memory";
 	};
 
 	reserved-memory {
@@ -87,11 +89,11 @@
 
 		/delete-node/ramoops@42ff0000;
 
-		bootdata_reserved: bootdata@0x45000000 {
+		bootdata_reserved: bootdata@45000000 {
 			no-map;
 			reg = <0x0 0x45000000 0x0 0x00001000>;
 		};
-		ramoops_reserved: ramoops1@0x45001000 {
+		ramoops_reserved: ramoops1@45001000 {
 			no-map;
 			compatible = "ramoops";
 			reg = <0x0 0x45001000 0x0 0x00140000>;
@@ -287,6 +289,8 @@
 	assigned-clocks = <&topckgen CLK_TOP_MSDC30_0_SEL>;
 	assigned-clock-parents = <&topckgen CLK_TOP_UNIV48M>;
 	non-removable;
+	#address-cells = <1>;
+	#size-cells = <0>;
 
 	emmc@0 {
 		#address-cells = <1>;
@@ -415,13 +419,13 @@
 			       "NDL3", "NDL4", "NDL5",
 			       "NDL6", "NDL7", "NRB";
 			input-enable;
-			drive-strength = <4>;
+			drive-strength = <MTK_DRIVE_4mA>;
 			bias-pull-up;
 		};
 
 		conf-clk {
 			pins = "NCLE";
-			drive-strength = <4>;
+			drive-strength = <MTK_DRIVE_4mA>;
 			bias-pull-down;
 		};
 	};
@@ -458,7 +462,7 @@
 		conf {
 			pins = "I2S1_IN", "I2S1_OUT", "I2S_BCLK",
 			       "I2S_WS", "I2S_MCLK";
-			drive-strength = <12>;
+			drive-strength = <MTK_DRIVE_12mA>;
 			bias-pull-down;
 		};
 	};
@@ -538,12 +542,12 @@
 			pins = "I2S2_OUT", "I2S4_IN", "I2S3_IN",
 			       "I2S2_IN","I2S4_OUT";
 			input-enable;
-			drive-strength = <8>;
+			drive-strength = <MTK_DRIVE_8mA>;
 			bias-pull-up;
 		};
 		conf-clk {
 			pins = "I2S3_OUT";
-			drive-strength = <12>;
+			drive-strength = <MTK_DRIVE_12mA>;
 			bias-pull-down;
 		};
 		conf-cd {

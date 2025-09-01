@@ -81,7 +81,7 @@ total CPU usage.
  
  	return buf_size;
  }
-@@ -4257,30 +4290,6 @@ static void mtk_dim_tx(struct work_struc
+@@ -4265,30 +4298,6 @@ static void mtk_dim_tx(struct work_struc
  	dim->state = DIM_START_MEASURE;
  }
  
@@ -112,7 +112,7 @@ total CPU usage.
  static void mtk_hw_dump_reg(struct mtk_eth *eth, char *name, u32 offset, u32 range)
  {
  	u32 cur = offset;
-@@ -4766,14 +4775,10 @@ static int mtk_hw_init(struct mtk_eth *e
+@@ -4774,14 +4783,10 @@ static int mtk_hw_init(struct mtk_eth *e
  	 * invoked.
  	 */
  	for (i = 0; i < MTK_MAX_DEVS; i++) {
@@ -128,7 +128,7 @@ total CPU usage.
  	}
  
  	/* Indicates CDM to parse the MTK special tag from CPU
-@@ -5860,11 +5865,7 @@ static int mtk_add_mac(struct mtk_eth *e
+@@ -5868,11 +5873,7 @@ static int mtk_add_mac(struct mtk_eth *e
  
  	eth->netdev[id]->irq = eth->irq_fe[0];
  	eth->netdev[id]->dev.of_node = np;

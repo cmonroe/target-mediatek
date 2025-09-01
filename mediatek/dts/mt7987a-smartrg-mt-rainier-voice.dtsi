@@ -68,6 +68,7 @@
 &i2c0 {
 	wm8960: wm8960@1a {
 		compatible = "wlf,wm8960";
+		#sound-dai-cells = <0>;
 		reg = <0x1a>;
 	};
 };
@@ -104,6 +105,8 @@
 	clock-names = "parent-clk", "sel-clk", "spi-clk", "hclk";
 
 	slic: slic@0 {
+		#address-cells = <1>;
+		#size-cells = <0>;
 		compatible = "silabs,si3210";
 		spi-max-frequency = <10000000>;
 		reg = <0>;

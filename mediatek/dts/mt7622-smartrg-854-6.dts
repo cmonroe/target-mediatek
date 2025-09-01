@@ -9,6 +9,7 @@
 #include <dt-bindings/input/input.h>
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/leds/common.h>
+#include <dt-bindings/pinctrl/mt65xx.h>
 
 #include "mt7622.dtsi"
 #include "mt6380.dtsi"
@@ -112,8 +113,9 @@
 		};
 	};
 
-	memory {
+	memory@40000000 {
 		reg = <0x0 0x40000000 0x0 0x40000000>;
+		device_type = "memory";
 	};
 
 	reserved-memory {
@@ -337,9 +339,11 @@
 	pinctrl-0 = <&i2c0_pins>;
 	status = "okay";
 
-	system-leds {
+	system-leds@30 {
 		compatible = "srg,sysled";
 		reg = <0x30>;
+		#address-cells = <1>;
+		#size-cells = <0>;
 
 		led_sys_red: system_red {
 			label = "red";
@@ -489,13 +493,13 @@
 			       "NDL3", "NDL4", "NDL5",
 			       "NDL6", "NDL7", "NRB";
 			input-enable;
-			drive-strength = <4>;
+			drive-strength = <MTK_DRIVE_4mA>;
 			bias-pull-up;
 		};
 
 		conf-clk {
 			pins = "NCLE";
-			drive-strength = <4>;
+			drive-strength = <MTK_DRIVE_4mA>;
 			bias-pull-down;
 		};
 	};
