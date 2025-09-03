@@ -1,0 +1,44 @@
+From: Cezary Wilmanski <cezary.wilmanski@adtran.com>
+Date: Mon, 08 Sep 2025 22:59:05 +0200
+Subject: [PATCH] net: phy: aquantia: remove polling GLOBAL_CFG reg
+
+Previous patches introduced a workaround for an issue observed on AQR115C,
+where after suspend the PHY firmware signaled readiness but the GLOBAL_CFG registers
+continued to return zeros for some time. That commit added polling of
+the 100M GLOBAL_CFG register until it returned a non-zero value, since AQR113,
+AQR113C and AQR115C were known to support it.
+
+However, on AQR113C, the polling still reads back zeros at this stage,
+which only leads to a spurious error during configuration initialization.
+This happens because at that point the PHY is not yet ready due to being held in reset by GPIO,
+so the register cannot return valid values anyway.
+
+As a result, the polling logic is dropped entirely.
+This reverts the workaround and avoids unnecessary initialization errors.
+
+Signed-off-by: Cezary Wilmanski <cezary.wilmanski@adtran.com>
+---
+ drivers/net/phy/aquantia/aquantia_main.c |   12 ------------
+ 1 file changed, 12 deletions(-)
+
+--- a/drivers/net/phy/aquantia/aquantia_main.c	2025-09-02 20:20:06.508837000 +0200
++++ b/drivers/net/phy/aquantia/aquantia_main.c	2025-09-03 01:45:53.586055811 +0200
+@@ -872,18 +872,6 @@ static int aqr113c_fill_interface_modes(
+ {
+ 	int val, ret;
+ 
+-	/* It's been observed on some models that - when coming out of suspend
+-	 * - the FW signals that the PHY is ready but the GLOBAL_CFG registers
+-	 * continue on returning zeroes for some time. Let's poll the 100M
+-	 * register until it returns a real value as both 113c and 115c support
+-	 * this mode.
+-	 */
+-	ret = phy_read_mmd_poll_timeout(phydev, MDIO_MMD_VEND1,
+-					VEND1_GLOBAL_CFG_100M, val, val != 0,
+-					1000, 100000, false);
+-	if (ret)
+-		return ret;
+-
+ 	ret = aqr107_fill_interface_modes(phydev);
+ 	if (ret)
+ 		return ret;
