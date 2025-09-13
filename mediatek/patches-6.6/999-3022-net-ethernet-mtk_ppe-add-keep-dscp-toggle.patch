@@ -22,7 +22,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.h
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.h
-@@ -1572,6 +1572,7 @@ struct mtk_eth {
+@@ -1564,6 +1564,7 @@ struct mtk_eth {
  
  	struct metadata_dst		*dsa_meta[MTK_MAX_DSA_PORTS];
  
@@ -63,7 +63,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	return 0;
  }
  
-@@ -1199,6 +1216,8 @@ void mtk_ppe_start(struct mtk_ppe *ppe)
+@@ -1201,6 +1218,8 @@ void mtk_ppe_start(struct mtk_ppe *ppe)
  			 MTK_PPE_ENTRIES_SHIFT);
  	if (mtk_is_netsys_v2_or_greater(ppe->eth))
  		val |= MTK_PPE_TB_CFG_INFO_SEL;

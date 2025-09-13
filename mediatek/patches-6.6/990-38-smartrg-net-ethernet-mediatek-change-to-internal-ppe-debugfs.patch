@@ -16,7 +16,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
-@@ -5647,6 +5647,8 @@ static int mtk_probe(struct platform_dev
+@@ -5675,6 +5675,8 @@ static int mtk_probe(struct platform_dev
  			if (err)
  				goto err_deinit_ppe;
  		}
@@ -35,7 +35,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	ppe->accounting = accounting;
  
  	foe = dmam_alloc_coherent(ppe->dev,
-@@ -963,8 +964,6 @@ struct mtk_ppe *mtk_ppe_init(struct mtk_
+@@ -965,8 +966,6 @@ struct mtk_ppe *mtk_ppe_init(struct mtk_
  		ppe->acct_table = acct;
  	}
  

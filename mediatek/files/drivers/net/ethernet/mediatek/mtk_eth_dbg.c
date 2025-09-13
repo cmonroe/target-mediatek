@@ -30,6 +30,11 @@
 #include "mtk_eth_dbg.h"
 #include "mtk_wed_regs.h"
 
+#define RX_DESC_OFS(eth, i) \
+	((i) << (eth)->soc->rx.desc_shift)
+#define TX_DESC_OFS(eth, i) \
+	((i) << (eth)->soc->tx.desc_shift)
+
 enum mt753x_presence {
 	MT753X_ABSENT = 0,
 	MT753X_PRESENT = 1,
@@ -1194,10 +1199,9 @@ int tx_ring_read(struct seq_file *seq, void *v)
 	seq_printf(seq, "cpu last free: %d\n",
 		   (int)(ring->last_free - (struct mtk_tx_dma *)ring->dma));
 	for (i = 0; i < eth->soc->tx.dma_size; i++) {
-		dma_addr_t tmp = ring->phys +
-				 i * (dma_addr_t)eth->soc->tx.desc_size;
+		dma_addr_t tmp = ring->phys + TX_DESC_OFS(eth, i);
 
-		tx_ring = ring->dma + i * eth->soc->tx.desc_size;
+		tx_ring = ring->dma + TX_DESC_OFS(eth, i);
 
 		seq_printf(seq, "%d (%pad): %08x %08x %08x %08x", i, &tmp,
 			   tx_ring->txd1, tx_ring->txd2,
@@ -1234,10 +1238,9 @@ int hwtx_ring_read(struct seq_file *seq, void *v)
 	int i = 0;
 
 	for (i = 0; i < MTK_QDMA_RING_SIZE; i++) {
-		dma_addr_t addr = eth->phy_scratch_ring +
-				  i * (dma_addr_t)eth->soc->tx.desc_size;
+		dma_addr_t addr = eth->phy_scratch_ring + TX_DESC_OFS(eth, i);
 
-		hwtx_ring = eth->scratch_ring + i * eth->soc->tx.desc_size;
+		hwtx_ring = eth->scratch_ring + TX_DESC_OFS(eth, i);
 
 		seq_printf(seq, "%d (%pad): %08x %08x %08x %08x", i, &addr,
 			   hwtx_ring->txd1, hwtx_ring->txd2,
@@ -1282,7 +1285,7 @@ int rx_ring_read(struct seq_file *seq, void *v)
 		seq_printf(seq, "[Ring%d] next to read: %d\n", j,
 			   NEXT_DESP_IDX(ring->calc_idx, eth->soc->rx.dma_size));
 		for (i = 0; i < ring->dma_size; i++) {
-			rx_ring = ring->dma + i * eth->soc->rx.desc_size;
+			rx_ring = ring->dma + RX_DESC_OFS(eth, i);
 
 			seq_printf(seq, "%04d: %08x %08x %08x %08x", i,
 				   rx_ring->rxd1, rx_ring->rxd2,

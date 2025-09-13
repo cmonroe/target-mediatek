@@ -12,8 +12,8 @@ Signed-off-by: Cezary Wilmanski <cezary.wilmanski@adtran.com>
  drivers/net/phy/phy_led_triggers.c |   12 ++++++++----
  1 file changed, 8 insertions(+), 4 deletions(-)
 
---- a/drivers/net/phy/phy_led_triggers.c	2025-08-15 12:09:09.000000000 +0200
-+++ b/drivers/net/phy/phy_led_triggers.c	2025-09-03 16:52:08.977294795 +0200
+--- a/drivers/net/phy/phy_led_triggers.c
++++ b/drivers/net/phy/phy_led_triggers.c
 @@ -141,15 +141,19 @@ void phy_led_triggers_unregister(struct
  {
  	int i;

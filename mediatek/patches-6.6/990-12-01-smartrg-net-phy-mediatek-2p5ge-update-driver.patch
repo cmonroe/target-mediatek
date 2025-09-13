@@ -100,7 +100,7 @@
  #define MTK_PHY_LPI_PCS_DSP_CTRL		(0x121)
  #define   MTK_PHY_LPI_SIG_EN_LO_THRESH100_MASK	GENMASK(12, 8)
  
-@@ -53,14 +120,256 @@ enum {
+@@ -52,14 +119,256 @@ enum {
  	PHY_AUX_SPD_2500,
  };
  
@@ -360,7 +360,7 @@
  
  	if (priv->fw_loaded)
  		return 0;
-@@ -68,9 +377,9 @@ static int mt798x_2p5ge_phy_load_fw(stru
+@@ -67,9 +376,9 @@ static int mt798x_2p5ge_phy_load_fw(stru
  	pmb_addr = ioremap(MT7988_2P5GE_PMB_FW_BASE, MT7988_2P5GE_PMB_FW_LEN);
  	if (!pmb_addr)
  		return -ENOMEM;
@@ -373,7 +373,7 @@
  		ret = -ENOMEM;
  		goto free_pmb;
  	}
-@@ -89,7 +398,7 @@ static int mt798x_2p5ge_phy_load_fw(stru
+@@ -88,7 +397,7 @@ static int mt798x_2p5ge_phy_load_fw(stru
  		goto release_fw;
  	}
  
@@ -382,7 +382,7 @@
  	if (reg & MD32_EN) {
  		phy_set_bits(phydev, MII_BMCR, BMCR_RESET);
  		usleep_range(10000, 11000);
-@@ -110,8 +419,8 @@ static int mt798x_2p5ge_phy_load_fw(stru
+@@ -109,8 +418,8 @@ static int mt798x_2p5ge_phy_load_fw(stru
  		 *(fw->data + MT7988_2P5GE_PMB_FW_SIZE - 2),
  		 *(fw->data + MT7988_2P5GE_PMB_FW_SIZE - 1));
  
@@ -393,7 +393,7 @@
  	phy_set_bits(phydev, MII_BMCR, BMCR_RESET);
  	/* We need a delay here to stabilize initialization of MCU */
  	usleep_range(7000, 8000);
-@@ -122,7 +431,7 @@ static int mt798x_2p5ge_phy_load_fw(stru
+@@ -121,7 +430,7 @@ static int mt798x_2p5ge_phy_load_fw(stru
  release_fw:
  	release_firmware(fw);
  free:
@@ -402,7 +402,7 @@
  free_pmb:
  	iounmap(pmb_addr);
  
-@@ -138,7 +447,20 @@ static int mt798x_2p5ge_phy_config_init(
+@@ -137,7 +446,20 @@ static int mt798x_2p5ge_phy_config_init(
  	if (phydev->interface != PHY_INTERFACE_MODE_INTERNAL)
  		return -ENODEV;
  
@@ -424,7 +424,7 @@
  	if (ret < 0)
  		return ret;
  
-@@ -380,6 +702,7 @@ static int mt798x_2p5ge_phy_probe(struct
+@@ -378,6 +700,7 @@ static int mt798x_2p5ge_phy_probe(struct
  		return -ENOMEM;
  
  	switch (phydev->drv->phy_id) {
@@ -432,7 +432,7 @@
  	case MTK_2P5GPHY_ID_MT7988:
  		/* The original hardware only sets MDIO_DEVS_PMAPMD */
  		phydev->c45_ids.mmds_present |= MDIO_DEVS_PCS |
-@@ -401,6 +724,25 @@ static int mt798x_2p5ge_phy_probe(struct
+@@ -399,6 +722,25 @@ static int mt798x_2p5ge_phy_probe(struct
  
  static struct phy_driver mtk_2p5gephy_driver[] = {
  	{

@@ -18,7 +18,7 @@ Signed-off-by: SkyLake.Huang <skylake.huang@mediatek.com>
 
 --- a/drivers/net/phy/mediatek/Kconfig
 +++ b/drivers/net/phy/mediatek/Kconfig
-@@ -25,3 +25,14 @@ config MEDIATEK_GE_SOC_PHY
+@@ -24,3 +24,14 @@ config MEDIATEK_GE_SOC_PHY
  	  the MT7981 and MT7988 SoCs. These PHYs need calibration data
  	  present in the SoCs efuse and will dynamically calibrate VCM
  	  (common-mode voltage) during startup.
@@ -42,7 +42,7 @@ Signed-off-by: SkyLake.Huang <skylake.huang@mediatek.com>
 +obj-$(CONFIG_MEDIATEK_2P5GE_PHY)	+= mtk-2p5ge.o
 --- /dev/null
 +++ b/drivers/net/phy/mediatek/mtk-2p5ge.c
-@@ -0,0 +1,436 @@
+@@ -0,0 +1,434 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +#include <linux/bitfield.h>
 +#include <linux/firmware.h>
@@ -88,7 +88,6 @@ Signed-off-by: SkyLake.Huang <skylake.huang@mediatek.com>
 +
 +struct mtk_i2p5ge_phy_priv {
 +	bool fw_loaded;
-+	unsigned long led_state;
 +};
 +
 +enum {
@@ -361,12 +360,11 @@ Signed-off-by: SkyLake.Huang <skylake.huang@mediatek.com>
 +	if (err < 0)
 +		return err;
 +
-+	err = mtk_phy_hw_led_blink_set(phydev, index, &priv->led_state,
-+				       blinking);
++	err = mtk_phy_hw_led_blink_set(phydev, index, blinking);
 +	if (err)
 +		return err;
 +
-+	return mtk_phy_hw_led_on_set(phydev, index, &priv->led_state,
++	return mtk_phy_hw_led_on_set(phydev, index,
 +				     MTK_2P5GPHY_LED_ON_MASK, false);
 +}
 +
@@ -377,11 +375,11 @@ Signed-off-by: SkyLake.Huang <skylake.huang@mediatek.com>
 +	struct mtk_i2p5ge_phy_priv *priv = phydev->priv;
 +	int err;
 +
-+	err = mtk_phy_hw_led_blink_set(phydev, index, &priv->led_state, false);
++	err = mtk_phy_hw_led_blink_set(phydev, index, false);
 +	if (err)
 +		return err;
 +
-+	return mtk_phy_hw_led_on_set(phydev, index, &priv->led_state,
++	return mtk_phy_hw_led_on_set(phydev, index,
 +				     MTK_2P5GPHY_LED_ON_MASK,
 +				     (value != LED_OFF));
 +}
@@ -398,7 +396,7 @@ Signed-off-by: SkyLake.Huang <skylake.huang@mediatek.com>
 +{
 +	struct mtk_i2p5ge_phy_priv *priv = phydev->priv;
 +
-+	return mtk_phy_led_hw_ctrl_get(phydev, index, rules, &priv->led_state,
++	return mtk_phy_led_hw_ctrl_get(phydev, index, rules,
 +				       MTK_2P5GPHY_LED_ON_SET,
 +				       MTK_2P5GPHY_LED_RX_BLINK_SET,
 +				       MTK_2P5GPHY_LED_TX_BLINK_SET);
@@ -409,7 +407,7 @@ Signed-off-by: SkyLake.Huang <skylake.huang@mediatek.com>
 +{
 +	struct mtk_i2p5ge_phy_priv *priv = phydev->priv;
 +
-+	return mtk_phy_led_hw_ctrl_set(phydev, index, rules, &priv->led_state,
++	return mtk_phy_led_hw_ctrl_set(phydev, index, rules,
 +				       MTK_2P5GPHY_LED_ON_SET,
 +				       MTK_2P5GPHY_LED_RX_BLINK_SET,
 +				       MTK_2P5GPHY_LED_TX_BLINK_SET);

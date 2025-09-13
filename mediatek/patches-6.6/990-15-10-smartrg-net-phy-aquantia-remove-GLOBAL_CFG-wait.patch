@@ -21,8 +21,8 @@ Signed-off-by: Cezary Wilmanski <cezary.wilmanski@adtran.com>
  drivers/net/phy/aquantia/aquantia_main.c |   12 ------------
  1 file changed, 12 deletions(-)
 
---- a/drivers/net/phy/aquantia/aquantia_main.c	2025-09-02 20:20:06.508837000 +0200
-+++ b/drivers/net/phy/aquantia/aquantia_main.c	2025-09-03 01:45:53.586055811 +0200
+--- a/drivers/net/phy/aquantia/aquantia_main.c
++++ b/drivers/net/phy/aquantia/aquantia_main.c
 @@ -872,18 +872,6 @@ static int aqr113c_fill_interface_modes(
  {
  	int val, ret;
