@@ -515,7 +515,7 @@
 };
 
 &trng {
-	status = "okay";
+	status = "disabled";
 };
 
 &uart0 {

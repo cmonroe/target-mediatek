@@ -17,7 +17,7 @@ Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 
 --- a/drivers/thermal/mediatek/lvts_thermal.c
 +++ b/drivers/thermal/mediatek/lvts_thermal.c
-@@ -97,6 +97,17 @@
+@@ -101,6 +101,17 @@
  
  #define LVTS_MINIMUM_THRESHOLD		20000
  
@@ -35,7 +35,7 @@ Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
  static int golden_temp = LVTS_GOLDEN_TEMP_DEFAULT;
  static int golden_temp_offset;
  
-@@ -829,7 +840,7 @@ static int lvts_ctrl_init(struct device
+@@ -851,7 +862,7 @@ static int lvts_ctrl_init(struct device
   * each write in the configuration register must be separated by a
   * delay of 2 us.
   */
@@ -44,7 +44,7 @@ Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
  {
  	int i;
  
-@@ -913,9 +924,9 @@ static int lvts_ctrl_set_enable(struct l
+@@ -935,9 +946,9 @@ static int lvts_ctrl_set_enable(struct l
  
  static int lvts_ctrl_connect(struct device *dev, struct lvts_ctrl *lvts_ctrl)
  {
@@ -56,7 +56,7 @@ Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
  
  	/*
  	 * LVTS_ID : Get ID and status of the thermal controller
-@@ -934,17 +945,7 @@ static int lvts_ctrl_connect(struct devi
+@@ -956,17 +967,7 @@ static int lvts_ctrl_connect(struct devi
  
  static int lvts_ctrl_initialize(struct device *dev, struct lvts_ctrl *lvts_ctrl)
  {

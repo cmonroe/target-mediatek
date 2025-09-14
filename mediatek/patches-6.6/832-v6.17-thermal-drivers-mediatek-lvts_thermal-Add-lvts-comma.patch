@@ -17,7 +17,7 @@ Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 
 --- a/drivers/thermal/mediatek/lvts_thermal.c
 +++ b/drivers/thermal/mediatek/lvts_thermal.c
-@@ -97,17 +97,6 @@
+@@ -101,17 +101,6 @@
  
  #define LVTS_MINIMUM_THRESHOLD		20000
  
@@ -35,7 +35,7 @@ Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
  static int golden_temp = LVTS_GOLDEN_TEMP_DEFAULT;
  static int golden_temp_offset;
  
-@@ -126,7 +115,11 @@ struct lvts_ctrl_data {
+@@ -130,7 +119,11 @@ struct lvts_ctrl_data {
  
  struct lvts_data {
  	const struct lvts_ctrl_data *lvts_ctrl;
@@ -47,7 +47,7 @@ Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
  	int temp_factor;
  	int temp_offset;
  };
-@@ -924,9 +917,10 @@ static int lvts_ctrl_set_enable(struct l
+@@ -946,9 +939,10 @@ static int lvts_ctrl_set_enable(struct l
  
  static int lvts_ctrl_connect(struct device *dev, struct lvts_ctrl *lvts_ctrl)
  {
@@ -59,7 +59,7 @@ Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
  
  	/*
  	 * LVTS_ID : Get ID and status of the thermal controller
-@@ -945,7 +939,9 @@ static int lvts_ctrl_connect(struct devi
+@@ -967,7 +961,9 @@ static int lvts_ctrl_connect(struct devi
  
  static int lvts_ctrl_initialize(struct device *dev, struct lvts_ctrl *lvts_ctrl)
  {
@@ -70,7 +70,7 @@ Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
  
  	return 0;
  }
-@@ -1366,6 +1362,17 @@ static int lvts_resume(struct device *de
+@@ -1388,6 +1384,17 @@ static int lvts_resume(struct device *de
  	return 0;
  }
  
@@ -88,7 +88,7 @@ Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
  static const struct lvts_ctrl_data mt8192_lvts_mcu_data_ctrl[] = {
  	{
  		.cal_offset = { 0x04, 0x08 },
-@@ -1529,7 +1536,11 @@ static const struct lvts_ctrl_data mt819
+@@ -1551,7 +1558,11 @@ static const struct lvts_ctrl_data mt819
  
  static const struct lvts_data mt7988_lvts_ap_data = {
  	.lvts_ctrl	= mt7988_lvts_ap_data_ctrl,
@@ -100,7 +100,7 @@ Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
  	.temp_factor	= LVTS_COEFF_A_MT7988,
  	.temp_offset	= LVTS_COEFF_B_MT7988,
  };
-@@ -1546,14 +1557,22 @@ static const struct lvts_data mt8192_lvt
+@@ -1568,14 +1579,22 @@ static const struct lvts_data mt8192_lvt
  
  static const struct lvts_data mt8195_lvts_mcu_data = {
  	.lvts_ctrl	= mt8195_lvts_mcu_data_ctrl,

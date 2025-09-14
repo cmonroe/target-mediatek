@@ -14,7 +14,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 
 --- a/drivers/thermal/mediatek/lvts_thermal.c
 +++ b/drivers/thermal/mediatek/lvts_thermal.c
-@@ -84,6 +84,8 @@
+@@ -88,6 +88,8 @@
  #define LVTS_COEFF_B_MT8195			250460
  #define LVTS_COEFF_A_MT7988			-204650
  #define LVTS_COEFF_B_MT7988			204650
@@ -23,7 +23,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  
  #define LVTS_MSR_IMMEDIATE_MODE		0
  #define LVTS_MSR_FILTERED_MODE		1
-@@ -92,6 +94,7 @@
+@@ -96,6 +98,7 @@
  #define LVTS_MSR_READ_WAIT_US		(LVTS_MSR_READ_TIMEOUT_US / 2)
  
  #define LVTS_HW_SHUTDOWN_MT7988		105000
@@ -31,7 +31,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  #define LVTS_HW_SHUTDOWN_MT8192		105000
  #define LVTS_HW_SHUTDOWN_MT8195		105000
  
-@@ -1315,6 +1318,19 @@ static void lvts_remove(struct platform_
+@@ -1337,6 +1340,19 @@ static void lvts_remove(struct platform_
  	lvts_debugfs_exit(lvts_td);
  }
  
@@ -51,7 +51,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  static const struct lvts_ctrl_data mt7988_lvts_ap_data_ctrl[] = {
  	{
  		.cal_offset = { 0x00, 0x04, 0x08, 0x0c },
-@@ -1375,6 +1391,7 @@ static int lvts_resume(struct device *de
+@@ -1397,6 +1413,7 @@ static int lvts_resume(struct device *de
  }
  
  static const u32 default_conn_cmds[] = { 0xC103FFFF, 0xC502FF55 };
@@ -59,7 +59,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  static const u32 mt7988_conn_cmds[] = { 0xC103FFFF, 0xC502FC55 };
  
  /*
-@@ -1387,6 +1404,12 @@ static const u32 default_init_cmds[] = {
+@@ -1409,6 +1426,12 @@ static const u32 default_init_cmds[] = {
  	0xC10300FC, 0xC103009D, 0xC10300F1, 0xC10300E1
  };
  
@@ -72,7 +72,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  static const u32 mt7988_init_cmds[] = {
  	0xC1030300, 0xC1030420, 0xC1030500, 0xC10307A6, 0xC1030CFC,
  	0xC1030A8C, 0xC103098D, 0xC10308F1, 0xC1030B04, 0xC1030E01,
-@@ -1566,6 +1589,18 @@ static const struct lvts_data mt7988_lvt
+@@ -1588,6 +1611,18 @@ static const struct lvts_data mt7988_lvt
  	.temp_offset	= LVTS_COEFF_B_MT7988,
  };
  
@@ -91,7 +91,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  static const struct lvts_data mt8192_lvts_mcu_data = {
  	.irq_enable	= 1,
  	.lvts_ctrl	= mt8192_lvts_mcu_data_ctrl,
-@@ -1603,6 +1638,7 @@ static const struct lvts_data mt8195_lvt
+@@ -1625,6 +1660,7 @@ static const struct lvts_data mt8195_lvt
  };
  
  static const struct of_device_id lvts_of_match[] = {
