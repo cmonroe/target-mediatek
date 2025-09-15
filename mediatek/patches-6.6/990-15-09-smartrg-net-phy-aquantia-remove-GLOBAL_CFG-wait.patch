@@ -18,15 +18,19 @@ This reverts the workaround and avoids unnecessary initialization errors.
 
 Signed-off-by: Cezary Wilmanski <cezary.wilmanski@adtran.com>
 ---
- drivers/net/phy/aquantia/aquantia_main.c |   12 ------------
- 1 file changed, 12 deletions(-)
+ drivers/net/phy/aquantia/aquantia_main.c |   21 +--------------------
+ 1 file changed, 1 insertion(+), 20 deletions(-)
 
 --- a/drivers/net/phy/aquantia/aquantia_main.c
 +++ b/drivers/net/phy/aquantia/aquantia_main.c
-@@ -872,18 +872,6 @@ static int aqr113c_fill_interface_modes(
- {
- 	int val, ret;
+@@ -870,25 +870,6 @@ static int aqr107_fill_interface_modes(s
+ 	return 0;
+ }
  
+-static int aqr113c_fill_interface_modes(struct phy_device *phydev)
+-{
+-	int val, ret;
+-
 -	/* It's been observed on some models that - when coming out of suspend
 -	 * - the FW signals that the PHY is ready but the GLOBAL_CFG registers
 -	 * continue on returning zeroes for some time. Let's poll the 100M
@@ -39,6 +43,18 @@ Signed-off-by: Cezary Wilmanski <cezary.wilmanski@adtran.com>
 -	if (ret)
 -		return ret;
 -
- 	ret = aqr107_fill_interface_modes(phydev);
- 	if (ret)
+-	return aqr107_fill_interface_modes(phydev);
+-}
+-
+ static int aqr113c_config_init(struct phy_device *phydev)
+ {
+ 	int ret;
+@@ -897,7 +878,7 @@ static int aqr113c_config_init(struct ph
+ 	if (ret < 0)
  		return ret;
+ 
+-	return aqr113c_fill_interface_modes(phydev);
++	return aqr107_fill_interface_modes(phydev);
+ }
+ 
+ static int aqr107_probe(struct phy_device *phydev)
