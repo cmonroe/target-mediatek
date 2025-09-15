@@ -222,203 +222,227 @@
 		};
 
 		lan1_white {
-			color = <LED_COLOR_ID_WHITE>;
-			function = "lan1";
 			gpios = <&swled_gpio0 0 GPIO_ACTIVE_LOW>;
-			linux,default-trigger = "mxl862xx_dsa-0:00:link";
+			color = <LED_COLOR_ID_WHITE>;
+			function = LED_FUNCTION_LAN;
+			function-enumerator = <1>;
 		};
 
 		lan1_blue {
-			color = <LED_COLOR_ID_BLUE>;
-			function = "lan1";
 			gpios = <&swled_gpio0 1 GPIO_ACTIVE_LOW>;
+			color = <LED_COLOR_ID_BLUE>;
+			function = LED_FUNCTION_LAN;
+			function-enumerator = <1>;
 		};
 
 		lan1_green {
-			color = <LED_COLOR_ID_GREEN>;
-			function = "lan1";
 			gpios = <&swled_gpio0 2 GPIO_ACTIVE_LOW>;
+			color = <LED_COLOR_ID_GREEN>;
+			function = LED_FUNCTION_LAN;
+			function-enumerator = <1>;
 		};
 
 		lan1_red {
-			color = <LED_COLOR_ID_RED>;
-			function = "lan1";
 			gpios = <&swled_gpio0 3 GPIO_ACTIVE_LOW>;
+			color = <LED_COLOR_ID_RED>;
+			function = LED_FUNCTION_LAN;
+			function-enumerator = <1>;
 		};
 
 		lan2_white {
-			color = <LED_COLOR_ID_WHITE>;
-			function = "lan2";
 			gpios = <&swled_gpio0 4 GPIO_ACTIVE_LOW>;
-			linux,default-trigger = "mxl862xx_dsa-0:01:link";
+			color = <LED_COLOR_ID_WHITE>;
+			function = LED_FUNCTION_LAN;
+			function-enumerator = <2>;
 		};
 
 		lan2_blue {
-			color = <LED_COLOR_ID_BLUE>;
-			function = "lan2";
 			gpios = <&swled_gpio0 5 GPIO_ACTIVE_LOW>;
+			color = <LED_COLOR_ID_BLUE>;
+			function = LED_FUNCTION_LAN;
+			function-enumerator = <2>;
 		};
 
 		lan2_green {
-			color = <LED_COLOR_ID_GREEN>;
-			function = "lan2";
 			gpios = <&swled_gpio0 6 GPIO_ACTIVE_LOW>;
+			color = <LED_COLOR_ID_GREEN>;
+			function = LED_FUNCTION_LAN;
+			function-enumerator = <2>;
 		};
 
 		lan2_red {
-			color = <LED_COLOR_ID_RED>;
-			function = "lan2";
 			gpios = <&swled_gpio0 7 GPIO_ACTIVE_LOW>;
+			color = <LED_COLOR_ID_RED>;
+			function = LED_FUNCTION_LAN;
+			function-enumerator = <2>;
 		};
 
 		lan3_white {
-			color = <LED_COLOR_ID_WHITE>;
-			function = "lan3";
 			gpios = <&swled_gpio0 8 GPIO_ACTIVE_LOW>;
-			linux,default-trigger = "mxl862xx_dsa-0:02:link";
+			color = <LED_COLOR_ID_WHITE>;
+			function = LED_FUNCTION_LAN;
+			function-enumerator = <3>;
 		};
 
 		lan3_blue {
-			color = <LED_COLOR_ID_BLUE>;
-			function = "lan3";
 			gpios = <&swled_gpio0 9 GPIO_ACTIVE_LOW>;
+			color = <LED_COLOR_ID_BLUE>;
+			function = LED_FUNCTION_LAN;
+			function-enumerator = <3>;
 		};
 
 		lan3_green {
-			color = <LED_COLOR_ID_GREEN>;
-			function = "lan3";
 			gpios = <&swled_gpio0 10 GPIO_ACTIVE_LOW>;
+			color = <LED_COLOR_ID_GREEN>;
+			function = LED_FUNCTION_LAN;
+			function-enumerator = <3>;
 		};
 
 		lan3_red {
-			color = <LED_COLOR_ID_RED>;
-			function = "lan3";
 			gpios = <&swled_gpio0 11 GPIO_ACTIVE_LOW>;
+			color = <LED_COLOR_ID_RED>;
+			function = LED_FUNCTION_LAN;
+			function-enumerator = <3>;
 		};
 
 		lan4_white {
-			color = <LED_COLOR_ID_WHITE>;
-			function = "lan4";
 			gpios = <&swled_gpio0 12 GPIO_ACTIVE_LOW>;
-			linux,default-trigger = "mxl862xx_dsa-0:03:link";
+			color = <LED_COLOR_ID_WHITE>;
+			function = LED_FUNCTION_LAN;
+			function-enumerator = <4>;
 		};
 
 		lan4_blue {
-			color = <LED_COLOR_ID_BLUE>;
-			function = "lan4";
 			gpios = <&swled_gpio0 13 GPIO_ACTIVE_LOW>;
+			color = <LED_COLOR_ID_BLUE>;
+			function = LED_FUNCTION_LAN;
+			function-enumerator = <4>;
 		};
 
 		lan4_green {
-			color = <LED_COLOR_ID_GREEN>;
-			function = "lan4";
 			gpios = <&swled_gpio0 14 GPIO_ACTIVE_LOW>;
+			color = <LED_COLOR_ID_GREEN>;
+			function = LED_FUNCTION_LAN;
+			function-enumerator = <4>;
 		};
 
 		lan4_red {
-			color = <LED_COLOR_ID_RED>;
-			function = "lan4";
 			gpios = <&swled_gpio0 15 GPIO_ACTIVE_LOW>;
+			color = <LED_COLOR_ID_RED>;
+			function = LED_FUNCTION_LAN;
+			function-enumerator = <4>;
 		};
 
 		lan5_white {
-			color = <LED_COLOR_ID_WHITE>;
-			function = "lan5";
 			gpios = <&swled_gpio1 0 GPIO_ACTIVE_LOW>;
-			linux,default-trigger = "mxl862xx_dsa-0:04:link";
+			color = <LED_COLOR_ID_WHITE>;
+			function = LED_FUNCTION_LAN;
+			function-enumerator = <5>;
 		};
 
 		lan5_blue {
-			color = <LED_COLOR_ID_BLUE>;
-			function = "lan5";
 			gpios = <&swled_gpio1 1 GPIO_ACTIVE_LOW>;
+			color = <LED_COLOR_ID_BLUE>;
+			function = LED_FUNCTION_LAN;
+			function-enumerator = <5>;
 		};
 
 		lan5_green {
-			color = <LED_COLOR_ID_GREEN>;
-			function = "lan5";
 			gpios = <&swled_gpio1 2 GPIO_ACTIVE_LOW>;
+			color = <LED_COLOR_ID_GREEN>;
+			function = LED_FUNCTION_LAN;
+			function-enumerator = <5>;
 		};
 
 		lan5_red {
-			color = <LED_COLOR_ID_RED>;
-			function = "lan5";
 			gpios = <&swled_gpio1 3 GPIO_ACTIVE_LOW>;
+			color = <LED_COLOR_ID_RED>;
+			function = LED_FUNCTION_LAN;
+			function-enumerator = <5>;
 		};
 
 		lan6_white {
-			color = <LED_COLOR_ID_WHITE>;
-			function = "lan6";
 			gpios = <&swled_gpio1 4 GPIO_ACTIVE_LOW>;
-			linux,default-trigger = "mxl862xx_dsa-0:05:link";
+			color = <LED_COLOR_ID_WHITE>;
+			function = LED_FUNCTION_LAN;
+			function-enumerator = <6>;
 		};
 
 		lan6_blue {
-			color = <LED_COLOR_ID_BLUE>;
-			function = "lan6";
 			gpios = <&swled_gpio1 5 GPIO_ACTIVE_LOW>;
+			color = <LED_COLOR_ID_BLUE>;
+			function = LED_FUNCTION_LAN;
+			function-enumerator = <6>;
 		};
 
 		lan6_green {
-			color = <LED_COLOR_ID_GREEN>;
-			function = "lan6";
 			gpios = <&swled_gpio1 6 GPIO_ACTIVE_LOW>;
+			color = <LED_COLOR_ID_GREEN>;
+			function = LED_FUNCTION_LAN;
+			function-enumerator = <6>;
 		};
 
 		lan6_red {
-			color = <LED_COLOR_ID_RED>;
-			function = "lan6";
 			gpios = <&swled_gpio1 7 GPIO_ACTIVE_LOW>;
+			color = <LED_COLOR_ID_RED>;
+			function = LED_FUNCTION_LAN;
+			function-enumerator = <6>;
 		};
 
 		lan7_white {
-			color = <LED_COLOR_ID_WHITE>;
-			function = "lan7";
 			gpios = <&swled_gpio1 8 GPIO_ACTIVE_LOW>;
-			linux,default-trigger = "mxl862xx_dsa-0:06:link";
+			color = <LED_COLOR_ID_WHITE>;
+			function = LED_FUNCTION_LAN;
+			function-enumerator = <7>;
 		};
 
 		lan7_blue {
-			color = <LED_COLOR_ID_BLUE>;
-			function = "lan7";
 			gpios = <&swled_gpio1 9 GPIO_ACTIVE_LOW>;
+			color = <LED_COLOR_ID_BLUE>;
+			function = LED_FUNCTION_LAN;
+			function-enumerator = <7>;
 		};
 
 		lan7_green {
-			color = <LED_COLOR_ID_GREEN>;
-			function = "lan7";
 			gpios = <&swled_gpio1 10 GPIO_ACTIVE_LOW>;
+			color = <LED_COLOR_ID_GREEN>;
+			function = LED_FUNCTION_LAN;
+			function-enumerator = <7>;
 		};
 
 		lan7_red {
-			color = <LED_COLOR_ID_RED>;
-			function = "lan7";
 			gpios = <&swled_gpio1 11 GPIO_ACTIVE_LOW>;
+			color = <LED_COLOR_ID_RED>;
+			function = LED_FUNCTION_LAN;
+			function-enumerator = <7>;
 		};
 
 		lan8_white {
-			color = <LED_COLOR_ID_WHITE>;
-			function = "lan8";
 			gpios = <&swled_gpio1 12 GPIO_ACTIVE_LOW>;
-			linux,default-trigger = "mxl862xx_dsa-0:07:link";
+			color = <LED_COLOR_ID_WHITE>;
+			function = LED_FUNCTION_LAN;
+			function-enumerator = <8>;
 		};
 
 		lan8_blue {
-			color = <LED_COLOR_ID_BLUE>;
-			function = "lan8";
 			gpios = <&swled_gpio1 13 GPIO_ACTIVE_LOW>;
+			color = <LED_COLOR_ID_BLUE>;
+			function = LED_FUNCTION_LAN;
+			function-enumerator = <8>;
 		};
 
 		lan8_green {
-			color = <LED_COLOR_ID_GREEN>;
-			function = "lan8";
 			gpios = <&swled_gpio1 14 GPIO_ACTIVE_LOW>;
+			color = <LED_COLOR_ID_GREEN>;
+			function = LED_FUNCTION_LAN;
+			function-enumerator = <8>;
 		};
 
 		lan8_red {
-			color = <LED_COLOR_ID_RED>;
-			function = "lan8";
 			gpios = <&swled_gpio1 15 GPIO_ACTIVE_LOW>;
+			color = <LED_COLOR_ID_RED>;
+			function = LED_FUNCTION_LAN;
+			function-enumerator = <8>;
 		};
 	};
 
