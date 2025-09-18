@@ -171,7 +171,7 @@ Signed-off-by: Cezary Wilmanski <cezary.wilmanski@adtran.com>
  #endif
 --- a/drivers/net/phy/aquantia/aquantia_main.c
 +++ b/drivers/net/phy/aquantia/aquantia_main.c
-@@ -701,6 +701,8 @@ static int aqr107_config_init(struct phy
+@@ -683,6 +683,8 @@ static int aqr107_config_init(struct phy
  			return ret;
  	}
  
@@ -180,7 +180,7 @@ Signed-off-by: Cezary Wilmanski <cezary.wilmanski@adtran.com>
  	return 0;
  }
  
-@@ -919,6 +921,7 @@ static int aqr107_probe(struct phy_devic
+@@ -882,6 +884,7 @@ static int aqr107_probe(struct phy_devic
  static void aqr107_remove(struct phy_device *phydev)
  {
  	aqr_mib_remove(phydev);

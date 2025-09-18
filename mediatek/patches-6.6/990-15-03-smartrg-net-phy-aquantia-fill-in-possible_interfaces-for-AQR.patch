@@ -12,9 +12,9 @@ Link: https://lore.kernel.org/r/E1r6VI6-00DDLl-2D@rmk-PC.armlinux.org.uk
 Signed-off-by: Jakub Kicinski <kuba@kernel.org>
 Signed-off-by: Piotr Kubik <piotr.kubik@adtran.com>
 ---
- drivers/net/phy/aquantia/aquantia.h      |  5 ++
- drivers/net/phy/aquantia/aquantia_main.c | 76 +++++++++++++++++++++++-
- 2 files changed, 80 insertions(+), 1 deletion(-)
+ drivers/net/phy/aquantia/aquantia.h      |    5 +
+ drivers/net/phy/aquantia/aquantia_main.c |   78 ++++++++++++++++++++-
+ 2 files changed, 81 insertions(+), 2 deletions(-)
 
 --- a/drivers/net/phy/aquantia/aquantia.h
 +++ b/drivers/net/phy/aquantia/aquantia.h
@@ -32,7 +32,7 @@ Signed-off-by: Piotr Kubik <piotr.kubik@adtran.com>
  #define VEND1_GLOBAL_CFG_RATE_ADAPT_USX		1
 --- a/drivers/net/phy/aquantia/aquantia_main.c
 +++ b/drivers/net/phy/aquantia/aquantia_main.c
-@@ -805,6 +805,80 @@ static int aqr107_resume(struct phy_devi
+@@ -787,6 +787,80 @@ static int aqr107_resume(struct phy_devi
  	return aqr107_wait_processor_intensive_op(phydev);
  }
  
@@ -113,7 +113,7 @@ Signed-off-by: Piotr Kubik <piotr.kubik@adtran.com>
  static int aqr107_probe(struct phy_device *phydev)
  {
  	int ret;
-@@ -1030,7 +1104,7 @@ static struct phy_driver aqr_driver[] =
+@@ -1012,7 +1086,7 @@ static struct phy_driver aqr_driver[] =
  	.probe          = aqr107_probe,
  	.remove		= aqr107_remove,
  	.get_rate_matching = aqr107_get_rate_matching,
@@ -122,9 +122,9 @@ Signed-off-by: Piotr Kubik <piotr.kubik@adtran.com>
  	.config_aneg    = aqr_config_aneg,
  	.config_intr    = aqr_config_intr,
  	.handle_interrupt       = aqr_handle_interrupt,
-@@ -1055,7 +1129,7 @@ static struct phy_driver aqr_driver[] =
+@@ -1037,7 +1111,7 @@ static struct phy_driver aqr_driver[] =
  	.probe          = aqr107_probe,
- 	.remove			= aqr107_remove,
+ 	.remove		= aqr107_remove,
  	.get_rate_matching = aqr107_get_rate_matching,
 -	.config_init    = aqr107_config_init,
 +	.config_init    = aqr113c_config_init,
