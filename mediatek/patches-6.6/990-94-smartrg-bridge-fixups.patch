@@ -1,18 +1,15 @@
 From: Chad Monroe <chad@monroe.io>
 Date: Tue, 09 Apr 2024 15:02:01 -0700
-Subject: [PATCH] net: bridge: fixups/hacks for kernel 6.6 
+Subject: [PATCH] net: bridge: fixups/hacks for SmartOS
 
-SmartOS still uses multiple bridges rather than a single bridge
-instance with bridge-vlans.
+SmartOS needs to enslave VLAN devices to a VLAN-aware bridge
+for xconnect still.
 
 1. adjust BR_PORT_FLAGS_HW_OFFLOAD to not attempt multicast
    to unicast offloading. the only DSA driver we currently use
    is mt7530 and it does not support it. reduce log spam.
-2. disable WARN_ON if vlan_list is empty.
-3. since all interfaces end up in hwdom 1 we don't care about
-   mixed VLAN-aware vs unaware states.
-
-This patch should be dropped when SmartOS moves to bridge-vlans.
+2. wan is not part of br0 but vlan devices might need to be
+   added to the bridge for xconnect.
 
 Signed-off-by: Chad Monroe <chad@monroe.io>
 ---
@@ -33,17 +30,6 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  
  int br_switchdev_set_port_flag(struct net_bridge_port *p,
  			       unsigned long flags,
---- a/net/bridge/br_vlan.c
-+++ b/net/bridge/br_vlan.c
-@@ -430,7 +430,7 @@ out:
- 
- static void __vlan_group_free(struct net_bridge_vlan_group *vg)
- {
--	WARN_ON(!list_empty(&vg->vlan_list));
-+	//WARN_ON(!list_empty(&vg->vlan_list));
- 	rhashtable_destroy(&vg->vlan_hash);
- 	vlan_tunnel_deinit(vg);
- 	kfree(vg);
 --- a/net/dsa/slave.c
 +++ b/net/dsa/slave.c
 @@ -2984,12 +2984,15 @@ dsa_prevent_bridging_8021q_upper(struct
@@ -51,7 +37,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  
  	/* Deny enslaving a VLAN device into a VLAN-aware bridge */
 +#if 0
-+	/* HACK: since all VLANs get put in hwdom 1 skip this */
++	/* HACK: allow this for xconnect */
  	if (br_vlan_enabled(br) &&
  	    netif_is_bridge_master(info->upper_dev) && info->linking) {
  		NL_SET_ERR_MSG_MOD(ext_ack,
