@@ -1248,6 +1248,17 @@
 		output-high;
 	};
 
+	/**
+	 * The hack to release PSE2 driver from reset
+	 * for units older than PVT2.
+	 */
+	pse2_reset_pvt: pse2-reset-pvt-hog {
+		gpio-hog;
+		gpios = <26 GPIO_ACTIVE_HIGH>;
+		line-name = "pse2-reset-pvt";
+		output-high;
+	};
+
 	pwm0_fan_pins: pwm0-pins {
 		mux {
 			function = "pwm";
