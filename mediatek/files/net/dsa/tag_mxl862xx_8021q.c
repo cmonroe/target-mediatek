@@ -20,18 +20,12 @@
  *
  */
 
-#ifndef LINUX_VERSION_CODE
 #include <linux/version.h>
-#else
-#define KERNEL_VERSION(a, b, c) (((a) << 16) + ((b) << 8) + (c))
-#endif
-
 #include <linux/dsa/8021q.h>
 #include "tag_8021q.h"
 #include "tag.h"
 
-
-#define MXL862_NAME	"mxl862xx"
+#define MXL862_TAG_8021Q_NAME	"mxl862_8021q"
 
 /* To define the outgoing port and to discover the incoming port
  * a special 4-byte outer VLAN tag is used by the MxL862xx.
@@ -97,20 +91,18 @@ static struct sk_buff *mxl862_8021q_tag_rcv(struct sk_buff *skb,
 }
 
 static const struct dsa_device_ops mxl862_8021q_netdev_ops = {
-	.name = "mxl862_8021q",
+	.name = MXL862_TAG_8021Q_NAME,
 	.proto = DSA_TAG_PROTO_MXL862_8021Q,
 	.xmit = mxl862_8021q_tag_xmit,
 	.rcv = mxl862_8021q_tag_rcv,
 	.needed_headroom	= VLAN_HLEN,
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 7, 0) && \
-	 LINUX_VERSION_CODE > KERNEL_VERSION(5, 10, 0))
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 7, 0))
 	.promisc_on_master	= true,
-#elif (LINUX_VERSION_CODE > KERNEL_VERSION(6, 7, 0))
-	.promisc_on_conduit = true,
+#else
+	.promisc_on_conduit	= true,
 #endif
 };
 
-
 MODULE_LICENSE("GPL");
-MODULE_ALIAS_DSA_TAG_DRIVER(DSA_TAG_PROTO_MXL862_8021Q, MXL862_NAME);
+MODULE_ALIAS_DSA_TAG_DRIVER(DSA_TAG_PROTO_MXL862_8021Q, MXL862_TAG_8021Q_NAME);
 module_dsa_tag_driver(mxl862_8021q_netdev_ops);

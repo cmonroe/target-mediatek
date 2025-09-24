@@ -23,16 +23,11 @@
 #include <linux/bitops.h>
 #include <linux/etherdevice.h>
 #include <linux/skbuff.h>
+#include <linux/version.h>
 #include <net/dsa.h>
 #include "tag.h"
 
-#ifndef LINUX_VERSION_CODE
-#include <linux/version.h>
-#else
-#define KERNEL_VERSION(a, b, c) (((a) << 16) + ((b) << 8) + (c))
-#endif
-
-#define MXL862_NAME	"mxl862xx"
+#define MXL862_TAG_NAME	"mxl862"
 
 /* To define the outgoing port and to discover the incoming port a special
  * tag is used by the GSW1xx.
@@ -51,6 +46,24 @@
 #define MXL862_IGP_EGP_SHIFT 0
 #define MXL862_IGP_EGP_MASK GENMASK(3, 0)
 
+static int mxl862_dsa_port_to_tag_port(const int in_dsa_port)
+{
+	if (in_dsa_port < 15)
+		return in_dsa_port + 1;
+
+	dev_err_ratelimited(NULL, "%s Wrong in_dsa_port value: %d\n", __FILE__, in_dsa_port);
+	return 0;
+}
+
+static int mxl862_tag_port_to_dsa_port(const int in_hw_port)
+{
+	if (in_hw_port >= 1 && in_hw_port <= 15)
+		return in_hw_port - 1;
+
+	dev_err_ratelimited(NULL, "%s Wrong in_hw_port value: %d\n", __FILE__, in_hw_port);
+	return 0;
+}
+
 static struct sk_buff *mxl862_tag_xmit(struct sk_buff *skb,
 				       struct net_device *dev)
 {
@@ -60,8 +73,8 @@ static struct sk_buff *mxl862_tag_xmit(struct sk_buff *skb,
 	struct dsa_port *dp = dsa_user_to_port(dev);
 #endif
 	struct dsa_port *cpu_dp = dp->cpu_dp;
-	unsigned int cpu_port = cpu_dp->index + 1;
-	unsigned int usr_port = dp->index + 1;
+	unsigned int cpu_port = mxl862_dsa_port_to_tag_port(cpu_dp->index);
+	unsigned int usr_port = mxl862_dsa_port_to_tag_port(dp->index);
 
 	u8 *mxl862_tag;
 
@@ -92,7 +105,7 @@ static struct sk_buff *mxl862_tag_xmit(struct sk_buff *skb,
 static struct sk_buff *mxl862_tag_rcv(struct sk_buff *skb,
 				      struct net_device *dev)
 {
-	int port;
+	int port, usr_port;
 	u8 *mxl862_tag;
 
 	if (unlikely(!pskb_may_pull(skb, MXL862_RX_HEADER_LEN))) {
@@ -118,7 +131,7 @@ static struct sk_buff *mxl862_tag_rcv(struct sk_buff *skb,
 
 	/* Get source port information */
 	port = (mxl862_tag[7] & MXL862_IGP_EGP_MASK) >> MXL862_IGP_EGP_SHIFT;
-	port = port - 1;
+	usr_port = mxl862_tag_port_to_dsa_port(port);
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(6, 7, 0))
 	skb->dev = dsa_master_find_slave(dev, 0, port);
 #else
@@ -127,7 +140,8 @@ static struct sk_buff *mxl862_tag_rcv(struct sk_buff *skb,
 	if (!skb->dev) {
 		dev_warn_ratelimited(
 			&dev->dev,
-			"Dropping packet due to invalid source port\n");
+			"Dropping packet due to invalid source port (hw %d, usr %d)\n",
+			port, usr_port);
 		dev_warn_ratelimited(
 			&dev->dev,
 			"Rx Packet Tag: 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x\n",
@@ -147,7 +161,7 @@ static struct sk_buff *mxl862_tag_rcv(struct sk_buff *skb,
 }
 
 static const struct dsa_device_ops mxl862_netdev_ops = {
-	.name = "mxl862",
+	.name = MXL862_TAG_NAME,
 	.proto = DSA_TAG_PROTO_MXL862,
 	.xmit = mxl862_tag_xmit,
 	.rcv = mxl862_tag_rcv,
@@ -155,5 +169,6 @@ static const struct dsa_device_ops mxl862_netdev_ops = {
 };
 
 MODULE_LICENSE("GPL");
-MODULE_ALIAS_DSA_TAG_DRIVER(DSA_TAG_PROTO_MXL862, MXL862_NAME);
+MODULE_ALIAS_DSA_TAG_DRIVER(DSA_TAG_PROTO_MXL862, MXL862_TAG_NAME);
 module_dsa_tag_driver(mxl862_netdev_ops);
+

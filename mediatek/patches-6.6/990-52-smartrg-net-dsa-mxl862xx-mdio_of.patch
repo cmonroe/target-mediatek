@@ -21,9 +21,9 @@ Signed-off-by: Piotr Kubik <piotr.kubik@adtran.com>
  #include <linux/phy.h>
  #include <net/dsa.h>
  #include <linux/dsa/8021q.h>
-@@ -2904,7 +2905,20 @@ static int mxl862xx_setup_mdio(struct ds
- 	bus->parent = dev;
- 	bus->phy_mask = ~ds->phys_mii_mask;
+@@ -2987,7 +2988,20 @@ static int mxl862xx_setup_mdio(struct ds
+ 	if (priv->hw_info->ext_ports <= 2)
+ 		 bus->phy_mask |= 0xff00;
  
 +#if IS_ENABLED(CONFIG_OF_MDIO)
 +	struct device_node *mdio_np;
