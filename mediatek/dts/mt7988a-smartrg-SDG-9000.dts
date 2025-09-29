@@ -1248,6 +1248,13 @@
 		output-high;
 	};
 
+	fan_enable: fan-enable-hog {
+		gpio-hog;
+		gpios = <59 GPIO_ACTIVE_HIGH>;
+		line-name = "fan-enable";
+		output-high;
+	};
+
 	/**
 	 * The hack to release PSE2 driver from reset
 	 * for units older than PVT2.
