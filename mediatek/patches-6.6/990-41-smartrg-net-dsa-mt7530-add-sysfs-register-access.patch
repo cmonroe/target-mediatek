@@ -17,7 +17,7 @@ Subject: [PATCH] OWRT-6281 mtk reg rd wr added
  
  #include "mt7530.h"
  
-@@ -886,6 +887,7 @@ mt7530_mib_fetch_port_stat(struct mt7530
+@@ -880,6 +881,7 @@ mt7530_mib_fetch_port_stat(struct mt7530
  	}
  }
  
@@ -25,16 +25,16 @@ Subject: [PATCH] OWRT-6281 mtk reg rd wr added
  static void
  mt7530_mib_work_func(struct work_struct *work)
  {
-@@ -901,7 +903,7 @@ mt7530_mib_work_func(struct work_struct
- 	}
+@@ -896,7 +898,7 @@ mt7530_mib_work_func(struct work_struct
+ 	mutex_unlock(&priv->mib_lock);
  
  	schedule_delayed_work(&priv->mib_work,
 -			      msecs_to_jiffies(MT7530_MIB_WORK_DELAY));
 +			      msecs_to_jiffies(mib_work_delay));
  }
  
- void mt7530_get_stats64(struct dsa_switch *ds, int port,struct rtnl_link_stats64 *stats)
-@@ -3131,6 +3133,86 @@ static const struct phylink_pcs_ops mt75
+ void mt7530_get_stats64(struct dsa_switch *ds, int port,
+@@ -3126,6 +3128,86 @@ static const struct phylink_pcs_ops mt75
  	.pcs_an_restart = mt7530_pcs_an_restart,
  };
  
@@ -121,13 +121,14 @@ Subject: [PATCH] OWRT-6281 mtk reg rd wr added
  static int
  mt753x_setup(struct dsa_switch *ds)
  {
-@@ -3364,6 +3446,9 @@ mt7530_probe_common(struct mt7530_priv *
+@@ -3362,6 +3444,10 @@ mt7530_probe_common(struct mt7530_priv *
+ 	priv->mib_work_started = false;
+ 	memset(priv->stats, 0, sizeof(priv->stats));
  
- 	mutex_init(&priv->mib_lock);
- 	INIT_DELAYED_WORK(&priv->mib_work, mt7530_mib_work_func);
 +	debugfs_dir = debugfs_create_dir("mtkreg", NULL);
 +	debugfs_create_file("regrdwr",(S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH), debugfs_dir, NULL, &mtk_common_reg_ops);
-+	regdev=priv;
- 
++	regdev = priv;
++
  	return 0;
  }
+ EXPORT_SYMBOL_GPL(mt7530_probe_common);

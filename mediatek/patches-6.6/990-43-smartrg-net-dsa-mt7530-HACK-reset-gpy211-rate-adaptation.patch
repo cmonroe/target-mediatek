@@ -18,7 +18,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 
 --- a/drivers/net/dsa/mt7530.c
 +++ b/drivers/net/dsa/mt7530.c
-@@ -811,6 +811,92 @@ mt7530_get_ethtool_stats(struct dsa_swit
+@@ -855,6 +855,92 @@ mt7530_get_ethtool_stats(struct dsa_swit
  }
  
  static void
@@ -110,15 +110,14 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 +static void
  mt7530_mib_fetch_port_stat(struct mt7530_priv *priv, int port)
  {
- 	u32 reg, i;
-@@ -885,6 +971,10 @@ mt7530_mib_fetch_port_stat(struct mt7530
- 				break;
- 		}
+ 	const u32 base_reg = MT7530_PORT_MIB_COUNTER(port);
+@@ -879,6 +965,9 @@ mt7530_mib_fetch_port_stat(struct mt7530
+ 
+ 		mib->stats(storage, val);
  	}
 +
-+	if ((port == 5) && priv->p5_sgmii) {
++	if ((port == 5) && priv->p5_sgmii)
 +		mt7531_mxl_gpy_check(priv, storage);
-+	}
  }
  
  static int mib_work_delay=MT7530_MIB_WORK_DELAY;
