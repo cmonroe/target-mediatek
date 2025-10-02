@@ -21,7 +21,7 @@ Signed-off-by: Piotr Kubik <piotr.kubik@adtran.com>
  #include <linux/phy.h>
  #include <net/dsa.h>
  #include <linux/dsa/8021q.h>
-@@ -2987,7 +2988,20 @@ static int mxl862xx_setup_mdio(struct ds
+@@ -2975,7 +2976,20 @@ static int mxl862xx_setup_mdio(struct ds
  	if (priv->hw_info->ext_ports <= 2)
  		 bus->phy_mask |= 0xff00;
  
