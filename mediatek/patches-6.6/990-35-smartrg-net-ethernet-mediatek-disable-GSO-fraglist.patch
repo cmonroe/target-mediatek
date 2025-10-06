@@ -11,11 +11,10 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.h
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.h
-@@ -52,8 +52,6 @@
- 				 NETIF_F_HW_VLAN_CTAG_TX | \
+@@ -53,7 +53,6 @@
  				 NETIF_F_SG | NETIF_F_TSO | \
  				 NETIF_F_TSO6 | \
--				 NETIF_F_FRAGLIST | \
+ 				 NETIF_F_FRAGLIST | \
 -				 NETIF_F_GSO_FRAGLIST | \
  				 NETIF_F_IPV6_CSUM |\
  				 NETIF_F_HW_TC)
