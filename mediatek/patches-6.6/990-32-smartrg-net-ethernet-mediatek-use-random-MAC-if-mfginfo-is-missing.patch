@@ -15,13 +15,14 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
-@@ -5331,9 +5331,6 @@ static int mtk_mac_assign_address(struct
+@@ -5331,8 +5331,10 @@ static int mtk_mac_assign_address(struct
  {
  	int err = of_get_ethdev_address(eth->mac[i]->of_node, eth->netdev[i]);
  
--	if (err == -EPROBE_DEFER)
--		return err;
--
++//#if 0
+ 	if (err == -EPROBE_DEFER)
+ 		return err;
++//#endif
+ 
  	if (test_defer_only)
  		return 0;
- 

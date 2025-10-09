@@ -359,7 +359,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  			ret = 0;
  		} else if (MTK_HAS_CAPS(eth->soc->caps, MTK_RSS)) {
  			cmd->data = MTK_RX_RSS_NUM;
-@@ -5950,6 +6100,18 @@ static int mtk_probe(struct platform_dev
+@@ -5955,6 +6105,18 @@ static int mtk_probe(struct platform_dev
  						goto err_free_dev;
  				}
  			}
@@ -378,7 +378,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  		} else {
  			err = devm_request_irq(eth->dev, eth->irq_fe[2],
  					       mtk_handle_irq_rx, 0,
-@@ -6017,6 +6179,13 @@ static int mtk_probe(struct platform_dev
+@@ -6022,6 +6184,13 @@ static int mtk_probe(struct platform_dev
  				       mtk_napi_rx);
  	}
  
@@ -392,7 +392,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  	mtketh_debugfs_init(eth);
  	debug_proc_init(eth);
  
-@@ -6072,6 +6241,11 @@ static int mtk_remove(struct platform_de
+@@ -6077,6 +6246,11 @@ static int mtk_remove(struct platform_de
  			netif_napi_del(&eth->rx_napi[MTK_RSS_RING(i)].napi);
  	}
  
