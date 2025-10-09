@@ -1,8 +1,9 @@
-From f126fe95f3455c551c20502f27d5e41fba4f0b9c Mon Sep 17 00:00:00 2001
+From e37d53fb387eb788dff33cdc4c1009543e2ccd5f Mon Sep 17 00:00:00 2001
 From: Sam Shih <sam.shih@mediatek.com>
 Date: Mon, 20 Jan 2025 19:49:34 +0800
-Subject: [PATCH] pinctrl: mediatek: add mt7987 pinctrl support
+Subject: [PATCH 1/2] pinctrl: mediatek: add mt7987 pinctrl support
 
+Signed-off-by: Daniel Golle <daniel@makrotopia.org>
 ---
  drivers/pinctrl/mediatek/Kconfig          |   6 +
  drivers/pinctrl/mediatek/Makefile         |   1 +
@@ -37,7 +38,7 @@ Subject: [PATCH] pinctrl: mediatek: add mt7987 pinctrl support
  obj-$(CONFIG_PINCTRL_MT8173)		+= pinctrl-mt8173.o
 --- /dev/null
 +++ b/drivers/pinctrl/mediatek/pinctrl-mt7987.c
-@@ -0,0 +1,752 @@
+@@ -0,0 +1,751 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * The MT7987 driver based on Linux generic pinctrl binding.
@@ -516,12 +517,13 @@ Subject: [PATCH] pinctrl: mediatek: add mt7987 pinctrl support
 +static int mt7987_jtag_pins[] = {3, 4, 5, 6, 7};
 +static int mt7987_jtag_funcs[] = {1, 1, 1, 1, 1};
 +
-+/* pcm */
-+static int mt7987_pcm0_0_pins[] = {3, 4, 5, 6, 7};
-+static int mt7987_pcm0_0_funcs[] = {2, 2, 2, 2, 2};
++/* i2s */
++static int mt7987_i2s_pins[] = { 8, 9, 10, 11, 12 };
++static int mt7987_i2s_funcs[] = { 1, 1, 1, 1, 1 };
 +
-+static int mt7987_pcm0_1_pins[] = {8, 9, 10, 11, 12};
-+static int mt7987_pcm0_1_funcs[] = {1, 1, 1, 1, 1};
++/* pcm */
++static int mt7987_pcm_pins[] = { 8, 9, 10, 11 };
++static int mt7987_pcm_funcs[] = { 1, 1, 1, 1 };
 +
 +/* uart */
 +static int mt7987_uart0_pins[] = {31, 32};
@@ -647,8 +649,8 @@ Subject: [PATCH] pinctrl: mediatek: add mt7987 pinctrl support
 +static const struct group_desc mt7987_groups[] = {
 +	PINCTRL_PIN_GROUP("watchdog", mt7987_watchdog),
 +	PINCTRL_PIN_GROUP("jtag", mt7987_jtag),
-+	PINCTRL_PIN_GROUP("pcm0_0", mt7987_pcm0_0),
-+	PINCTRL_PIN_GROUP("pcm0_1", mt7987_pcm0_1),
++	PINCTRL_PIN_GROUP("i2s", mt7987_i2s),
++	PINCTRL_PIN_GROUP("pcm", mt7987_pcm),
 +	PINCTRL_PIN_GROUP("uart0", mt7987_uart0),
 +	PINCTRL_PIN_GROUP("uart1_0", mt7987_uart1_0),
 +	PINCTRL_PIN_GROUP("uart1_0_lite", mt7987_uart1_0_lite),
@@ -688,9 +690,9 @@ Subject: [PATCH] pinctrl: mediatek: add mt7987 pinctrl support
 +	PINCTRL_PIN_GROUP("pcie1_pcie_phy_i2c", mt7987_pcie_phy_i2c),
 +};
 +
++static const char *const mt7987_audio_groups[] = {"i2s", "pcm",};
 +static const char *const mt7987_wdt_groups[] = {"watchdog",};
 +static const char *const mt7987_jtag_groups[] = {"jtag",};
-+static const char *const mt7987_pcm_groups[] = {"pcm0_0", "pcm0_1"};
 +static const char *const mt7987_uart_groups[] = {"uart0", "uart1_0",
 +						 "uart1_0_lite", "uart1_1",
 +						 "uart1_2", "uart2_0",
@@ -703,29 +705,27 @@ Subject: [PATCH] pinctrl: mediatek: add mt7987 pinctrl support
 +static const char *const mt7987_ethernet_groups[] = {"2p5g_ext_mdc_mdio", "mdc_mdio",};
 +static const char *const mt7987_spi_groups[] = {"spi0", "spi0_wp_hold", "spi1",
 +						"spi1_1", "spi2", "spi2_wp_hold",};
-+static const char *const mt7987_flash_groups[] = {"emmc_45", "sd"};
++static const char *const mt7987_flash_groups[] = {"emmc_45", "sd",};
 +static const char *const mt7987_i2c_groups[] = {"i2c0_0", "i2c0_1", "i2c0_2",};
 +static const char *const mt7987_pcie_groups[] = {"pcie_phy_i2c", "pcie0_pereset",
 +						 "pcie0_clkreq", "pcie0_wake",
 +						 "pcie1_pereset", "pcie1_clkreq",
 +						 "pcie1_wake",};
-+static const char *const mt7987_i2s_groups[] = {"pcm0_0", "pcm0_1"};
 +
 +
 +static const struct function_desc mt7987_functions[] = {
-+	{"wdt", mt7987_wdt_groups, ARRAY_SIZE(mt7987_wdt_groups)},
-+	{"jtag", mt7987_jtag_groups, ARRAY_SIZE(mt7987_jtag_groups)},
-+	{"pcm", mt7987_pcm_groups, ARRAY_SIZE(mt7987_pcm_groups)},
-+	{"uart", mt7987_uart_groups, ARRAY_SIZE(mt7987_uart_groups)},
-+	{"pwm", mt7987_pwm_groups, ARRAY_SIZE(mt7987_pwm_groups)},
-+	{"usb", mt7987_usb_groups, ARRAY_SIZE(mt7987_usb_groups)},
-+	{"led", mt7987_led_groups, ARRAY_SIZE(mt7987_led_groups)},
-+	{"eth", mt7987_ethernet_groups, ARRAY_SIZE(mt7987_ethernet_groups)},
-+	{"spi", mt7987_spi_groups, ARRAY_SIZE(mt7987_spi_groups)},
-+	{"flash", mt7987_flash_groups, ARRAY_SIZE(mt7987_flash_groups)},
-+	{"i2c", mt7987_i2c_groups, ARRAY_SIZE(mt7987_i2c_groups)},
-+	{"pcie", mt7987_pcie_groups, ARRAY_SIZE(mt7987_pcie_groups)},
-+	{"i2s", mt7987_i2s_groups, ARRAY_SIZE(mt7987_i2s_groups)},
++	{ {"audio", mt7987_audio_groups, ARRAY_SIZE(mt7987_audio_groups)}, NULL },
++	{ {"wdt", mt7987_wdt_groups, ARRAY_SIZE(mt7987_wdt_groups)}, NULL },
++	{ {"jtag", mt7987_jtag_groups, ARRAY_SIZE(mt7987_jtag_groups)}, NULL },
++	{ {"uart", mt7987_uart_groups, ARRAY_SIZE(mt7987_uart_groups)}, NULL },
++	{ {"pwm", mt7987_pwm_groups, ARRAY_SIZE(mt7987_pwm_groups)}, NULL },
++	{ {"usb", mt7987_usb_groups, ARRAY_SIZE(mt7987_usb_groups)}, NULL },
++	{ {"led", mt7987_led_groups, ARRAY_SIZE(mt7987_led_groups)}, NULL },
++	{ {"eth", mt7987_ethernet_groups, ARRAY_SIZE(mt7987_ethernet_groups)}, NULL },
++	{ {"spi", mt7987_spi_groups, ARRAY_SIZE(mt7987_spi_groups)}, NULL },
++	{ {"flash", mt7987_flash_groups, ARRAY_SIZE(mt7987_flash_groups)}, NULL },
++	{ {"i2c", mt7987_i2c_groups, ARRAY_SIZE(mt7987_i2c_groups)}, NULL },
++	{ {"pcie", mt7987_pcie_groups, ARRAY_SIZE(mt7987_pcie_groups)}, NULL },
 +};
 +
 +static const struct mtk_eint_hw mt7987_eint_hw = {

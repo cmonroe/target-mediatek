@@ -1,19 +1,20 @@
-From 7c68fb1dd33b4b1cc4fd709906f5ff99678c60dd Mon Sep 17 00:00:00 2001
+From 08b3847982f4c470ff1ac0761bed0d8d83f1fd49 Mon Sep 17 00:00:00 2001
 From: Sam Shih <sam.shih@mediatek.com>
 Date: Mon, 20 Jan 2025 19:50:03 +0800
-Subject: [PATCH] clk: mediatek: add mt7987 clock drivers support
+Subject: [PATCH 2/2] clk: mediatek: add mt7987 clock drivers support
 
+Signed-off-by: Daniel Golle <daniel@makrotopia.org>
 ---
  drivers/clk/mediatek/Kconfig                  |   9 +
  drivers/clk/mediatek/Makefile                 |   5 +
  drivers/clk/mediatek/clk-mt7987-apmixed.c     | 116 +++++++
  drivers/clk/mediatek/clk-mt7987-eth.c         |  94 +++++
- drivers/clk/mediatek/clk-mt7987-infracfg.c    | 325 ++++++++++++++++++
+ drivers/clk/mediatek/clk-mt7987-infracfg.c    | 328 ++++++++++++++++++
  drivers/clk/mediatek/clk-mt7987-mcusys.c      |  47 +++
  drivers/clk/mediatek/clk-mt7987-topckgen.c    | 311 +++++++++++++++++
  .../dt-bindings/clock/mediatek,mt7987-clk.h   | 206 +++++++++++
- .../reset/mediatek,mt7987-resets.h            |  12 +
- 9 files changed, 1125 insertions(+)
+ .../reset/mediatek,mt7987-resets.h            |  10 +
+ 9 files changed, 1126 insertions(+)
  create mode 100644 drivers/clk/mediatek/clk-mt7987-apmixed.c
  create mode 100644 drivers/clk/mediatek/clk-mt7987-eth.c
  create mode 100644 drivers/clk/mediatek/clk-mt7987-infracfg.c
@@ -272,7 +273,7 @@ Subject: [PATCH] clk: mediatek: add mt7987 clock drivers support
 +MODULE_LICENSE("GPL");
 --- /dev/null
 +++ b/drivers/clk/mediatek/clk-mt7987-infracfg.c
-@@ -0,0 +1,325 @@
+@@ -0,0 +1,328 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Copyright (c) 2024 MediaTek Inc.
@@ -300,12 +301,15 @@ Subject: [PATCH] clk: mediatek: add mt7987 clock drivers support
 +static DEFINE_SPINLOCK(mt7987_clk_lock);
 +
 +static const char *const infra_mux_uart0_parents[] = { "csw_infra_f26m_sel",
++						       "infra_hf_66m_uart0_pck",
 +						       "uart_sel" };
 +
 +static const char *const infra_mux_uart1_parents[] = { "csw_infra_f26m_sel",
++						       "infra_hf_66m_uart1_pck",
 +						       "uart_sel" };
 +
 +static const char *const infra_mux_uart2_parents[] = { "csw_infra_f26m_sel",
++						       "infra_hf_66m_uart1_pck",
 +						       "uart_sel" };
 +
 +static const char *const infra_mux_spi0_parents[] = {
@@ -1173,7 +1177,7 @@ Subject: [PATCH] clk: mediatek: add mt7987 clock drivers support
 +
 --- /dev/null
 +++ b/include/dt-bindings/reset/mediatek,mt7987-resets.h
-@@ -0,0 +1,12 @@
+@@ -0,0 +1,10 @@
 +/* SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause) */
 +
 +#ifndef _DT_BINDINGS_RESET_CONTROLLER_MT7987
@@ -1183,6 +1187,4 @@ Subject: [PATCH] clk: mediatek: add mt7987 clock drivers support
 +#define MT7987_INFRA_RST0_PEXTP_MAC_SWRST	0
 +#define MT7987_INFRA_RST1_THERM_CTRL_SWRST	1
 +
-+
 +#endif  /* _DT_BINDINGS_RESET_CONTROLLER_MT7987 */
-+

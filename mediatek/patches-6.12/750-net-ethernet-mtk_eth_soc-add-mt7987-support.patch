@@ -46,49 +46,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  		.cap_bit = MTK_ETH_MUX_GMAC2_TO_2P5GPHY,
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
-@@ -790,14 +790,21 @@ static int mtk_mac_prepare(struct phylin
- {
- 	struct mtk_mac *mac = container_of(config, struct mtk_mac,
- 					   phylink_config);
-+	struct mtk_eth *eth = mac->hw;
- 
- 	if (mtk_is_netsys_v3_or_greater(mac->hw) && mtk_interface_mode_is_xgmii(iface)) {
- 		if (mac->id != MTK_GMAC1_ID)
- 			mtk_m32(mac->hw, XMAC_MCR_TRX_DISABLE,
- 				XMAC_MCR_TRX_DISABLE, MTK_XMAC_MCR(mac->id));
- 
--		mtk_m32(mac->hw, MTK_XGMAC_FORCE_MODE(mac->id) | MTK_XGMAC_FORCE_LINK(mac->id),
--			MTK_XGMAC_FORCE_MODE(mac->id), MTK_XGMAC_STS(mac->id));
-+		if (MTK_HAS_CAPS(eth->soc->caps, MTK_XGMAC_V2))
-+			mtk_m32(mac->hw, XMAC_FORCE_RX_FC_MODE | XMAC_FORCE_TX_FC_MODE |
-+					 XMAC_FORCE_LINK_MODE | XMAC_FORCE_LINK,
-+					 XMAC_FORCE_RX_FC_MODE | XMAC_FORCE_TX_FC_MODE |
-+					 XMAC_FORCE_LINK_MODE, MTK_XMAC_STS_FRC(mac->id));
-+		else
-+			mtk_m32(mac->hw, MTK_XGMAC_FORCE_MODE(mac->id) | MTK_XGMAC_FORCE_LINK(mac->id),
-+				MTK_XGMAC_FORCE_MODE(mac->id), MTK_XGMAC_STS(mac->id));
- 	}
- 
- 	return 0;
-@@ -835,12 +842,16 @@ static void mtk_mac_link_down(struct phy
- {
- 	struct mtk_mac *mac = container_of(config, struct mtk_mac,
- 					   phylink_config);
-+	struct mtk_eth *eth = mac->hw;
- 
- 	if (!mtk_interface_mode_is_xgmii(interface)) {
- 		mtk_m32(mac->hw, MAC_MCR_TX_EN | MAC_MCR_RX_EN | MAC_MCR_FORCE_LINK, 0, MTK_MAC_MCR(mac->id));
- 	} else if (mtk_is_netsys_v3_or_greater(mac->hw) && mac->id != MTK_GMAC1_ID) {
- 		mtk_m32(mac->hw, XMAC_MCR_TRX_DISABLE, XMAC_MCR_TRX_DISABLE, MTK_XMAC_MCR(mac->id));
--		mtk_m32(mac->hw, MTK_XGMAC_FORCE_LINK(mac->id), 0, MTK_XGMAC_STS(mac->id));
-+		if (MTK_HAS_CAPS(eth->soc->caps, MTK_XGMAC_V2))
-+			mtk_m32(mac->hw, XMAC_FORCE_LINK, 0, MTK_XMAC_STS_FRC(mac->id));
-+		else
-+			mtk_m32(mac->hw, MTK_XGMAC_FORCE_LINK(mac->id), 0, MTK_XGMAC_STS(mac->id));
- 	}
- }
- 
-@@ -854,10 +865,16 @@ static void mtk_set_queue_speed(struct m
+@@ -817,10 +817,16 @@ static void mtk_set_queue_speed(struct m
  		return;
  
  	val = MTK_QTX_SCH_MIN_RATE_EN |
@@ -108,7 +66,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	if (mtk_is_netsys_v1(eth))
  		val |= MTK_QTX_SCH_LEAKY_BUCKET_EN;
  
-@@ -884,6 +901,30 @@ static void mtk_set_queue_speed(struct m
+@@ -847,6 +853,30 @@ static void mtk_set_queue_speed(struct m
  		default:
  			break;
  		}
@@ -139,65 +97,16 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	} else {
  		switch (speed) {
  		case SPEED_10:
-@@ -966,6 +1007,7 @@ static void mtk_xgdm_mac_link_up(struct
- 				 unsigned int mode, phy_interface_t interface,
- 				 int speed, int duplex, bool tx_pause, bool rx_pause)
- {
-+	struct mtk_eth *eth = mac->hw;
- 	u32 mcr;
+@@ -935,7 +965,7 @@ static void mtk_xgdm_mac_link_up(struct
+ 		return;
  
- 	if (mac->id == MTK_GMAC1_ID)
-@@ -976,20 +1018,37 @@ static void mtk_xgdm_mac_link_up(struct
+ 	/* Eliminate the interference(before link-up) caused by PHY noise */
+-	mtk_m32(mac->hw, XMAC_LOGIC_RST, 0, MTK_XMAC_LOGIC_RST(mac->id));
++	mtk_m32(mac->hw, XMAC_LOGIC_RST, 0, MTK_XMAC_LOGIC_RST(mac->hw, mac->id));
  	mdelay(20);
  	mtk_m32(mac->hw, XMAC_GLB_CNTCLR, XMAC_GLB_CNTCLR, MTK_XMAC_CNT_CTRL(mac->id));
  
--	mtk_m32(mac->hw, MTK_XGMAC_FORCE_LINK(mac->id),
--		MTK_XGMAC_FORCE_LINK(mac->id), MTK_XGMAC_STS(mac->id));
-+	if (MTK_HAS_CAPS(eth->soc->caps, MTK_XGMAC_V2)) {
-+		mcr = mtk_r32(mac->hw, MTK_XMAC_STS_FRC(mac->id));
-+		mcr |= XMAC_FORCE_LINK;
-+		mcr &= ~(XMAC_FORCE_TX_FC | XMAC_FORCE_RX_FC);
-+		/* Configure pause modes -
-+		 * phylink will avoid these for half duplex
-+		 */
-+		if (tx_pause)
-+			mcr |= XMAC_FORCE_TX_FC;
-+		if (rx_pause)
-+			mcr |= XMAC_FORCE_RX_FC;
- 
--	mcr = mtk_r32(mac->hw, MTK_XMAC_MCR(mac->id));
--	mcr &= ~(XMAC_MCR_FORCE_TX_FC | XMAC_MCR_FORCE_RX_FC | XMAC_MCR_TRX_DISABLE);
--	/* Configure pause modes -
--	 * phylink will avoid these for half duplex
--	 */
--	if (tx_pause)
--		mcr |= XMAC_MCR_FORCE_TX_FC;
--	if (rx_pause)
--		mcr |= XMAC_MCR_FORCE_RX_FC;
-+		mtk_w32(mac->hw, mcr, MTK_XMAC_STS_FRC(mac->id));
- 
--	mtk_w32(mac->hw, mcr, MTK_XMAC_MCR(mac->id));
-+		mtk_m32(mac->hw, XMAC_MCR_TRX_DISABLE, 0, MTK_XMAC_MCR(mac->id));
-+	} else {
-+		mtk_m32(mac->hw, MTK_XGMAC_FORCE_LINK(mac->id),
-+			MTK_XGMAC_FORCE_LINK(mac->id), MTK_XGMAC_STS(mac->id));
-+
-+		mcr = mtk_r32(mac->hw, MTK_XMAC_MCR(mac->id));
-+		mcr &= ~(XMAC_MCR_FORCE_TX_FC | XMAC_MCR_FORCE_RX_FC | XMAC_MCR_TRX_DISABLE);
-+		/* Configure pause modes -
-+		 * phylink will avoid these for half duplex
-+		 */
-+		if (tx_pause)
-+			mcr |= XMAC_MCR_FORCE_TX_FC;
-+		if (rx_pause)
-+			mcr |= XMAC_MCR_FORCE_RX_FC;
-+
-+		mtk_w32(mac->hw, mcr, MTK_XMAC_MCR(mac->id));
-+	}
- }
- 
- static void mtk_mac_link_up(struct phylink_config *config,
-@@ -2783,10 +2842,16 @@ static int mtk_tx_alloc(struct mtk_eth *
+@@ -2898,10 +2928,16 @@ static int mtk_tx_alloc(struct mtk_eth *
  			mtk_w32(eth, val, soc->reg_map->qdma.qtx_cfg + ofs);
  
  			val = MTK_QTX_SCH_MIN_RATE_EN |
@@ -217,7 +126,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  			if (mtk_is_netsys_v1(eth))
  				val |= MTK_QTX_SCH_LEAKY_BUCKET_EN;
  			mtk_w32(eth, val, soc->reg_map->qdma.qtx_sch + ofs);
-@@ -6557,6 +6622,36 @@ static const struct mtk_soc_data mt7986_
+@@ -5870,6 +5906,36 @@ static const struct mtk_soc_data mt7986_
  	},
  };
  
@@ -234,7 +143,6 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 +	.hash_offset = 4,
 +	.has_accounting = true,
 +	.foe_entry_size = MTK_FOE_ENTRY_V3_SIZE,
-+	.rss_num = 4,
 +	.tx = {
 +		DESC_SIZE(struct mtk_tx_dma_v2),
 +		.dma_max_len = MTK_TX_DMA_BUF_LEN_V2,
@@ -244,6 +152,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 +	},
 +	.rx = {
 +		DESC_SIZE(struct mtk_rx_dma_v2),
++		.irq_done_mask = MTK_RX_DONE_INT_V2,
 +		.dma_l4_valid = RX_DMA_L4_VALID_V2,
 +		.dma_max_len = MTK_TX_DMA_BUF_LEN_V2,
 +		.dma_len_offset = 8,
@@ -254,7 +163,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  static const struct mtk_soc_data mt7988_data = {
  	.reg_map = &mt7988_reg_map,
  	.ana_rgc3 = 0x128,
-@@ -6618,6 +6713,7 @@ const struct of_device_id of_mtk_match[]
+@@ -5931,6 +5997,7 @@ const struct of_device_id of_mtk_match[]
  	{ .compatible = "mediatek,mt7629-eth", .data = &mt7629_data },
  	{ .compatible = "mediatek,mt7981-eth", .data = &mt7981_data },
  	{ .compatible = "mediatek,mt7986-eth", .data = &mt7986_data },
@@ -264,7 +173,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	{},
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.h
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.h
-@@ -319,6 +319,13 @@
+@@ -262,6 +262,13 @@
  #define MTK_QTX_SCH_MAX_RATE_MAN	GENMASK(10, 4)
  #define MTK_QTX_SCH_MAX_RATE_EXP	GENMASK(3, 0)
  
@@ -275,17 +184,17 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 +#define MTK_QTX_SCH_MAX_RATE_MAN_V3	GENMASK(9, 3)
 +#define MTK_QTX_SCH_MAX_RATE_EXP_V3	GENMASK(2, 0)
 +
- /* QDMA Page Configuration Register */
- #define MTK_QTX_PER_PAGE	(16)
+ /* QDMA TX Scheduler Rate Control Register */
+ #define MTK_QDMA_TX_SCH_MAX_WFQ		BIT(15)
  
-@@ -621,9 +628,23 @@
+@@ -536,9 +543,23 @@
  #define XMAC_MCR_FORCE_RX_FC	BIT(4)
  
  /* XFI Mac logic reset registers */
 -#define MTK_XMAC_LOGIC_RST(x)	(MTK_XMAC_BASE(x) + 0x10)
-+#define MTK_XMAC_LOGIC_RST(x)	(MTK_XMAC_BASE(x) +				\
-+				 (MTK_HAS_CAPS(eth->soc->caps, MTK_XGMAC_V2) ?  \
-+				  0x820 : 0x10))
++#define MTK_XMAC_LOGIC_RST(eth, x)	(MTK_XMAC_BASE(x) +				\
++					(MTK_HAS_CAPS((eth)->soc->caps, MTK_XGMAC_V2) ?	\
++					0x820 : 0x10))
  #define XMAC_LOGIC_RST		BIT(0)
  
 +/* XFI Mac status force registers */
@@ -303,7 +212,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  /* XFI Mac count global control */
  #define MTK_XMAC_CNT_CTRL(x)	(MTK_XMAC_BASE(x) + 0x100)
  #define XMAC_GLB_CNTCLR		BIT(0)
-@@ -926,6 +947,17 @@ enum mtk_clks_map {
+@@ -834,6 +855,17 @@ enum mtk_clks_map {
  				 BIT_ULL(MTK_CLK_SGMII2_RX_250M) | \
  				 BIT_ULL(MTK_CLK_SGMII2_CDR_REF) | \
  				 BIT_ULL(MTK_CLK_SGMII2_CDR_FB))
@@ -321,7 +230,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  #define MT7988_CLKS_BITMAP	(BIT_ULL(MTK_CLK_FE) | BIT_ULL(MTK_CLK_ESW) | \
  				 BIT_ULL(MTK_CLK_GP1) | BIT_ULL(MTK_CLK_GP2) | \
  				 BIT_ULL(MTK_CLK_GP3) | BIT_ULL(MTK_CLK_XGP1) | \
-@@ -1116,12 +1148,14 @@ enum mkt_eth_capabilities {
+@@ -990,12 +1022,14 @@ enum mkt_eth_capabilities {
  	MTK_RSTCTRL_PPE2_BIT,
  	MTK_U3_COPHY_V2_BIT,
  	MTK_SRAM_BIT,
@@ -337,7 +246,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	MTK_ETH_MUX_GMAC2_TO_2P5GPHY_BIT,
  	MTK_ETH_MUX_GMAC1_GMAC2_TO_SGMII_RGMII_BIT,
  	MTK_ETH_MUX_GMAC12_TO_GEPHY_SGMII_BIT,
-@@ -1165,14 +1199,16 @@ enum mkt_eth_capabilities {
+@@ -1037,14 +1071,16 @@ enum mkt_eth_capabilities {
  #define MTK_RSTCTRL_PPE2	BIT_ULL(MTK_RSTCTRL_PPE2_BIT)
  #define MTK_U3_COPHY_V2		BIT_ULL(MTK_U3_COPHY_V2_BIT)
  #define MTK_SRAM		BIT_ULL(MTK_SRAM_BIT)
@@ -356,7 +265,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  #define MTK_ETH_MUX_GMAC2_TO_2P5GPHY		\
  	BIT_ULL(MTK_ETH_MUX_GMAC2_TO_2P5GPHY_BIT)
  #define MTK_ETH_MUX_GMAC1_GMAC2_TO_SGMII_RGMII	\
-@@ -1204,12 +1240,13 @@ enum mkt_eth_capabilities {
+@@ -1076,12 +1112,13 @@ enum mkt_eth_capabilities {
  #define MTK_GMAC2_RGMII		(MTK_ETH_PATH_GMAC2_RGMII | MTK_RGMII)
  #define MTK_GMAC2_SGMII		(MTK_ETH_PATH_GMAC2_SGMII | MTK_SGMII)
  #define MTK_GMAC2_GEPHY		(MTK_ETH_PATH_GMAC2_GEPHY | MTK_GEPHY)
@@ -374,7 +283,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  
  /* MUXes present on SoCs */
  /* 0: GDM1 -> GMAC1, 1: GDM1 -> ESW */
-@@ -1219,9 +1256,9 @@ enum mkt_eth_capabilities {
+@@ -1091,9 +1128,9 @@ enum mkt_eth_capabilities {
  #define MTK_MUX_GMAC2_GMAC0_TO_GEPHY    \
  	(MTK_ETH_MUX_GMAC2_GMAC0_TO_GEPHY | MTK_MUX | MTK_INFRA)
  
@@ -387,7 +296,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  
  /* 2: GMAC1 -> SGMII, 3: GMAC2 -> SGMII */
  #define MTK_MUX_GMAC1_GMAC2_TO_SGMII_RGMII      \
-@@ -1261,18 +1298,25 @@ enum mkt_eth_capabilities {
+@@ -1133,18 +1170,24 @@ enum mkt_eth_capabilities {
  #define MT7629_CAPS  (MTK_GMAC1_SGMII | MTK_GMAC2_SGMII | MTK_GMAC2_GEPHY | \
  		      MTK_GDM1_ESW | MTK_MUX_GDM1_TO_GMAC1_ESW | \
  		      MTK_MUX_GMAC2_GMAC0_TO_GEPHY | \
@@ -399,18 +308,17 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  		      MTK_MUX_GMAC12_TO_GEPHY_SGMII | MTK_QDMA | \
 -		      MTK_MUX_U3_GMAC2_TO_QPHY | MTK_U3_COPHY_V2 | \
 +		      MTK_MUX_U3_GMAC23_TO_QPHY | MTK_U3_COPHY_V2 | \
- 		      MTK_RSTCTRL_PPE1 | MTK_SRAM | MTK_PDMA_INT | MTK_RSS)
+ 		      MTK_RSTCTRL_PPE1 | MTK_SRAM)
  
  #define MT7986_CAPS  (MTK_GMAC1_SGMII | MTK_GMAC2_SGMII | \
  		      MTK_MUX_GMAC12_TO_GEPHY_SGMII | MTK_QDMA | \
- 		      MTK_RSTCTRL_PPE1 | MTK_SRAM | MTK_PDMA_INT | MTK_RSS)
+ 		      MTK_RSTCTRL_PPE1 | MTK_SRAM)
  
 +#define MT7987_CAPS  (MTK_36BIT_DMA | MTK_GMAC1_SGMII | \
 +		      MTK_GMAC2_2P5GPHY_V2 | MTK_GMAC2_SGMII | MTK_GMAC3_SGMII | \
 +		      MTK_MUX_GMAC123_TO_GEPHY_SGMII | MTK_MUX_GMAC2_TO_2P5GPHY | \
 +		      MTK_MUX_U3_GMAC23_TO_QPHY | MTK_U3_COPHY_V2 | \
-+		      MTK_QDMA | MTK_PDMA_INT | MTK_RSS | \
-+		      MTK_RSTCTRL_PPE1)
++		      MTK_QDMA | MTK_RSTCTRL_PPE1)
 +
  #define MT7988_CAPS  (MTK_36BIT_DMA | MTK_GDM1_ESW | MTK_GMAC1_SGMII | \
  		      MTK_GMAC2_2P5GPHY | MTK_GMAC2_SGMII | MTK_GMAC2_USXGMII | \

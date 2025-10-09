@@ -21,8 +21,8 @@
 	};
 
 	chosen {
-		stdout-path = &uart0;
-		bootargs = "console=ttyS0,115200n1 pci=pcie_bus_perf";
+		bootargs = "console=ttyS0,115200n1 earlycon=uart8250,mmio32,0x11000000";
+		stdout-path = "serial0:115200n8";
 	};
 
 	memory@40000000 {
@@ -115,6 +115,15 @@
 	pinctrl-0 = <&mdio0_pins>;
 	pinctrl-names = "default";
 	status = "okay";
+
+	interrupts = <GIC_SPI 189 IRQ_TYPE_LEVEL_HIGH>,
+			 <GIC_SPI 190 IRQ_TYPE_LEVEL_HIGH>,
+			 <GIC_SPI 191 IRQ_TYPE_LEVEL_HIGH>,
+			 <GIC_SPI 192 IRQ_TYPE_LEVEL_HIGH>,
+			 <GIC_SPI 196 IRQ_TYPE_LEVEL_HIGH>,
+			 <GIC_SPI 197 IRQ_TYPE_LEVEL_HIGH>,
+			 <GIC_SPI 198 IRQ_TYPE_LEVEL_HIGH>,
+			 <GIC_SPI 199 IRQ_TYPE_LEVEL_HIGH>;
 };
 
 &gmac0 {

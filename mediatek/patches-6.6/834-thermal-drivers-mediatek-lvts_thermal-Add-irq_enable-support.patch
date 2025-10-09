@@ -16,7 +16,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	const struct lvts_ctrl_data *lvts_ctrl;
  	const u32 *conn_cmd;
  	const u32 *init_cmd;
-+	int irq_enable;
++	bool irq_enable;
  	int num_lvts_ctrl;
  	int num_conn_cmd;
  	int num_init_cmd;
@@ -86,7 +86,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  };
  
  static const struct lvts_data mt7988_lvts_ap_data = {
-+	.irq_enable	= 1,
++	.irq_enable	= true,
  	.lvts_ctrl	= mt7988_lvts_ap_data_ctrl,
  	.conn_cmd	= mt7988_conn_cmds,
  	.init_cmd	= mt7988_init_cmds,
@@ -94,19 +94,19 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  };
  
  static const struct lvts_data mt8192_lvts_mcu_data = {
-+	.irq_enable	= 1,
++	.irq_enable	= true,
  	.lvts_ctrl	= mt8192_lvts_mcu_data_ctrl,
  	.num_lvts_ctrl	= ARRAY_SIZE(mt8192_lvts_mcu_data_ctrl),
  };
  
  static const struct lvts_data mt8192_lvts_ap_data = {
-+	.irq_enable	= 1,
++	.irq_enable	= true,
  	.lvts_ctrl	= mt8192_lvts_ap_data_ctrl,
  	.num_lvts_ctrl	= ARRAY_SIZE(mt8192_lvts_ap_data_ctrl),
  };
  
  static const struct lvts_data mt8195_lvts_mcu_data = {
-+	.irq_enable	= 1,
++	.irq_enable	= true,
  	.lvts_ctrl	= mt8195_lvts_mcu_data_ctrl,
  	.conn_cmd	= default_conn_cmds,
  	.init_cmd	= default_init_cmds,
@@ -114,7 +114,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  };
  
  static const struct lvts_data mt8195_lvts_ap_data = {
-+	.irq_enable	= 1,
++	.irq_enable	= true,
  	.lvts_ctrl	= mt8195_lvts_ap_data_ctrl,
  	.conn_cmd	= default_conn_cmds,
  	.init_cmd	= default_init_cmds,

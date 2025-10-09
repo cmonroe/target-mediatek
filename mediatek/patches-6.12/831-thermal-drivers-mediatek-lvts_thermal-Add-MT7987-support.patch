@@ -14,7 +14,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 
 --- a/drivers/thermal/mediatek/lvts_thermal.c
 +++ b/drivers/thermal/mediatek/lvts_thermal.c
-@@ -88,6 +88,8 @@
+@@ -87,6 +87,8 @@
  #define LVTS_COEFF_B_MT8195			250460
  #define LVTS_COEFF_A_MT7988			-204650
  #define LVTS_COEFF_B_MT7988			204650
@@ -23,35 +23,27 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  
  #define LVTS_MSR_IMMEDIATE_MODE		0
  #define LVTS_MSR_FILTERED_MODE		1
-@@ -96,6 +98,7 @@
- #define LVTS_MSR_READ_WAIT_US		(LVTS_MSR_READ_TIMEOUT_US / 2)
- 
- #define LVTS_HW_SHUTDOWN_MT7988		105000
-+#define LVTS_HW_SHUTDOWN_MT7987		105000
- #define LVTS_HW_SHUTDOWN_MT8192		105000
- #define LVTS_HW_SHUTDOWN_MT8195		105000
- 
-@@ -1337,6 +1340,19 @@ static void lvts_remove(struct platform_
- 	lvts_debugfs_exit(lvts_td);
+@@ -1385,6 +1387,19 @@ static void lvts_remove(struct platform_
+ 		lvts_ctrl_set_enable(&lvts_td->lvts_ctrl[i], false);
  }
  
 +static const struct lvts_ctrl_data mt7987_lvts_ap_data_ctrl[] = {
 +	{
-+		.cal_offset = { 0x04, 0x08 },
 +		.lvts_sensor = {
-+			{ .dt_id = MT7987_CPU },
-+			{ .dt_id = MT7987_ETH2P5G },
++			{ .dt_id = MT7987_CPU,
++			  .cal_offsets = { 0x04, 0x05, 0x06 } },
++			{ .dt_id = MT7987_ETH2P5G,
++			  .cal_offsets = { 0x08, 0x09, 0x0a } },
 +		},
-+		.num_lvts_sensor = 2,
++		VALID_SENSOR_MAP(1, 1, 0, 0),
 +		.offset = 0x0,
-+		.hw_tshut_temp = LVTS_HW_SHUTDOWN_MT7987,
 +	},
 +};
 +
  static const struct lvts_ctrl_data mt7988_lvts_ap_data_ctrl[] = {
  	{
- 		.cal_offset = { 0x00, 0x04, 0x08, 0x0c },
-@@ -1397,6 +1413,7 @@ static int lvts_resume(struct device *de
+ 		.lvts_sensor = {
+@@ -1455,6 +1470,7 @@ static int lvts_resume(struct device *de
  }
  
  static const u32 default_conn_cmds[] = { 0xC103FFFF, 0xC502FF55 };
@@ -59,7 +51,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  static const u32 mt7988_conn_cmds[] = { 0xC103FFFF, 0xC502FC55 };
  
  /*
-@@ -1409,6 +1426,12 @@ static const u32 default_init_cmds[] = {
+@@ -1467,6 +1483,12 @@ static const u32 default_init_cmds[] = {
  	0xC10300FC, 0xC103009D, 0xC10300F1, 0xC10300E1
  };
  
@@ -72,12 +64,12 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  static const u32 mt7988_init_cmds[] = {
  	0xC1030300, 0xC1030420, 0xC1030500, 0xC10307A6, 0xC1030CFC,
  	0xC1030A8C, 0xC103098D, 0xC10308F1, 0xC1030B04, 0xC1030E01,
-@@ -1588,6 +1611,18 @@ static const struct lvts_data mt7988_lvt
- 	.temp_offset	= LVTS_COEFF_B_MT7988,
+@@ -1765,6 +1787,19 @@ static const struct lvts_ctrl_data mt819
+ 	}
  };
  
 +static const struct lvts_data mt7987_lvts_ap_data = {
-+	.irq_enable	= 0,
++	.irq_enable	= false,
 +	.lvts_ctrl	= mt7987_lvts_ap_data_ctrl,
 +	.conn_cmd	= mt7987_conn_cmds,
 +	.init_cmd	= mt7987_init_cmds,
@@ -86,19 +78,20 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 +	.num_init_cmd	= ARRAY_SIZE(mt7987_init_cmds),
 +	.temp_factor	= LVTS_COEFF_A_MT7987,
 +	.temp_offset	= LVTS_COEFF_B_MT7987,
++	.gt_calib_bit_offset = 24,
 +};
 +
- static const struct lvts_data mt8192_lvts_mcu_data = {
- 	.irq_enable	= 1,
- 	.lvts_ctrl	= mt8192_lvts_mcu_data_ctrl,
-@@ -1625,6 +1660,7 @@ static const struct lvts_data mt8195_lvt
+ static const struct lvts_data mt7988_lvts_ap_data = {
+ 	.irq_enable	= true,
+ 	.lvts_ctrl	= mt7988_lvts_ap_data_ctrl,
+@@ -1877,6 +1912,7 @@ static const struct lvts_data mt8195_lvt
  };
  
  static const struct of_device_id lvts_of_match[] = {
 +	{ .compatible = "mediatek,mt7987-lvts-ap", .data = &mt7987_lvts_ap_data },
  	{ .compatible = "mediatek,mt7988-lvts-ap", .data = &mt7988_lvts_ap_data },
- 	{ .compatible = "mediatek,mt8192-lvts-mcu", .data = &mt8192_lvts_mcu_data },
- 	{ .compatible = "mediatek,mt8192-lvts-ap", .data = &mt8192_lvts_ap_data },
+ 	{ .compatible = "mediatek,mt8186-lvts", .data = &mt8186_lvts_data },
+ 	{ .compatible = "mediatek,mt8188-lvts-mcu", .data = &mt8188_lvts_mcu_data },
 --- a/include/dt-bindings/thermal/mediatek,lvts-thermal.h
 +++ b/include/dt-bindings/thermal/mediatek,lvts-thermal.h
 @@ -7,6 +7,9 @@

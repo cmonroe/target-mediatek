@@ -10,7 +10,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
 
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
-@@ -2419,6 +2419,12 @@ static int mtk_poll_rx(struct napi_struc
+@@ -2449,6 +2449,12 @@ static int mtk_poll_rx(struct napi_struc
  		if (reason == MTK_PPE_CPU_REASON_HIT_UNBIND_RATE_REACHED)
  			mtk_ppe_check_skb(eth->ppe[ppe_idx], skb, hash);
  
@@ -23,7 +23,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  		skb_record_rx_queue(skb, 0);
  		napi_gro_receive(napi, skb);
  
-@@ -2864,7 +2870,7 @@ static int mtk_rx_alloc(struct mtk_eth *
+@@ -2900,7 +2906,7 @@ static int mtk_rx_alloc(struct mtk_eth *
  	if (!ring->data)
  		return -ENOMEM;
  
@@ -32,7 +32,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  		struct page_pool *pp;
  
  		pp = mtk_create_page_pool(eth, &ring->xdp_q, ring_no,
-@@ -3023,7 +3029,7 @@ static void mtk_rx_clean(struct mtk_eth
+@@ -3059,7 +3065,7 @@ static void mtk_rx_clean(struct mtk_eth
  static int mtk_hwlro_rx_init(struct mtk_eth *eth)
  {
  	const struct mtk_reg_map *reg_map = eth->soc->reg_map;
@@ -41,7 +41,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  	u32 ring_ctrl_dw1 = 0, ring_ctrl_dw2 = 0, ring_ctrl_dw3 = 0;
  	u32 lro_ctrl_dw0 = 0, lro_ctrl_dw3 = 0;
  
-@@ -3044,7 +3050,7 @@ static int mtk_hwlro_rx_init(struct mtk_
+@@ -3080,7 +3086,7 @@ static int mtk_hwlro_rx_init(struct mtk_
  	ring_ctrl_dw2 |= MTK_RING_MAX_AGG_CNT_L;
  	ring_ctrl_dw3 |= MTK_RING_MAX_AGG_CNT_H;
  
@@ -50,7 +50,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  		mtk_w32(eth, ring_ctrl_dw1, MTK_LRO_CTRL_DW1_CFG(i));
  		mtk_w32(eth, ring_ctrl_dw2, MTK_LRO_CTRL_DW2_CFG(i));
  		mtk_w32(eth, ring_ctrl_dw3, MTK_LRO_CTRL_DW3_CFG(i));
-@@ -3066,8 +3072,22 @@ static int mtk_hwlro_rx_init(struct mtk_
+@@ -3102,8 +3108,22 @@ static int mtk_hwlro_rx_init(struct mtk_
  	mtk_w32(eth, (MTK_HW_LRO_TIMER_UNIT << 16) | MTK_HW_LRO_REFRESH_TIME,
  		MTK_PDMA_LRO_ALT_REFRESH_TIMER);
  
@@ -75,7 +75,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  
  	/* the minimal remaining room of SDL0 in RXD for lro aggregation */
  	lro_ctrl_dw3 |= MTK_LRO_MIN_RXD_SDL;
-@@ -3078,6 +3098,16 @@ static int mtk_hwlro_rx_init(struct mtk_
+@@ -3114,6 +3134,16 @@ static int mtk_hwlro_rx_init(struct mtk_
  	mtk_w32(eth, lro_ctrl_dw3, MTK_PDMA_LRO_CTRL_DW3);
  	mtk_w32(eth, lro_ctrl_dw0, MTK_PDMA_LRO_CTRL_DW0);
  
@@ -92,7 +92,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  	return 0;
  }
  
-@@ -3101,7 +3131,7 @@ static void mtk_hwlro_rx_uninit(struct m
+@@ -3137,7 +3167,7 @@ static void mtk_hwlro_rx_uninit(struct m
  	}
  
  	/* invalidate lro rings */
@@ -101,7 +101,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  		mtk_w32(eth, 0, MTK_LRO_CTRL_DW2_CFG(i));
  
  	/* disable HW LRO */
-@@ -3150,6 +3180,64 @@ static int mtk_hwlro_get_ip_cnt(struct m
+@@ -3186,6 +3216,64 @@ static int mtk_hwlro_get_ip_cnt(struct m
  	return cnt;
  }
  
@@ -166,7 +166,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  static int mtk_hwlro_add_ipaddr(struct net_device *dev,
  				struct ethtool_rxnfc *cmd)
  {
-@@ -3158,15 +3246,19 @@ static int mtk_hwlro_add_ipaddr(struct n
+@@ -3194,15 +3282,19 @@ static int mtk_hwlro_add_ipaddr(struct n
  	struct mtk_mac *mac = netdev_priv(dev);
  	struct mtk_eth *eth = mac->hw;
  	int hwlro_idx;
@@ -188,7 +188,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  	mac->hwlro_ip_cnt = mtk_hwlro_get_ip_cnt(mac);
  
  	mtk_hwlro_val_ipaddr(eth, hwlro_idx, mac->hwlro_ip[fsp->location]);
-@@ -3182,13 +3274,17 @@ static int mtk_hwlro_del_ipaddr(struct n
+@@ -3218,13 +3310,17 @@ static int mtk_hwlro_del_ipaddr(struct n
  	struct mtk_mac *mac = netdev_priv(dev);
  	struct mtk_eth *eth = mac->hw;
  	int hwlro_idx;
@@ -208,7 +208,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  	mac->hwlro_ip_cnt = mtk_hwlro_get_ip_cnt(mac);
  
  	mtk_hwlro_inval_ipaddr(eth, hwlro_idx);
-@@ -3196,6 +3292,24 @@ static int mtk_hwlro_del_ipaddr(struct n
+@@ -3232,6 +3328,24 @@ static int mtk_hwlro_del_ipaddr(struct n
  	return 0;
  }
  
@@ -233,7 +233,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  static void mtk_hwlro_netdev_disable(struct net_device *dev)
  {
  	struct mtk_mac *mac = netdev_priv(dev);
-@@ -3203,8 +3317,14 @@ static void mtk_hwlro_netdev_disable(str
+@@ -3239,8 +3353,14 @@ static void mtk_hwlro_netdev_disable(str
  	int i, hwlro_idx;
  
  	for (i = 0; i < MTK_MAX_LRO_IP_CNT; i++) {
@@ -249,7 +249,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  
  		mtk_hwlro_inval_ipaddr(eth, hwlro_idx);
  	}
-@@ -3389,6 +3509,8 @@ static int mtk_set_features(struct net_d
+@@ -3425,6 +3545,8 @@ static int mtk_set_features(struct net_d
  
  	if ((diff & NETIF_F_LRO) && !(features & NETIF_F_LRO))
  		mtk_hwlro_netdev_disable(dev);
@@ -258,7 +258,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  
  	return 0;
  }
-@@ -3446,8 +3568,8 @@ static int mtk_dma_init(struct mtk_eth *
+@@ -3482,8 +3604,8 @@ static int mtk_dma_init(struct mtk_eth *
  		return err;
  
  	if (eth->hwlro) {
@@ -269,7 +269,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  			if (err)
  				return err;
  		}
-@@ -3508,8 +3630,8 @@ static void mtk_dma_free(struct mtk_eth
+@@ -3544,8 +3666,8 @@ static void mtk_dma_free(struct mtk_eth
  
  	if (eth->hwlro) {
  		mtk_hwlro_rx_uninit(eth);
@@ -280,7 +280,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  	}
  
  	if (MTK_HAS_CAPS(eth->soc->caps, MTK_RSS)) {
-@@ -3647,16 +3769,21 @@ static int mtk_start_dma(struct mtk_eth
+@@ -3683,16 +3805,21 @@ static int mtk_start_dma(struct mtk_eth
  		}
  		mtk_w32(eth, val, reg_map->qdma.glo_cfg);
  
@@ -306,7 +306,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  	return 0;
  }
  
-@@ -3817,6 +3944,13 @@ static int mtk_open(struct net_device *d
+@@ -3853,6 +3980,13 @@ static int mtk_open(struct net_device *d
  			}
  		}
  
@@ -320,7 +320,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  		refcount_set(&eth->dma_refcnt, 1);
  	} else {
  		refcount_inc(&eth->dma_refcnt);
-@@ -3912,6 +4046,14 @@ static int mtk_stop(struct net_device *d
+@@ -3948,6 +4082,14 @@ static int mtk_stop(struct net_device *d
  		}
  	}
  
@@ -335,7 +335,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  	cancel_work_sync(&eth->rx_dim.work);
  	cancel_work_sync(&eth->tx_dim.work);
  
-@@ -4365,6 +4507,14 @@ static int mtk_napi_init(struct mtk_eth
+@@ -4401,6 +4543,14 @@ static int mtk_napi_init(struct mtk_eth
  		}
  	}
  
@@ -350,7 +350,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  	return 0;
  }
  
-@@ -4935,7 +5085,7 @@ static int mtk_get_rxnfc(struct net_devi
+@@ -4984,7 +5134,7 @@ static int mtk_get_rxnfc(struct net_devi
  	switch (cmd->cmd) {
  	case ETHTOOL_GRXRINGS:
  		if (dev->hw_features & NETIF_F_LRO) {
@@ -359,7 +359,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  			ret = 0;
  		} else if (MTK_HAS_CAPS(eth->soc->caps, MTK_RSS)) {
  			cmd->data = MTK_RX_RSS_NUM;
-@@ -5904,6 +6054,18 @@ static int mtk_probe(struct platform_dev
+@@ -5950,6 +6100,18 @@ static int mtk_probe(struct platform_dev
  						goto err_free_dev;
  				}
  			}
@@ -378,7 +378,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  		} else {
  			err = devm_request_irq(eth->dev, eth->irq_fe[2],
  					       mtk_handle_irq_rx, 0,
-@@ -5971,6 +6133,13 @@ static int mtk_probe(struct platform_dev
+@@ -6017,6 +6179,13 @@ static int mtk_probe(struct platform_dev
  				       mtk_napi_rx);
  	}
  
@@ -392,7 +392,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  	mtketh_debugfs_init(eth);
  	debug_proc_init(eth);
  
-@@ -6026,6 +6195,11 @@ static int mtk_remove(struct platform_de
+@@ -6072,6 +6241,11 @@ static int mtk_remove(struct platform_de
  			netif_napi_del(&eth->rx_napi[MTK_RSS_RING(i)].napi);
  	}
  
@@ -415,7 +415,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  #define MTK_RX_HLEN		(NET_SKB_PAD + MTK_RX_ETH_HLEN + NET_IP_ALIGN)
  #define MTK_DMA_DUMMY_DESC	0xffffffff
  #define MTK_DEFAULT_MSG_ENABLE	(NETIF_MSG_DRV | \
-@@ -64,10 +64,13 @@
+@@ -65,10 +65,13 @@
  
  #define MTK_QRX_OFFSET		0x10
  
@@ -432,7 +432,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  #define	MTK_MAX_LRO_IP_CNT		2
  #define	MTK_HW_LRO_TIMER_UNIT		1	/* 20 us */
  #define	MTK_HW_LRO_REFRESH_TIME		50000	/* 1 sec. */
-@@ -190,38 +193,38 @@
+@@ -191,38 +194,38 @@
  #define MTK_CDMM_THRES		0x165c
  
  /* PDMA HW LRO Control Registers */
@@ -487,7 +487,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  #define MTK_RX_RSS_NUM			(eth->soc->rss_num)
  #define MTK_RSS_RING(x)			(x)
  #define MTK_RSS_EN			BIT(0)
-@@ -257,11 +260,10 @@
+@@ -258,11 +261,10 @@
  #define MTK_PDMA_DELAY_PTIME_MASK	0xff
  
  /* PDMA HW LRO Alter Flow Delta Register */
@@ -501,7 +501,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  #define MTK_RING_MYIP_VLD		BIT(9)
  
  /* PDMA HW LRO Ring Control Registers */
-@@ -1267,7 +1269,7 @@ enum mkt_eth_capabilities {
+@@ -1311,7 +1313,7 @@ enum mkt_eth_capabilities {
  		      MTK_MUX_GMAC123_TO_GEPHY_SGMII | \
  		      MTK_MUX_GMAC123_TO_USXGMII | MTK_MUX_GMAC2_TO_2P5GPHY | \
  		      MTK_QDMA | MTK_SRAM | MTK_PDMA_INT | MTK_RSS | \
@@ -510,7 +510,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  
  struct mtk_tx_dma_desc_info {
  	dma_addr_t	addr;
-@@ -1571,6 +1573,7 @@ struct mtk_mux {
+@@ -1615,6 +1617,7 @@ struct mtk_mux {
  
  /* the struct describing the SoC. these are declared in the soc_xyz.c files */
  extern const struct of_device_id of_mtk_match[];

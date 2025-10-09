@@ -146,7 +146,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  {
  	int ret;
  
-@@ -2620,12 +2633,12 @@ static int mtk_poll_tx(struct mtk_eth *e
+@@ -2650,12 +2663,12 @@ static int mtk_poll_tx(struct mtk_eth *e
  
  static void mtk_handle_status_irq(struct mtk_eth *eth)
  {
@@ -161,7 +161,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	}
  }
  
-@@ -3403,7 +3416,7 @@ static void mtk_dma_free(struct mtk_eth
+@@ -3439,7 +3452,7 @@ static void mtk_dma_free(struct mtk_eth
  
  static bool mtk_hw_reset_check(struct mtk_eth *eth)
  {
@@ -170,7 +170,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  
  	return (val & MTK_FE_INT_FQ_EMPTY) || (val & MTK_FE_INT_RFIFO_UF) ||
  	       (val & MTK_FE_INT_RFIFO_OV) || (val & MTK_FE_INT_TSO_FAIL) ||
-@@ -4423,6 +4436,12 @@ static int mtk_do_ioctl(struct net_devic
+@@ -4472,6 +4485,12 @@ static int mtk_do_ioctl(struct net_devic
  	return -EOPNOTSUPP;
  }
  
@@ -183,7 +183,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  static void mtk_prepare_for_reset(struct mtk_eth *eth)
  {
  	u32 val;
-@@ -4891,6 +4910,7 @@ static const struct net_device_ops mtk_n
+@@ -4940,6 +4959,7 @@ static const struct net_device_ops mtk_n
  	.ndo_set_mac_address	= mtk_set_mac_address,
  	.ndo_validate_addr	= eth_validate_addr,
  	.ndo_eth_ioctl		= mtk_do_ioctl,
@@ -191,7 +191,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	.ndo_change_mtu		= mtk_change_mtu,
  	.ndo_tx_timeout		= mtk_tx_timeout,
  	.ndo_get_stats64        = mtk_get_stats64,
-@@ -5660,6 +5680,9 @@ static int mtk_probe(struct platform_dev
+@@ -5709,6 +5729,9 @@ static int mtk_probe(struct platform_dev
  	netif_napi_add(&eth->dummy_dev, &eth->tx_napi, mtk_napi_tx);
  	netif_napi_add(&eth->dummy_dev, &eth->rx_napi, mtk_napi_rx);
  
@@ -271,9 +271,9 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  #define MTK_QTX_OFFSET		0x10
  #define QDMA_RES_THRES		4
  
-@@ -262,8 +299,19 @@
- #define MTK_QTX_SCH_MAX_RATE_MAN	GENMASK(10, 4)
- #define MTK_QTX_SCH_MAX_RATE_EXP	GENMASK(3, 0)
+@@ -269,8 +306,19 @@
+ #define MTK_QTX_SCH_MAX_RATE_MAN_V3	GENMASK(9, 3)
+ #define MTK_QTX_SCH_MAX_RATE_EXP_V3	GENMASK(2, 0)
  
 +/* QDMA Page Configuration Register */
 +#define MTK_QTX_PER_PAGE	(16)
@@ -291,7 +291,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  
  /* QDMA Global Configuration Register */
  #define MTK_RX_2B_OFFSET	BIT(31)
-@@ -390,6 +438,10 @@
+@@ -397,6 +445,10 @@
  #define RX_DMA_L4_VALID_PDMA	BIT(30)		/* when PDMA is used */
  #define RX_DMA_SPECIAL_TAG	BIT(22)
  
@@ -302,7 +302,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  /* PDMA descriptor rxd5 */
  #define MTK_RXD5_FOE_ENTRY	GENMASK(14, 0)
  #define MTK_RXD5_PPE_CPU_REASON	GENMASK(22, 18)
-@@ -402,6 +454,10 @@
+@@ -409,6 +461,10 @@
  #define RX_DMA_VTAG_V2		BIT(0)
  #define RX_DMA_L4_VALID_V2	BIT(2)
  
@@ -313,7 +313,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  /* PHY Polling and SMI Master Control registers */
  #define MTK_PPSC		0x10000
  #define PPSC_MDC_CFG		GENMASK(29, 24)
-@@ -1172,6 +1228,7 @@ struct mtk_reg_map {
+@@ -1215,6 +1271,7 @@ struct mtk_reg_map {
  		u32	rx_ptr;		/* rx base pointer */
  		u32	rx_cnt_cfg;	/* rx max count configuration */
  		u32	pcrx_ptr;	/* rx cpu pointer */
@@ -321,7 +321,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  		u32	glo_cfg;	/* global configuration */
  		u32	rst_idx;	/* reset index */
  		u32	delay_irq;	/* delay interrupt */
-@@ -1192,9 +1249,12 @@ struct mtk_reg_map {
+@@ -1235,9 +1292,12 @@ struct mtk_reg_map {
  		u32	delay_irq;	/* delay interrupt */
  		u32	fc_th;		/* flow control */
  		u32	int_grp;

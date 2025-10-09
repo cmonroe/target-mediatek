@@ -10,7 +10,7 @@ Subject: [PATCH] arm64: dts: mt7988: move phys to sgmiipcs and usxgmiisys
 
 --- a/arch/arm64/boot/dts/mediatek/mt7988a.dtsi
 +++ b/arch/arm64/boot/dts/mediatek/mt7988a.dtsi
-@@ -339,6 +339,7 @@
+@@ -347,6 +347,7 @@
  
  			sgmiipcs0: pcs {
  				compatible = "mediatek,mt7988-sgmii";
@@ -18,7 +18,7 @@ Subject: [PATCH] arm64: dts: mt7988: move phys to sgmiipcs and usxgmiisys
  				clocks = <&topckgen CLK_TOP_SGM_0_SEL>,
  					 <&sgmiisys0 CLK_SGM0_TX_EN>,
  					 <&sgmiisys0 CLK_SGM0_RX_EN>;
-@@ -357,6 +358,7 @@
+@@ -365,6 +366,7 @@
  
  			sgmiipcs1: pcs {
  				compatible = "mediatek,mt7988-sgmii";
@@ -26,7 +26,7 @@ Subject: [PATCH] arm64: dts: mt7988: move phys to sgmiipcs and usxgmiisys
  				clocks = <&topckgen CLK_TOP_SGM_1_SEL>,
  					 <&sgmiisys1 CLK_SGM1_TX_EN>,
  					 <&sgmiisys1 CLK_SGM1_RX_EN>;
-@@ -368,6 +370,7 @@
+@@ -376,6 +378,7 @@
  			compatible = "mediatek,mt7988-usxgmiisys";
  			reg = <0 0x10080000 0 0x1000>;
  			resets = <&watchdog MT7988_TOPRGU_XFI0_GRST>;
@@ -34,7 +34,7 @@ Subject: [PATCH] arm64: dts: mt7988: move phys to sgmiipcs and usxgmiisys
  			clocks = <&topckgen CLK_TOP_USXGMII_SBUS_0_SEL>;
  		};
  
-@@ -375,6 +378,7 @@
+@@ -383,6 +386,7 @@
  			compatible = "mediatek,mt7988-usxgmiisys";
  			reg = <0 0x10081000 0 0x1000>;
  			resets = <&watchdog MT7988_TOPRGU_XFI1_GRST>;
@@ -42,7 +42,7 @@ Subject: [PATCH] arm64: dts: mt7988: move phys to sgmiipcs and usxgmiisys
  			clocks = <&topckgen CLK_TOP_USXGMII_SBUS_1_SEL>;
  		};
  
-@@ -1246,7 +1250,6 @@
+@@ -1254,7 +1258,6 @@
  				reg = <1>;
  				status = "disabled";
  				pcs-handle = <&sgmiipcs1>, <&usxgmiisys1>;
@@ -50,7 +50,7 @@ Subject: [PATCH] arm64: dts: mt7988: move phys to sgmiipcs and usxgmiisys
  			};
  
  			gmac2: mac@2 {
-@@ -1254,7 +1257,6 @@
+@@ -1262,7 +1265,6 @@
  				reg = <2>;
  				status = "disabled";
  				pcs-handle = <&sgmiipcs0>, <&usxgmiisys0>;

@@ -10,7 +10,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: refactor SER monitor
 
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
-@@ -4395,80 +4395,231 @@ static void mtk_hw_warm_reset(struct mtk
+@@ -4431,80 +4431,231 @@ static void mtk_hw_warm_reset(struct mtk
  			val, rst_mask);
  }
  
@@ -284,7 +284,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: refactor SER monitor
  }
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.h
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.h
-@@ -385,8 +385,6 @@
+@@ -393,8 +393,6 @@
  #define MTK_TX_DONE_INT0	BIT(0)
  #define MTK_TX_DONE_INT		MTK_TX_DONE_DLY
  
@@ -293,7 +293,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: refactor SER monitor
  /* QDMA Interrupt grouping registers */
  #define MTK_RLS_DONE_INT	BIT(0)
  
-@@ -739,6 +737,12 @@
+@@ -761,6 +759,12 @@
  #define MTK_FE_DROP_FC		0x248
  #define MTK_FE_DROP_PPE		0x24C
  
@@ -306,7 +306,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: refactor SER monitor
  #define MTK_MAC_FSM(x)		(0x1010C + ((x) * 0x100))
  
  struct mtk_rx_dma {
-@@ -969,6 +973,12 @@ enum mtk_pse_port {
+@@ -1002,6 +1006,12 @@ enum mtk_pse_port {
  	PSE_PORT_MAX
  };
  
@@ -319,7 +319,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: refactor SER monitor
  /* GMAC Identifier */
  enum mtk_gmac_id {
  	MTK_GMAC1_ID = 0,
-@@ -1517,10 +1527,21 @@ struct mtk_eth {
+@@ -1561,10 +1571,21 @@ struct mtk_eth {
  	struct {
  		struct delayed_work monitor_work;
  		atomic_t force;
