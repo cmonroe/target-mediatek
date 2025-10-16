@@ -149,18 +149,16 @@ Signed-off-by: Tim Hayes <tim.hayes@smartrg.com>
  };
  
  static void
-@@ -809,6 +853,72 @@ mt7530_get_ethtool_stats(struct dsa_swit
+@@ -809,6 +853,71 @@ mt7530_get_ethtool_stats(struct dsa_swit
  	}
  }
  
 +static void
-+mt7530_mib_fetch_port_stat(struct mt7530_priv *priv, int port)
++mt7530_mib_fetch_port_stat(struct mt7530_priv *priv, int port,
++			 struct rtnl_link_stats64 *storage)
 +{
 +	const u32 base_reg = MT7530_PORT_MIB_COUNTER(port);
-+	struct rtnl_link_stats64 *storage = &priv->stats[port];
 +	u32 i;
-+
-+	memset(storage, 0, sizeof(*storage));
 +
 +	for (i = 0; i < ARRAY_SIZE(mt7530_mib); i++) {
 +		const struct mt7530_mib_desc *mib = &mt7530_mib[i];
@@ -183,17 +181,18 @@ Signed-off-by: Tim Hayes <tim.hayes@smartrg.com>
 +static void
 +mt7530_mib_work_func(struct work_struct *work)
 +{
++	struct rtnl_link_stats64 stats[MT7530_NUM_PORTS] = {0};
 +	struct mt7530_priv *priv;
 +	int port;
 +
 +	priv = container_of(work, struct mt7530_priv, mib_work.work);
 +
-+	mutex_lock(&priv->mib_lock);
-+
 +	for (port = 0; port < MT7530_NUM_PORTS; port++)
-+		mt7530_mib_fetch_port_stat(priv, port);
++		mt7530_mib_fetch_port_stat(priv, port, &stats[port]);
 +
-+	mutex_unlock(&priv->mib_lock);
++	spin_lock(&priv->stats_lock);
++	memcpy(priv->stats, stats, sizeof(stats));
++	spin_unlock(&priv->stats_lock);
 +
 +	schedule_delayed_work(&priv->mib_work,
 +			      msecs_to_jiffies(MT7530_MIB_WORK_DELAY));
@@ -209,9 +208,9 @@ Signed-off-by: Tim Hayes <tim.hayes@smartrg.com>
 +		return;
 +	}
 +
-+	mutex_lock(&priv->mib_lock);
++	spin_lock(&priv->stats_lock);
 +	memcpy(stats, &priv->stats[port], sizeof(struct rtnl_link_stats64));
-+	mutex_unlock(&priv->mib_lock);
++	spin_unlock(&priv->stats_lock);
 +
 +	if (!priv->mib_work_started) {
 +		priv->mib_work_started = true;
@@ -222,7 +221,7 @@ Signed-off-by: Tim Hayes <tim.hayes@smartrg.com>
  static int
  mt7530_get_sset_count(struct dsa_switch *ds, int port, int sset)
  {
-@@ -3137,6 +3247,7 @@ const struct dsa_switch_ops mt7530_switc
+@@ -3137,6 +3246,7 @@ const struct dsa_switch_ops mt7530_switc
  	.preferred_default_local_cpu_port = mt753x_preferred_default_local_cpu_port,
  	.get_strings		= mt7530_get_strings,
  	.get_ethtool_stats	= mt7530_get_ethtool_stats,
@@ -230,11 +229,11 @@ Signed-off-by: Tim Hayes <tim.hayes@smartrg.com>
  	.get_sset_count		= mt7530_get_sset_count,
  	.set_ageing_time	= mt7530_set_ageing_time,
  	.port_enable		= mt7530_port_enable,
-@@ -3246,6 +3357,11 @@ mt7530_probe_common(struct mt7530_priv *
+@@ -3246,6 +3356,11 @@ mt7530_probe_common(struct mt7530_priv *
  	mutex_init(&priv->reg_mutex);
  	dev_set_drvdata(dev, priv);
  
-+	mutex_init(&priv->mib_lock);
++	spin_lock_init(&priv->stats_lock);
 +	INIT_DELAYED_WORK(&priv->mib_work, mt7530_mib_work_func);
 +	priv->mib_work_started = false;
 +	memset(priv->stats, 0, sizeof(priv->stats));
@@ -242,7 +241,7 @@ Signed-off-by: Tim Hayes <tim.hayes@smartrg.com>
  	return 0;
  }
  EXPORT_SYMBOL_GPL(mt7530_probe_common);
-@@ -3253,6 +3369,8 @@ EXPORT_SYMBOL_GPL(mt7530_probe_common);
+@@ -3253,6 +3368,8 @@ EXPORT_SYMBOL_GPL(mt7530_probe_common);
  void
  mt7530_remove_common(struct mt7530_priv *priv)
  {
@@ -277,7 +276,7 @@ Signed-off-by: Tim Hayes <tim.hayes@smartrg.com>
  	int (*create_sgmii)(struct mt7530_priv *priv);
  	u8 active_cpu_ports;
  	struct mdio_device *mdiodev;
-+	struct mutex mib_lock;
++	spinlock_t stats_lock;
 +	struct delayed_work mib_work;
 +	bool mib_work_started;
 +	struct rtnl_link_stats64 stats[MT7530_NUM_PORTS];

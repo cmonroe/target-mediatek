@@ -108,10 +108,10 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 +}
 +
 +static void
- mt7530_mib_fetch_port_stat(struct mt7530_priv *priv, int port)
+ mt7530_mib_fetch_port_stat(struct mt7530_priv *priv, int port,
+ 			 struct rtnl_link_stats64 *storage)
  {
- 	const u32 base_reg = MT7530_PORT_MIB_COUNTER(port);
-@@ -879,6 +965,9 @@ mt7530_mib_fetch_port_stat(struct mt7530
+@@ -877,6 +963,9 @@ mt7530_mib_fetch_port_stat(struct mt7530
  
  		mib->stats(storage, val);
  	}
