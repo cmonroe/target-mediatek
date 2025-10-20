@@ -22,7 +22,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
-@@ -3599,7 +3599,6 @@ static void mtk_gdm_config(struct mtk_et
+@@ -3715,7 +3715,6 @@ static void mtk_gdm_config(struct mtk_et
  	mtk_w32(eth, val, MTK_GDMA_FWD_CFG(id));
  }
  
@@ -30,7 +30,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  static bool mtk_uses_dsa(struct net_device *dev)
  {
  #if IS_ENABLED(CONFIG_NET_DSA)
-@@ -3686,6 +3685,13 @@ static int mtk_open(struct net_device *d
+@@ -3802,6 +3801,13 @@ static int mtk_open(struct net_device *d
  		for (i = 0; i < ARRAY_SIZE(eth->ppe); i++)
  			mtk_ppe_start(eth->ppe[i]);
  
@@ -44,7 +44,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  		for (i = 0; i < MTK_MAX_DEVS; i++) {
  			if (!eth->netdev[i])
  				continue;
-@@ -3814,6 +3820,10 @@ static int mtk_stop(struct net_device *d
+@@ -3930,6 +3936,10 @@ static int mtk_stop(struct net_device *d
  	for (i = 0; i < ARRAY_SIZE(eth->ppe); i++)
  		mtk_ppe_stop(eth->ppe[i]);
  

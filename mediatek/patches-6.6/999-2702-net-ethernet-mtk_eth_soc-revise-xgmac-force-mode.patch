@@ -10,7 +10,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: revise xgmac force mode
 
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
-@@ -760,6 +760,24 @@ init_err:
+@@ -763,6 +763,24 @@ init_err:
  		mac->id, phy_modes(state->interface), err);
  }
  
@@ -35,7 +35,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: revise xgmac force mode
  static int mtk_mac_finish(struct phylink_config *config, unsigned int mode,
  			  phy_interface_t interface)
  {
-@@ -795,10 +813,9 @@ static void mtk_mac_link_down(struct phy
+@@ -798,10 +816,9 @@ static void mtk_mac_link_down(struct phy
  
  	if (!mtk_interface_mode_is_xgmii(interface)) {
  		mtk_m32(mac->hw, MAC_MCR_TX_EN | MAC_MCR_RX_EN | MAC_MCR_FORCE_LINK, 0, MTK_MAC_MCR(mac->id));
@@ -47,7 +47,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: revise xgmac force mode
  	}
  }
  
-@@ -954,7 +971,7 @@ static void mtk_xgdm_mac_link_up(struct
+@@ -957,7 +974,7 @@ static void mtk_xgdm_mac_link_up(struct
  				 unsigned int mode, phy_interface_t interface,
  				 int speed, int duplex, bool tx_pause, bool rx_pause)
  {
@@ -56,7 +56,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: revise xgmac force mode
  
  	if (mac->id == MTK_GMAC1_ID)
  		return;
-@@ -964,10 +981,8 @@ static void mtk_xgdm_mac_link_up(struct
+@@ -967,10 +984,8 @@ static void mtk_xgdm_mac_link_up(struct
  	mdelay(20);
  	mtk_m32(mac->hw, XMAC_GLB_CNTCLR, XMAC_GLB_CNTCLR, MTK_XMAC_CNT_CTRL(mac->id));
  
@@ -69,7 +69,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: revise xgmac force mode
  
  	mcr = mtk_r32(mac->hw, MTK_XMAC_MCR(mac->id));
  	mcr &= ~(XMAC_MCR_FORCE_TX_FC | XMAC_MCR_FORCE_RX_FC | XMAC_MCR_TRX_DISABLE);
-@@ -1002,6 +1017,7 @@ static void mtk_mac_link_up(struct phyli
+@@ -1005,6 +1020,7 @@ static void mtk_mac_link_up(struct phyli
  static const struct phylink_mac_ops mtk_phylink_ops = {
  	.mac_select_pcs = mtk_mac_select_pcs,
  	.mac_config = mtk_mac_config,

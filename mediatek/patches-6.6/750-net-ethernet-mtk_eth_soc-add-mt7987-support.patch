@@ -46,7 +46,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  		.cap_bit = MTK_ETH_MUX_GMAC2_TO_2P5GPHY,
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
-@@ -814,10 +814,16 @@ static void mtk_set_queue_speed(struct m
+@@ -817,10 +817,16 @@ static void mtk_set_queue_speed(struct m
  		return;
  
  	val = MTK_QTX_SCH_MIN_RATE_EN |
@@ -66,7 +66,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	if (mtk_is_netsys_v1(eth))
  		val |= MTK_QTX_SCH_LEAKY_BUCKET_EN;
  
-@@ -844,6 +850,30 @@ static void mtk_set_queue_speed(struct m
+@@ -847,6 +853,30 @@ static void mtk_set_queue_speed(struct m
  		default:
  			break;
  		}
@@ -97,7 +97,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	} else {
  		switch (speed) {
  		case SPEED_10:
-@@ -932,7 +962,7 @@ static void mtk_xgdm_mac_link_up(struct
+@@ -935,7 +965,7 @@ static void mtk_xgdm_mac_link_up(struct
  		return;
  
  	/* Eliminate the interference(before link-up) caused by PHY noise */
@@ -106,7 +106,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	mdelay(20);
  	mtk_m32(mac->hw, XMAC_GLB_CNTCLR, XMAC_GLB_CNTCLR, MTK_XMAC_CNT_CTRL(mac->id));
  
-@@ -2780,10 +2810,16 @@ static int mtk_tx_alloc(struct mtk_eth *
+@@ -2896,10 +2926,16 @@ static int mtk_tx_alloc(struct mtk_eth *
  			mtk_w32(eth, val, soc->reg_map->qdma.qtx_cfg + ofs);
  
  			val = MTK_QTX_SCH_MIN_RATE_EN |
@@ -126,7 +126,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  			if (mtk_is_netsys_v1(eth))
  				val |= MTK_QTX_SCH_LEAKY_BUCKET_EN;
  			mtk_w32(eth, val, soc->reg_map->qdma.qtx_sch + ofs);
-@@ -5745,6 +5781,36 @@ static const struct mtk_soc_data mt7986_
+@@ -5861,6 +5897,36 @@ static const struct mtk_soc_data mt7986_
  	},
  };
  
@@ -163,7 +163,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  static const struct mtk_soc_data mt7988_data = {
  	.reg_map = &mt7988_reg_map,
  	.ana_rgc3 = 0x128,
-@@ -5806,6 +5872,7 @@ const struct of_device_id of_mtk_match[]
+@@ -5922,6 +5988,7 @@ const struct of_device_id of_mtk_match[]
  	{ .compatible = "mediatek,mt7629-eth", .data = &mt7629_data },
  	{ .compatible = "mediatek,mt7981-eth", .data = &mt7981_data },
  	{ .compatible = "mediatek,mt7986-eth", .data = &mt7986_data },

@@ -10,7 +10,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: remove pextp reset
 
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
-@@ -760,18 +760,6 @@ init_err:
+@@ -763,18 +763,6 @@ init_err:
  		mac->id, phy_modes(state->interface), err);
  }
  
@@ -29,7 +29,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: remove pextp reset
  static int mtk_mac_finish(struct phylink_config *config, unsigned int mode,
  			  phy_interface_t interface)
  {
-@@ -780,10 +768,6 @@ static int mtk_mac_finish(struct phylink
+@@ -783,10 +771,6 @@ static int mtk_mac_finish(struct phylink
  	struct mtk_eth *eth = mac->hw;
  	u32 mcr_cur, mcr_new;
  
@@ -40,7 +40,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: remove pextp reset
  	/* Enable SGMII */
  	if (interface == PHY_INTERFACE_MODE_SGMII ||
  	    phy_interface_mode_is_8023z(interface))
-@@ -1013,15 +997,11 @@ static void mtk_mac_link_up(struct phyli
+@@ -1016,15 +1000,11 @@ static void mtk_mac_link_up(struct phyli
  		mtk_gdm_mac_link_up(mac, phy, mode, interface, speed, duplex,
  				    tx_pause, rx_pause);
  
@@ -56,7 +56,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: remove pextp reset
  	.mac_finish = mtk_mac_finish,
  	.mac_link_down = mtk_mac_link_down,
  	.mac_link_up = mtk_mac_link_up,
-@@ -3669,9 +3649,6 @@ static int mtk_open(struct net_device *d
+@@ -3785,9 +3765,6 @@ static int mtk_open(struct net_device *d
  
  	ppe_num = eth->soc->ppe_num;
  
@@ -66,7 +66,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: remove pextp reset
  	err = phylink_of_phy_connect(mac->phylink, mac->of_node, 0);
  	if (err) {
  		netdev_err(dev, "%s: could not attach PHY: %d\n", __func__,
-@@ -3833,9 +3810,6 @@ static int mtk_stop(struct net_device *d
+@@ -3949,9 +3926,6 @@ static int mtk_stop(struct net_device *d
  		mtk_ppe_roaming_stop(eth);
  	}
  
@@ -76,7 +76,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: remove pextp reset
  	return 0;
  }
  
-@@ -5207,17 +5181,6 @@ static int mtk_add_mac(struct mtk_eth *e
+@@ -5323,17 +5297,6 @@ static int mtk_add_mac(struct mtk_eth *e
  		}
  	}
  
