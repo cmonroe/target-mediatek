@@ -993,8 +993,6 @@
 		status = "okay";
 
 		reset-gpios = <&pio 1 GPIO_ACTIVE_LOW>;
-		reset-assert-us = <100000>;
-		reset-deassert-us = <1000000>;
 
 		ports {
 			#address-cells = <1>;
@@ -1231,15 +1229,6 @@
 			groups = "emmc_51";
 		};
 	};
-
-/*
-	mxl86282_reset: mxl86282-reset-hog {
-		gpio-hog;
-		gpios = <1 GPIO_ACTIVE_LOW>;
-		line-name = "mxl86282-reset";
-		output-high;
-	};
-*/
 
 	mux_oe: mux-oe-hog {
 		gpio-hog;
