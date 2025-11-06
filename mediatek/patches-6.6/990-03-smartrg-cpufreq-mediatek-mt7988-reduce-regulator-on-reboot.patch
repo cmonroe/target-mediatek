@@ -1,0 +1,122 @@
+From: Chad Monroe <chad@monroe.io>
+Date: Mon, 04 Nov 2025 05:20:12 -0800
+Subject: [PATCH] cpufreq: mediatek: reduce MT7988 vproc on reboot
+
+reduce vproc to 900000uV for MT7988 when rebooting to prevent regulator
+kernel panics if downgrading to a build with lower proc_max_volt.
+
+Signed-off-by: Chad Monroe <chad@monroe.io>
+---
+ drivers/cpufreq/mediatek-cpufreq.c |   61 +++++++++++++++++++++++++++
+ 1 file changed, 61 insertions(+)
+
+--- a/drivers/cpufreq/mediatek-cpufreq.c
++++ b/drivers/cpufreq/mediatek-cpufreq.c
+@@ -14,6 +14,7 @@
+ #include <linux/of_platform.h>
+ #include <linux/platform_device.h>
+ #include <linux/pm_opp.h>
++#include <linux/reboot.h>
+ #include <linux/regulator/consumer.h>
+ #include <linux/nvmem-consumer.h>
+ 
+@@ -692,6 +693,14 @@ static struct cpufreq_driver mtk_cpufreq
+ 	.attr = cpufreq_generic_attr,
+ };
+ 
++static int mtk_cpufreq_reboot_notifier(struct notifier_block *nb,
++				    unsigned long action, void *data);
++
++static struct notifier_block mtk_cpufreq_notifier = {
++	.notifier_call = mtk_cpufreq_reboot_notifier,
++	.priority = 0,
++};
++
+ static int mtk_cpufreq_probe(struct platform_device *pdev)
+ {
+ 	const struct mtk_cpufreq_platform_data *data;
+@@ -734,6 +743,13 @@ static int mtk_cpufreq_probe(struct plat
+ 		goto release_dvfs_info_list;
+ 	}
+ 
++	ret = register_reboot_notifier(&mtk_cpufreq_notifier);
++	if (ret) {
++		dev_err(&pdev->dev, "failed to register reboot notifier\n");
++		cpufreq_unregister_driver(&mtk_cpufreq_driver);
++		goto release_dvfs_info_list;
++	}
++
+ 	return 0;
+ 
+ release_dvfs_info_list:
+@@ -745,11 +761,20 @@ release_dvfs_info_list:
+ 	return ret;
+ }
+ 
++static int mtk_cpufreq_remove(struct platform_device *pdev)
++{
++	unregister_reboot_notifier(&mtk_cpufreq_notifier);
++	cpufreq_unregister_driver(&mtk_cpufreq_driver);
++
++	return 0;
++}
++
+ static struct platform_driver mtk_cpufreq_platdrv = {
+ 	.driver = {
+ 		.name	= "mtk-cpufreq",
+ 	},
+ 	.probe		= mtk_cpufreq_probe,
++	.remove		= mtk_cpufreq_remove,
+ };
+ 
+ struct mtk_cpufreq_corr_data mt7988_volt_corr_data[] = {
+@@ -852,6 +877,41 @@ static const struct of_device_id mtk_cpu
+ };
+ MODULE_DEVICE_TABLE(of, mtk_cpufreq_machines);
+ 
++#define MT7988_VPROC_SAFE_VOLTAGE 90000
++static int mtk_cpufreq_reboot_notifier(struct notifier_block *nb,
++				       unsigned long action, void *data)
++{
++	struct mtk_cpu_dvfs_info *info;
++	int current_volt;
++
++	list_for_each_entry(info, &dvfs_info_list, list_head) {
++		if (info->soc_data->corr_data != mt7988_volt_corr_data)
++			continue;	
++
++		if (info->soc_data->proc_fixed_volt)
++			continue;
++
++		if (!info->proc_reg)
++			continue;
++
++		current_volt = regulator_get_voltage(info->proc_reg);
++		if (current_volt < MT7988_VPROC_SAFE_VOLTAGE)
++			continue;
++
++		dev_info(info->cpu_dev,
++			 "%s: reducing vproc from %duV to %duV\n",
++			 __func__, current_volt, MT7988_VPROC_SAFE_VOLTAGE);
++
++		if (info->need_voltage_tracking)
++			mtk_cpufreq_voltage_tracking(info, MT7988_VPROC_SAFE_VOLTAGE);
++		else
++			regulator_set_voltage(info->proc_reg, MT7988_VPROC_SAFE_VOLTAGE,
++						  MT7988_VPROC_SAFE_VOLTAGE);
++	}
++
++	return NOTIFY_DONE;
++}
++
+ static int __init mtk_cpufreq_driver_init(void)
+ {
+ 	struct device_node *np;
+@@ -895,6 +955,7 @@ module_init(mtk_cpufreq_driver_init)
+ 
+ static void __exit mtk_cpufreq_driver_exit(void)
+ {
++	unregister_reboot_notifier(&mtk_cpufreq_notifier);
+ 	platform_device_unregister(cpufreq_pdev);
+ 	platform_driver_unregister(&mtk_cpufreq_platdrv);
+ }
