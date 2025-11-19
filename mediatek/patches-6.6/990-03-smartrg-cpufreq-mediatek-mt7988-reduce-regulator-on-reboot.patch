@@ -74,7 +74,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  };
  MODULE_DEVICE_TABLE(of, mtk_cpufreq_machines);
  
-+#define MT7988_VPROC_SAFE_VOLTAGE 90000
++#define MT7988_VPROC_SAFE_VOLTAGE 900000
 +static int mtk_cpufreq_reboot_notifier(struct notifier_block *nb,
 +				       unsigned long action, void *data)
 +{
