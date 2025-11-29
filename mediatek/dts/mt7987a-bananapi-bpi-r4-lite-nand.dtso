@@ -57,5 +57,5 @@
 };
 
 &{/chosen} {
-	rootdisk-nand = <&ubi_rootfs>;
+	rootdisk-spim-nand = <&ubi_rootfs>;
 };

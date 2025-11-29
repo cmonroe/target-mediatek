@@ -146,7 +146,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  {
  	int ret;
  
-@@ -2771,12 +2784,12 @@ static int mtk_poll_tx(struct mtk_eth *e
+@@ -2778,12 +2791,12 @@ static int mtk_poll_tx(struct mtk_eth *e
  
  static void mtk_handle_status_irq(struct mtk_eth *eth)
  {
@@ -161,7 +161,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	}
  }
  
-@@ -3560,7 +3573,7 @@ static void mtk_dma_free(struct mtk_eth
+@@ -3567,7 +3580,7 @@ static void mtk_dma_free(struct mtk_eth
  
  static bool mtk_hw_reset_check(struct mtk_eth *eth)
  {
@@ -170,7 +170,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  
  	return (val & MTK_FE_INT_FQ_EMPTY) || (val & MTK_FE_INT_RFIFO_UF) ||
  	       (val & MTK_FE_INT_RFIFO_OV) || (val & MTK_FE_INT_TSO_FAIL) ||
-@@ -4594,6 +4607,12 @@ static int mtk_do_ioctl(struct net_devic
+@@ -4601,6 +4614,12 @@ static int mtk_do_ioctl(struct net_devic
  	return -EOPNOTSUPP;
  }
  
@@ -183,7 +183,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  static void mtk_prepare_for_reset(struct mtk_eth *eth)
  {
  	u32 val;
-@@ -5062,6 +5081,7 @@ static const struct net_device_ops mtk_n
+@@ -5069,6 +5088,7 @@ static const struct net_device_ops mtk_n
  	.ndo_set_mac_address	= mtk_set_mac_address,
  	.ndo_validate_addr	= eth_validate_addr,
  	.ndo_eth_ioctl		= mtk_do_ioctl,
@@ -191,7 +191,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	.ndo_change_mtu		= mtk_change_mtu,
  	.ndo_tx_timeout		= mtk_tx_timeout,
  	.ndo_get_stats64        = mtk_get_stats64,
-@@ -5841,6 +5861,9 @@ static int mtk_probe(struct platform_dev
+@@ -5848,6 +5868,9 @@ static int mtk_probe(struct platform_dev
  	netif_napi_add(eth->dummy_dev, &eth->tx_napi, mtk_napi_tx);
  	netif_napi_add(eth->dummy_dev, &eth->rx_napi, mtk_napi_rx);
  

@@ -13,14 +13,15 @@ Signed-off-by: Daniel Golle <daniel@makrotopia.org>
 
 --- a/drivers/pinctrl/mediatek/Kconfig
 +++ b/drivers/pinctrl/mediatek/Kconfig
-@@ -187,6 +187,12 @@ config PINCTRL_MT7986
+@@ -187,6 +187,13 @@ config PINCTRL_MT7986
  	default ARM64 && ARCH_MEDIATEK
  	select PINCTRL_MTK_MOORE
  
 +config PINCTRL_MT7987
 +	bool "Mediatek MT7987 pin control"
 +	depends on OF
-+	default ARCH_MEDIATEK
++	depends on ARM64 || COMPILE_TEST
++	default ARM64 && ARCH_MEDIATEK
 +	select PINCTRL_MTK_MOORE
 +
  config PINCTRL_MT7988

@@ -16,7 +16,8 @@ acer,predator-w6d)
 	ucidef_set_led_netdev "internet" "INTERNET" "mdio-bus:06:amber:wan" "eth1" "link_10 link_100 link_1000 tx rx"
 	ucidef_set_led_netdev "internet" "INTERNET" "mdio-bus:06:green:wan" "eth1" "link_2500 tx rx"
 	;;
-acer,predator-w6x)
+acer,predator-w6x-stock|\
+acer,predator-w6x-ubootmod)
 	ucidef_set_led_netdev "wan" "wan" "rgb:status" "eth1"
 	;;
 asus,rt-ax52|\
@@ -91,6 +92,9 @@ huasifei,wh3000)
 iptime,ax3000q)
 	ucidef_set_led_netdev "wan" "WAN" "amber:wan" "wan" "link tx rx"
 	;;
+iptime,ax3000se)
+	ucidef_set_led_netdev "wlan" "WLAN" "blue:wlan" "phy1-ap0"
+	;;
 iptime,ax3000sm)
 	ucidef_set_led_netdev "wan" "wan" "amber:wan" "eth1" "link tx rx"
 	;;
@@ -118,12 +122,24 @@ netcore,n60-pro)
 	ucidef_set_led_netdev "wanact" "WANACT" "mdio-bus:06:green:wan" "eth1" "tx rx"
 	ucidef_set_led_netdev "wanlink" "WANLINK" "blue:wan" "eth1" "link"
 	;;
+netgear,eax17)
+	ucidef_set_led_default power_green "Power (green)" green:power 1
+	ucidef_set_led_default power_red   "Power (red)"   red:power   0
+	ucidef_set_led_default rlink_red   "Client (red)"  red:lan     0
+	ucidef_set_led_default clink_red   "Router (red)"  red:wan     0
+	ucidef_set_led_wps     wps_green   "WPS (green)"   green:wps
+	ucidef_set_led_netdev  lan_speed_fast  "LAN Link (green)"     green:status  eth0
+	uci -q set system.lan_speed_fast.mode='link'
+	ucidef_set_led_netdev  lan_speed_slow  "LAN Activity (yellow)" yellow:status eth0
+	uci -q set system.lan_speed_slow.mode='tx rx'
+	;;
 netgear,wax220)
 	ucidef_set_led_netdev "eth0" "LAN" "green:lan" "eth0"
 	;;
 netis,nx31)
 	ucidef_set_led_netdev "wan" "wan" "blue:wan" "eth1" "link tx rx"
 	;;
+imou,hx21|\
 nokia,ea0326gmp)
 	ucidef_set_led_netdev "wan" "WAN" "green:wan" "eth1" "link"
 	ucidef_set_led_netdev "lan" "LAN" "green:lan" "br-lan" "link"
@@ -213,6 +229,11 @@ teltonika,rutc50)
 totolink,x6000r)
 	ucidef_set_led_netdev "wan" "wan" "green:wan" "wan" "link tx rx"
 	;;
+tplink,be450)
+	ucidef_set_led_netdev "br-lan" "lan" "blue:lan" "br-lan" "link tx rx"
+	ucidef_set_led_netdev "wlan2g" "WLAN2G" "blue:wlan-2ghz" "phy0.0-ap0"
+	ucidef_set_led_netdev "wlan5g" "WLAN5G" "blue:wlan-5ghz" "phy0.1-ap0"
+	;;
 tplink,fr365-v1)
 	ucidef_set_led_netdev "port2-green-act" "port-2" "green:port2_act" "port2" "link tx rx"
 	ucidef_set_led_netdev "port1-green-act" "port-1" "green:sfp" "port1" "link tx rx"
@@ -222,6 +243,10 @@ tplink,re6000xd)
 	ucidef_set_led_netdev "lan-1" "lan-1" "blue:lan-0" "lan1" "link tx rx"
 	ucidef_set_led_netdev "lan-2" "lan-2" "blue:lan-1" "lan2" "link tx rx"
 	ucidef_set_led_netdev "eth1" "lan-3" "blue:lan-2" "eth1" "link tx rx"
+	;;
+wavlink,wl-wn536ax6-a)
+	ucidef_set_led_netdev "wifi" "wifi" "blue:wlan" "phy1-ap0" "link"
+	ucidef_set_led_netdev "wan" "wan" "blue:wan" "eth1" "link tx rx"
 	;;
 wavlink,wl-wn551x3)
         ucidef_set_led_netdev "lan-1" "lan-1" "green:lan-1" "lan1" "link tx rx"
@@ -248,9 +273,9 @@ zbtlink,zbt-z8103ax)
 zyxel,ex5601-t0-stock|\
 zyxel,ex5601-t0-ubootmod)
 	ucidef_set_led_netdev "lan1" "LAN1" "mdio-bus:05:green:lan" "lan1" "link tx rx"
-	ucidef_set_led_netdev "wan" "2.5G-WAN" "mdio-bus:06:green:wan" "eth1" "link_2500"
+	ucidef_set_led_netdev "wan" "2.5G-WAN" "mdio-bus:06:green:wan" "wan" "link_2500"
 	ucidef_set_led_netdev "lan" "LAN" "green:lan" "eth0" "link tx rx"
-	ucidef_set_led_netdev "internet" "INTERNET" "green:inet" "eth1" "link tx rx"
+	ucidef_set_led_netdev "internet" "INTERNET" "green:inet" "wan" "link tx rx"
 	ucidef_set_led_netdev "wifi-24g" "WIFI-2.4G" "green:wifi24g" "phy0-ap0" "link tx rx"
 	ucidef_set_led_netdev "wifi-5g" "WIFI-5G" "green:wifi5g" "phy1-ap0" "link tx rx"
 	;;

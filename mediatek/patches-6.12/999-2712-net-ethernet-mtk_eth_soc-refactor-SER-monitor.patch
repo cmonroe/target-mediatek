@@ -10,7 +10,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: refactor SER monitor
 
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
-@@ -4549,80 +4549,231 @@ static void mtk_hw_warm_reset(struct mtk
+@@ -4556,80 +4556,231 @@ static void mtk_hw_warm_reset(struct mtk
  			val, rst_mask);
  }
  

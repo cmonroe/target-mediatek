@@ -56,7 +56,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: remove pextp reset
  	.mac_finish = mtk_mac_finish,
  	.mac_link_down = mtk_mac_link_down,
  	.mac_link_up = mtk_mac_link_up,
-@@ -3790,9 +3770,6 @@ static int mtk_open(struct net_device *d
+@@ -3797,9 +3777,6 @@ static int mtk_open(struct net_device *d
  
  	ppe_num = eth->soc->ppe_num;
  
@@ -66,7 +66,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: remove pextp reset
  	err = phylink_of_phy_connect(mac->phylink, mac->of_node, 0);
  	if (err) {
  		netdev_err(dev, "%s: could not attach PHY: %d\n", __func__,
-@@ -3951,9 +3928,6 @@ static int mtk_stop(struct net_device *d
+@@ -3958,9 +3935,6 @@ static int mtk_stop(struct net_device *d
  		mtk_ppe_roaming_stop(eth);
  	}
  
@@ -76,12 +76,12 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: remove pextp reset
  	return 0;
  }
  
-@@ -5329,17 +5303,6 @@ static int mtk_add_mac(struct mtk_eth *e
+@@ -5336,17 +5310,6 @@ static int mtk_add_mac(struct mtk_eth *e
  		}
  	}
  
 -	if (mtk_is_netsys_v3_or_greater(eth) && (mac->sgmii_pcs || mac->usxgmii_pcs)) {
--		mac->pextp = devm_of_phy_get(eth->dev, mac->of_node, NULL);
+-		mac->pextp = devm_of_phy_optional_get(eth->dev, mac->of_node, NULL);
 -		if (IS_ERR(mac->pextp)) {
 -			if (PTR_ERR(mac->pextp) != -EPROBE_DEFER)
 -				dev_err(eth->dev, "cannot get PHY, error %ld\n",
