@@ -26,7 +26,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  source "drivers/net/dsa/xrs700x/Kconfig"
 --- a/drivers/net/dsa/Makefile
 +++ b/drivers/net/dsa/Makefile
-@@ -22,6 +22,7 @@ obj-y				+= b53/
+@@ -23,6 +23,7 @@ obj-y				+= b53/
  obj-y				+= hirschmann/
  obj-y				+= microchip/
  obj-y				+= mv88e6xxx/
@@ -36,19 +36,19 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  obj-y				+= realtek/
 --- a/include/net/dsa.h
 +++ b/include/net/dsa.h
-@@ -56,6 +56,8 @@ struct phylink_link_state;
- #define DSA_TAG_PROTO_RTL8_4T_VALUE		25
- #define DSA_TAG_PROTO_RZN1_A5PSW_VALUE		26
+@@ -55,6 +55,8 @@ struct tc_action;
  #define DSA_TAG_PROTO_LAN937X_VALUE		27
-+#define DSA_TAG_PROTO_MXL862_VALUE		28
-+#define DSA_TAG_PROTO_MXL862_8021Q_VALUE	29
+ #define DSA_TAG_PROTO_VSC73XX_8021Q_VALUE	28
+ #define DSA_TAG_PROTO_BRCM_LEGACY_FCS_VALUE	29
++#define DSA_TAG_PROTO_MXL862_VALUE		30
++#define DSA_TAG_PROTO_MXL862_8021Q_VALUE	31
  
  enum dsa_tag_protocol {
  	DSA_TAG_PROTO_NONE		= DSA_TAG_PROTO_NONE_VALUE,
-@@ -86,6 +88,8 @@ enum dsa_tag_protocol {
- 	DSA_TAG_PROTO_RTL8_4T		= DSA_TAG_PROTO_RTL8_4T_VALUE,
+@@ -87,6 +89,8 @@ enum dsa_tag_protocol {
  	DSA_TAG_PROTO_RZN1_A5PSW	= DSA_TAG_PROTO_RZN1_A5PSW_VALUE,
  	DSA_TAG_PROTO_LAN937X		= DSA_TAG_PROTO_LAN937X_VALUE,
+ 	DSA_TAG_PROTO_VSC73XX_8021Q	= DSA_TAG_PROTO_VSC73XX_8021Q_VALUE,
 +	DSA_TAG_PROTO_MXL862		= DSA_TAG_PROTO_MXL862_VALUE,
 +	DSA_TAG_PROTO_MXL862_8021Q	= DSA_TAG_PROTO_MXL862_8021Q_VALUE,
  };
@@ -56,7 +56,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  struct dsa_switch;
 --- a/net/dsa/Kconfig
 +++ b/net/dsa/Kconfig
-@@ -125,6 +125,19 @@ config NET_DSA_TAG_QCA
+@@ -137,6 +137,19 @@ config NET_DSA_TAG_QCA
  	  Say Y or M if you want to enable support for tagging frames for
  	  the Qualcomm Atheros QCA8K switches.
  

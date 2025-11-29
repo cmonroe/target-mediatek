@@ -24,7 +24,7 @@ Signed-off-by: Christian Marangi <ansuelsmth@gmail.com>
 
 --- a/drivers/net/phy/phy_device.c
 +++ b/drivers/net/phy/phy_device.c
-@@ -1970,7 +1970,8 @@ void phy_detach(struct phy_device *phyde
+@@ -2074,7 +2074,8 @@ void phy_detach(struct phy_device *phyde
  		device_release_driver(&phydev->mdio.dev);
  
  	/* Assert the reset signal */
@@ -36,7 +36,7 @@ Signed-off-by: Christian Marangi <ansuelsmth@gmail.com>
  	 * The phydev might go away on the put_device() below, so avoid
 --- a/include/linux/phy.h
 +++ b/include/linux/phy.h
-@@ -87,6 +87,7 @@ extern const int phy_10gbit_features_arr
+@@ -90,6 +90,7 @@ extern const int phy_10gbit_features_arr
  #define PHY_RST_AFTER_CLK_EN	0x00000002
  #define PHY_POLL_CABLE_TEST	0x00000004
  #define PHY_ALWAYS_CALL_SUSPEND	0x00000008

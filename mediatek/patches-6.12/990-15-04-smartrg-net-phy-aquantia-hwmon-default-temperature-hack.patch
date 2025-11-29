@@ -22,7 +22,7 @@ Signed-off-by: Cezary Wilmanski <cezary.wilmanski@adtran.com>
 
 --- a/drivers/net/phy/aquantia/aquantia.h
 +++ b/drivers/net/phy/aquantia/aquantia.h
-@@ -191,11 +191,17 @@ struct aqr107_priv {
+@@ -194,11 +194,17 @@ struct aqr107_priv {
  	struct aqr107_mib_stat mib;
  	struct task_struct *mib_thread;
  	struct dentry *mib_dentry;
@@ -171,7 +171,7 @@ Signed-off-by: Cezary Wilmanski <cezary.wilmanski@adtran.com>
  #endif
 --- a/drivers/net/phy/aquantia/aquantia_main.c
 +++ b/drivers/net/phy/aquantia/aquantia_main.c
-@@ -683,6 +683,8 @@ static int aqr107_config_init(struct phy
+@@ -662,6 +662,8 @@ static int aqr107_config_init(struct phy
  			return ret;
  	}
  
@@ -180,11 +180,11 @@ Signed-off-by: Cezary Wilmanski <cezary.wilmanski@adtran.com>
  	return 0;
  }
  
-@@ -882,6 +884,7 @@ static int aqr107_probe(struct phy_devic
+@@ -932,6 +934,7 @@ static int aqr107_probe(struct phy_devic
  static void aqr107_remove(struct phy_device *phydev)
  {
  	aqr_mib_remove(phydev);
 +	aqr_hwmon_cancel_fix_temp_work(phydev);
  }
  
- static int aqr111_config_init(struct phy_device *phydev)
+ static struct phy_driver aqr_driver[] = {

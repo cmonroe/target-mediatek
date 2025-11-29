@@ -148,7 +148,7 @@ Signed-off-by: Oleh Kuzhylnyi <kuzhylol@gmail.com>
 +...
 --- a/drivers/input/touchscreen/Kconfig
 +++ b/drivers/input/touchscreen/Kconfig
-@@ -450,6 +450,18 @@ config TOUCHSCREEN_HYNITRON_CSTXXX
+@@ -451,6 +451,18 @@ config TOUCHSCREEN_HYNITRON_CSTXXX
  	  To compile this driver as a module, choose M here: the
  	  module will be called hynitron-cstxxx.
  
@@ -169,9 +169,9 @@ Signed-off-by: Oleh Kuzhylnyi <kuzhylol@gmail.com>
  	depends on I2C
 --- a/drivers/input/touchscreen/Makefile
 +++ b/drivers/input/touchscreen/Makefile
-@@ -48,6 +48,7 @@ obj-$(CONFIG_TOUCHSCREEN_EXC3000)	+= exc
- obj-$(CONFIG_TOUCHSCREEN_FUJITSU)	+= fujitsu_ts.o
- obj-$(CONFIG_TOUCHSCREEN_GOODIX)	+= goodix_ts.o
+@@ -48,6 +48,7 @@ obj-$(CONFIG_TOUCHSCREEN_GOODIX_BERLIN_C
+ obj-$(CONFIG_TOUCHSCREEN_GOODIX_BERLIN_I2C)	+= goodix_berlin_i2c.o
+ obj-$(CONFIG_TOUCHSCREEN_GOODIX_BERLIN_SPI)	+= goodix_berlin_spi.o
  obj-$(CONFIG_TOUCHSCREEN_HIDEEP)	+= hideep.o
 +obj-$(CONFIG_TOUCHSCREEN_HYNITRON_CST816X)	+= hynitron-cst816x.o
  obj-$(CONFIG_TOUCHSCREEN_HYNITRON_CSTXXX)	+= hynitron_cstxxx.o
@@ -186,7 +186,7 @@ Signed-off-by: Oleh Kuzhylnyi <kuzhylol@gmail.com>
 + *
 + * Copyright (C) 2024 Oleh Kuzhylnyi <kuzhylol@gmail.com>
 + */
-+#include <asm/unaligned.h>
++#include <linux/unaligned.h>
 +#include <linux/delay.h>
 +#include <linux/err.h>
 +#include <linux/gpio/consumer.h>

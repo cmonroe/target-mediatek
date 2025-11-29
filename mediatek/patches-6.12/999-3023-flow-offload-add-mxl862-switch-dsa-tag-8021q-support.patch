@@ -81,7 +81,7 @@ Subject: [PATCH] flow offload add mxl862 switch dsa tag 8021q support
 +	    dp->cpu_dp->tag_ops->proto != DSA_TAG_PROTO_MXL862_8021Q)
  		return -ENODEV;
  
- 	*dev = dsa_port_to_master(dp);
+ 	*dev = dsa_port_to_conduit(dp);
  
 +	if (proto)
 +		*proto = dp->cpu_dp->tag_ops->proto;
@@ -124,7 +124,7 @@ Subject: [PATCH] flow offload add mxl862 switch dsa tag 8021q support
  			if (idev && idev->netdev_ops == eth->netdev[0]->netdev_ops) {
  				struct mtk_mac *mac = netdev_priv(idev);
  
-@@ -448,6 +453,14 @@ mtk_flow_offload_replace(struct mtk_eth
+@@ -452,6 +457,14 @@ mtk_flow_offload_replace(struct mtk_eth
  			return err;
  	}
  
@@ -139,7 +139,7 @@ Subject: [PATCH] flow offload add mxl862 switch dsa tag 8021q support
  	if (offload_type == MTK_PPE_PKT_TYPE_BRIDGE)
  		foe.bridge.vlan = data.vlan_in;
  
-@@ -457,14 +470,6 @@ mtk_flow_offload_replace(struct mtk_eth
+@@ -461,14 +474,6 @@ mtk_flow_offload_replace(struct mtk_eth
  	if (data.pppoe.num == 1)
  		mtk_foe_entry_set_pppoe(eth, &foe, data.pppoe.sid);
  

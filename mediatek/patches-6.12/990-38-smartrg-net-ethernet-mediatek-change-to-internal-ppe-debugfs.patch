@@ -16,7 +16,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
-@@ -5852,6 +5852,8 @@ static int mtk_probe(struct platform_dev
+@@ -5851,6 +5851,8 @@ static int mtk_probe(struct platform_dev
  			if (err)
  				goto err_deinit_ppe;
  		}
@@ -66,7 +66,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  
 --- a/drivers/net/ethernet/mediatek/mtk_ppe_debugfs.c
 +++ b/drivers/net/ethernet/mediatek/mtk_ppe_debugfs.c
-@@ -73,9 +73,8 @@ mtk_print_addr_info(struct seq_file *m,
+@@ -74,9 +74,8 @@ mtk_print_addr_info(struct seq_file *m,
  }
  
  static int
@@ -77,7 +77,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	int i;
  
  	for (i = 0; i < MTK_PPE_ENTRIES; i++) {
-@@ -125,6 +124,8 @@ mtk_ppe_debugfs_foe_show(struct seq_file
+@@ -126,6 +125,8 @@ mtk_ppe_debugfs_foe_show(struct seq_file
  			break;
  		}
  
@@ -86,7 +86,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  		seq_printf(m, " orig=");
  		mtk_print_addr_info(m, &ai);
  
-@@ -169,26 +170,39 @@ mtk_ppe_debugfs_foe_show(struct seq_file
+@@ -170,26 +171,39 @@ mtk_ppe_debugfs_foe_show(struct seq_file
  static int
  mtk_ppe_debugfs_foe_all_show(struct seq_file *m, void *private)
  {

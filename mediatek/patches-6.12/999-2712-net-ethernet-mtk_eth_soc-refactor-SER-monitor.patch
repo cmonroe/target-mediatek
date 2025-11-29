@@ -10,7 +10,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: refactor SER monitor
 
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
-@@ -4554,80 +4554,231 @@ static void mtk_hw_warm_reset(struct mtk
+@@ -4549,80 +4549,231 @@ static void mtk_hw_warm_reset(struct mtk
  			val, rst_mask);
  }
  
@@ -319,7 +319,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: refactor SER monitor
  /* GMAC Identifier */
  enum mtk_gmac_id {
  	MTK_GMAC1_ID = 0,
-@@ -1561,10 +1571,21 @@ struct mtk_eth {
+@@ -1562,10 +1572,21 @@ struct mtk_eth {
  	struct {
  		struct delayed_work monitor_work;
  		atomic_t force;

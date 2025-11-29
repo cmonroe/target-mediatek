@@ -23,7 +23,7 @@ Signed-off-by: Cezary Wilmanski <cezary.wilmanski@adtran.com>
 
 --- a/drivers/net/phy/aquantia/aquantia_main.c
 +++ b/drivers/net/phy/aquantia/aquantia_main.c
-@@ -870,25 +870,6 @@ static int aqr107_fill_interface_modes(s
+@@ -867,25 +867,6 @@ static int aqr107_fill_interface_modes(s
  	return 0;
  }
  
@@ -46,11 +46,11 @@ Signed-off-by: Cezary Wilmanski <cezary.wilmanski@adtran.com>
 -	return aqr107_fill_interface_modes(phydev);
 -}
 -
- static int aqr113c_config_init(struct phy_device *phydev)
+ static int aqr115c_get_features(struct phy_device *phydev)
  {
- 	int ret;
-@@ -897,7 +878,7 @@ static int aqr113c_config_init(struct ph
- 	if (ret < 0)
+ 	unsigned long *supported = phydev->supported;
+@@ -928,7 +909,7 @@ static int aqr113c_config_init(struct ph
+ 	if (ret)
  		return ret;
  
 -	return aqr113c_fill_interface_modes(phydev);

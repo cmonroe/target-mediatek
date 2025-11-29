@@ -16,7 +16,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 
 --- a/drivers/net/ethernet/mediatek/mtk_ppe.c
 +++ b/drivers/net/ethernet/mediatek/mtk_ppe.c
-@@ -76,6 +76,21 @@ static int mtk_ppe_wait_busy(struct mtk_
+@@ -79,6 +79,21 @@ static int mtk_ppe_wait_busy(struct mtk_
  	return ret;
  }
  
@@ -38,7 +38,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  static int mtk_ppe_mib_wait_busy(struct mtk_ppe *ppe)
  {
  	int ret;
-@@ -139,15 +154,147 @@ struct mtk_foe_accounting *mtk_ppe_mib_e
+@@ -142,15 +157,147 @@ struct mtk_foe_accounting *mtk_ppe_mib_e
  	return acct;
  }
  

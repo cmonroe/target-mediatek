@@ -17,7 +17,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
-@@ -3746,6 +3746,14 @@ static int mtk_device_event(struct notif
+@@ -3744,6 +3744,14 @@ static int mtk_device_event(struct notif
  	if (event != NETDEV_CHANGE)
  		return NOTIFY_DONE;
  

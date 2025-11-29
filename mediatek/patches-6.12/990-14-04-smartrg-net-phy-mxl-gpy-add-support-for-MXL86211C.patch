@@ -19,7 +19,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  
  #define PHY_CTL1		0x13
  #define PHY_CTL1_MDICD		BIT(3)
-@@ -1333,6 +1334,29 @@ static struct phy_driver gpy_drivers[] =
+@@ -1341,6 +1342,29 @@ static struct phy_driver gpy_drivers[] =
  		.set_loopback	= gpy_loopback,
  		.link_change_notify	= gpy_link_change_notify,
  	},

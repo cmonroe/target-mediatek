@@ -34,7 +34,7 @@
  };
  
  &bch {
-@@ -517,7 +528,7 @@
+@@ -527,7 +538,7 @@
  	spic1_pins: spic1-pins {
  		mux {
  			function = "spi";
@@ -43,7 +43,7 @@
  		};
  	};
  
-@@ -665,6 +676,11 @@
+@@ -675,6 +686,11 @@
  	pinctrl-names = "default";
  	pinctrl-0 = <&spic1_pins>;
  	status = "okay";

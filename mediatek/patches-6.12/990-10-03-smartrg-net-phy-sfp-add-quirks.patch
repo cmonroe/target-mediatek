@@ -9,20 +9,7 @@ Subject: [PATCH] OWRT-7643 Adtran quirks added
 
 --- a/drivers/net/phy/sfp.c
 +++ b/drivers/net/phy/sfp.c
-@@ -344,10 +344,12 @@ static const struct of_device_id sfp_of_
- };
- MODULE_DEVICE_TABLE(of, sfp_of_match);
- 
-+#if 0
- static void sfp_fixup_long_startup(struct sfp *sfp)
- {
- 	sfp->module_t_start_up = T_START_UP_BAD_GPON;
- }
-+#endif
- 
- static void sfp_fixup_ignore_tx_fault(struct sfp *sfp)
- {
-@@ -409,13 +411,33 @@ static void sfp_fixup_rollball_cc(struct
+@@ -441,13 +441,33 @@ static void sfp_fixup_rollball_cc(struct
  	sfp->id.base.extended_cc = SFF8024_ECC_10GBASE_T_SFI;
  }
  
@@ -56,7 +43,7 @@ Subject: [PATCH] OWRT-7643 Adtran quirks added
  }
  
  static void sfp_quirk_disable_autoneg(struct sfp *sfp,
-@@ -423,7 +445,11 @@ static void sfp_quirk_disable_autoneg(st
+@@ -455,7 +475,11 @@ static void sfp_quirk_disable_autoneg(st
  				      unsigned long *modes,
  				      unsigned long *interfaces)
  {
@@ -68,7 +55,7 @@ Subject: [PATCH] OWRT-7643 Adtran quirks added
  }
  
  static void sfp_quirk_oem_2_5g(struct sfp *sfp,
-@@ -431,10 +457,15 @@ static void sfp_quirk_oem_2_5g(struct sf
+@@ -463,10 +487,15 @@ static void sfp_quirk_oem_2_5g(struct sf
  			       unsigned long *modes,
  			       unsigned long *interfaces)
  {
@@ -84,7 +71,7 @@ Subject: [PATCH] OWRT-7643 Adtran quirks added
  }
  
  static void sfp_quirk_ubnt_uf_instant(struct sfp *sfp,
-@@ -450,13 +481,52 @@ static void sfp_quirk_ubnt_uf_instant(st
+@@ -482,13 +511,52 @@ static void sfp_quirk_ubnt_uf_instant(st
  	linkmode_set_bit(ETHTOOL_LINK_MODE_1000baseX_Full_BIT, modes);
  }
  
@@ -138,7 +125,7 @@ Subject: [PATCH] OWRT-7643 Adtran quirks added
  {
  	int speed;
  	struct device_node *mac_np, *sfp_np;
-@@ -493,7 +563,9 @@ static void sfp_quirk_phy_mode(struct sf
+@@ -525,7 +593,9 @@ static void sfp_quirk_phy_mode(struct sf
  		case PHY_INTERFACE_MODE_2500BASEX:
  			linkmode_zero(modes);
  			//linkmode_set_bit(ETHTOOL_LINK_MODE_1000baseX_Full_BIT, modes);
@@ -148,7 +135,7 @@ Subject: [PATCH] OWRT-7643 Adtran quirks added
  			speed = 2500;
  			break;
  		case PHY_INTERFACE_MODE_5GBASER:
-@@ -509,11 +581,14 @@ static void sfp_quirk_phy_mode(struct sf
+@@ -541,11 +611,14 @@ static void sfp_quirk_phy_mode(struct sf
  		default:
  			linkmode_zero(modes);
  			linkmode_set_bit(ETHTOOL_LINK_MODE_1000baseX_Full_BIT, modes);
@@ -164,7 +151,7 @@ Subject: [PATCH] OWRT-7643 Adtran quirks added
  	dev_warn(sfp->dev, "%s: set speed: %d based on bus phy-mode: %s",
  			__FUNCTION__, speed, phy_modes(interface));
  	dev_warn(sfp->dev, "%s: exit modes 0x%016lx", __FUNCTION__, *modes);
-@@ -530,13 +605,15 @@ static const struct sfp_quirk sfp_quirk_
+@@ -562,8 +635,9 @@ static const struct sfp_quirk sfp_quirk_
  static const struct sfp_quirk sfp_quirks[] = {
  	// Alcatel Lucent G-010S-P can operate at 2500base-X, but incorrectly
  	// report 2500MBd NRZ in their EEPROM
@@ -175,14 +162,7 @@ Subject: [PATCH] OWRT-7643 Adtran quirks added
  
  	// Alcatel Lucent G-010S-A can operate at 2500base-X, but report 3.2GBd
  	// NRZ in their EEPROM
-+	// From Chad for reference
- 	SFP_QUIRK("ALCATELLUCENT", "3FE46541AA", sfp_quirk_2500basex,
--		  sfp_fixup_long_startup),
-+		  sfp_fixup_gpon_xxx),
- 
- 	// FLYPRO SFP-10GT-CS-30M uses Rollball protocol to talk to the PHY.
- 	SFP_QUIRK_F("FLYPRO", "SFP-10GT-CS-30M", sfp_fixup_rollball),
-@@ -565,7 +642,7 @@ static const struct sfp_quirk sfp_quirks
+@@ -597,7 +671,7 @@ static const struct sfp_quirk sfp_quirks
  	// Huawei MA5671A can operate at 2500base-X, but report 1.2GBd NRZ in
  	// their EEPROM
  	SFP_QUIRK("HUAWEI", "MA5671A", sfp_quirk_2500basex,
@@ -191,7 +171,7 @@ Subject: [PATCH] OWRT-7643 Adtran quirks added
  
  	// Lantech 8330-262D-E can operate at 2500base-X, but incorrectly report
  	// 2500MBd NRZ in their EEPROM
-@@ -590,6 +667,28 @@ static const struct sfp_quirk sfp_quirks
+@@ -624,6 +698,28 @@ static const struct sfp_quirk sfp_quirks
  	SFP_QUIRK_F("Turris", "RTSFP-2.5G", sfp_fixup_rollball),
  	SFP_QUIRK_F("Turris", "RTSFP-10", sfp_fixup_rollball),
  	SFP_QUIRK_F("Turris", "RTSFP-10G", sfp_fixup_rollball),

@@ -16,7 +16,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 
 --- a/include/net/netfilter/nf_flow_table.h
 +++ b/include/net/netfilter/nf_flow_table.h
-@@ -292,6 +292,7 @@ int nf_flow_table_init(struct nf_flowtab
+@@ -293,6 +293,7 @@ int nf_flow_table_init(struct nf_flowtab
  void nf_flow_table_free(struct nf_flowtable *flow_table);
  
  void flow_offload_teardown(struct flow_offload *flow);

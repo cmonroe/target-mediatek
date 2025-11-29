@@ -8,7 +8,7 @@
  
  #include "aquantia.h"
  
-@@ -602,6 +603,27 @@ static int aqr107_config_mdi(struct phy_
+@@ -590,6 +591,27 @@ static int aqr107_config_mdi(struct phy_
  			      mdi_conf | PMAPMD_RSVD_VEND_PROV_MDI_FORCE);
  }
  
@@ -36,7 +36,7 @@
  static int aqr107_config_init(struct phy_device *phydev)
  {
  	struct aqr107_priv *priv = phydev->priv;
-@@ -644,6 +666,10 @@ static int aqr107_config_init(struct phy
+@@ -623,6 +645,10 @@ static int aqr107_config_init(struct phy
  	if (ret)
  		return ret;
  
@@ -47,7 +47,7 @@
  	/* Restore LED polarity state after reset */
  	for_each_set_bit(led_idx, &priv->leds_active_low, AQR_MAX_LEDS) {
  		ret = aqr_phy_led_active_low_set(phydev, led_idx, true);
-@@ -1009,10 +1035,10 @@ static struct phy_driver aqr_driver[] =
+@@ -1103,10 +1129,10 @@ static struct phy_driver aqr_driver[] =
  	.get_strings    = aqr107_get_strings,
  	.get_stats      = aqr107_get_stats,
  	.link_change_notify = aqr107_link_change_notify,

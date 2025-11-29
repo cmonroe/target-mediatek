@@ -1,6 +1,6 @@
 --- a/sound/soc/mediatek/mt2701/mt2701-afe-pcm.c
 +++ b/sound/soc/mediatek/mt2701/mt2701-afe-pcm.c
-@@ -26,11 +26,11 @@ static const struct snd_pcm_hardware mt2
+@@ -24,11 +24,11 @@ static const struct snd_pcm_hardware mt2
  		| SNDRV_PCM_INFO_RESUME | SNDRV_PCM_INFO_MMAP_VALID,
  	.formats = SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S24_LE
  		   | SNDRV_PCM_FMTBIT_S32_LE,
@@ -16,7 +16,7 @@
  	.fifo_size = 0,
  };
  
-@@ -242,8 +242,10 @@ static int mt2701_afe_i2s_prepare(struct
+@@ -240,8 +240,10 @@ static int mt2701_afe_i2s_prepare(struct
  
  	i2s_path = &afe_priv->i2s_path[i2s_num];
  

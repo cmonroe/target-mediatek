@@ -10,15 +10,15 @@ Subject: [PATCH] sound add si3218x spi driver
 
 --- a/sound/soc/codecs/Kconfig
 +++ b/sound/soc/codecs/Kconfig
-@@ -220,6 +220,7 @@ config SND_SOC_ALL_CODECS
- 	imply SND_SOC_RT9120
+@@ -232,6 +232,7 @@ config SND_SOC_ALL_CODECS
+ 	imply SND_SOC_RTQ9128
  	imply SND_SOC_SDW_MOCKUP
  	imply SND_SOC_SGTL5000
 +	imply SND_SOC_SI3218X_SPI
  	imply SND_SOC_SI476X
  	imply SND_SOC_SIMPLE_AMPLIFIER
  	imply SND_SOC_SIMPLE_MUX
-@@ -2375,6 +2376,10 @@ config SND_SOC_NAU8825
+@@ -2565,6 +2566,10 @@ config SND_SOC_NAU8825
  	tristate
  	depends on I2C
  
@@ -31,15 +31,15 @@ Subject: [PATCH] sound add si3218x spi driver
  	depends on I2C
 --- a/sound/soc/codecs/Makefile
 +++ b/sound/soc/codecs/Makefile
-@@ -252,6 +252,7 @@ snd-soc-alc5632-objs := alc5632.o
- snd-soc-sigmadsp-objs := sigmadsp.o
- snd-soc-sigmadsp-i2c-objs := sigmadsp-i2c.o
- snd-soc-sigmadsp-regmap-objs := sigmadsp-regmap.o
+@@ -269,6 +269,7 @@ snd-soc-alc5632-y := alc5632.o
+ snd-soc-sigmadsp-y := sigmadsp.o
+ snd-soc-sigmadsp-i2c-y := sigmadsp-i2c.o
+ snd-soc-sigmadsp-regmap-y := sigmadsp-regmap.o
 +snd-soc-si3218x-spi-objs := si3218x-spi.o
- snd-soc-si476x-objs := si476x.o
- snd-soc-sma1303-objs := sma1303.o
- snd-soc-spdif-tx-objs := spdif_transmitter.o
-@@ -632,6 +633,7 @@ obj-$(CONFIG_SND_SOC_SGTL5000)  += snd-s
+ snd-soc-si476x-y := si476x.o
+ snd-soc-sma1303-y := sma1303.o
+ snd-soc-spdif-tx-y := spdif_transmitter.o
+@@ -670,6 +671,7 @@ obj-$(CONFIG_SND_SOC_SGTL5000)  += snd-s
  obj-$(CONFIG_SND_SOC_SIGMADSP)	+= snd-soc-sigmadsp.o
  obj-$(CONFIG_SND_SOC_SIGMADSP_I2C)	+= snd-soc-sigmadsp-i2c.o
  obj-$(CONFIG_SND_SOC_SIGMADSP_REGMAP)	+= snd-soc-sigmadsp-regmap.o

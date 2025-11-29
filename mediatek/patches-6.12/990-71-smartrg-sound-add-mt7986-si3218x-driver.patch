@@ -29,7 +29,7 @@ Subject: [PATCH] sound add mt7986 si3218x driver
  	depends on ARCH_MEDIATEK
 --- a/sound/soc/mediatek/mt7986/Makefile
 +++ b/sound/soc/mediatek/mt7986/Makefile
-@@ -7,3 +7,4 @@ snd-soc-mt7986-afe-objs := \
+@@ -7,3 +7,4 @@ snd-soc-mt7986-afe-y := \
  
  obj-$(CONFIG_SND_SOC_MT7986) += snd-soc-mt7986-afe.o
  obj-$(CONFIG_SND_SOC_MT7986_WM8960) += mt7986-wm8960.o

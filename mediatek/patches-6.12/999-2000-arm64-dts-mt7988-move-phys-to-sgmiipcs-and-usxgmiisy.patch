@@ -1,8 +1,8 @@
-From a470ccb0e299f36e38a715c6d1b3631243e71e77 Mon Sep 17 00:00:00 2001
+From f8a9077417d95647cd4a1d545a6ecdac91357088 Mon Sep 17 00:00:00 2001
 From: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
-Date: Tue, 29 Oct 2024 14:18:55 +0800
+Date: Fri, 3 Oct 2025 10:33:14 +0800
 Subject: [PATCH] arm64: dts: mt7988: move phys to sgmiipcs and usxgmiisys
- nodes
+ node
 
 ---
  arch/arm64/boot/dts/mediatek/mt7988a.dtsi | 6 ++++--
@@ -10,7 +10,7 @@ Subject: [PATCH] arm64: dts: mt7988: move phys to sgmiipcs and usxgmiisys
 
 --- a/arch/arm64/boot/dts/mediatek/mt7988a.dtsi
 +++ b/arch/arm64/boot/dts/mediatek/mt7988a.dtsi
-@@ -347,6 +347,7 @@
+@@ -330,6 +330,7 @@
  
  			sgmiipcs0: pcs {
  				compatible = "mediatek,mt7988-sgmii";
@@ -18,7 +18,7 @@ Subject: [PATCH] arm64: dts: mt7988: move phys to sgmiipcs and usxgmiisys
  				clocks = <&topckgen CLK_TOP_SGM_0_SEL>,
  					 <&sgmiisys0 CLK_SGM0_TX_EN>,
  					 <&sgmiisys0 CLK_SGM0_RX_EN>;
-@@ -365,6 +366,7 @@
+@@ -349,6 +350,7 @@
  
  			sgmiipcs1: pcs {
  				compatible = "mediatek,mt7988-sgmii";
@@ -26,35 +26,35 @@ Subject: [PATCH] arm64: dts: mt7988: move phys to sgmiipcs and usxgmiisys
  				clocks = <&topckgen CLK_TOP_SGM_1_SEL>,
  					 <&sgmiisys1 CLK_SGM1_TX_EN>,
  					 <&sgmiisys1 CLK_SGM1_RX_EN>;
-@@ -376,6 +378,7 @@
+@@ -361,6 +363,7 @@
  			compatible = "mediatek,mt7988-usxgmiisys";
  			reg = <0 0x10080000 0 0x1000>;
- 			resets = <&watchdog MT7988_TOPRGU_XFI0_GRST>;
+ 			resets = <&watchdog 12>;
 +			phys = <&xfi_tphy0>;
  			clocks = <&topckgen CLK_TOP_USXGMII_SBUS_0_SEL>;
+ 			#pcs-cells = <0>;
  		};
- 
-@@ -383,6 +386,7 @@
+@@ -369,6 +372,7 @@
  			compatible = "mediatek,mt7988-usxgmiisys";
  			reg = <0 0x10081000 0 0x1000>;
- 			resets = <&watchdog MT7988_TOPRGU_XFI1_GRST>;
+ 			resets = <&watchdog 13>;
 +			phys = <&xfi_tphy1>;
  			clocks = <&topckgen CLK_TOP_USXGMII_SBUS_1_SEL>;
+ 			#pcs-cells = <0>;
  		};
- 
-@@ -1254,7 +1258,6 @@
+@@ -1184,7 +1188,6 @@
+ 				compatible = "mediatek,eth-mac";
  				reg = <1>;
- 				status = "disabled";
  				pcs-handle = <&sgmiipcs1>, <&usxgmiisys1>;
 -				phys = <&xfi_tphy1>;
+ 				status = "disabled";
  			};
  
- 			gmac2: mac@2 {
-@@ -1262,7 +1265,6 @@
+@@ -1192,7 +1195,6 @@
+ 				compatible = "mediatek,eth-mac";
  				reg = <2>;
- 				status = "disabled";
  				pcs-handle = <&sgmiipcs0>, <&usxgmiisys0>;
 -				phys = <&xfi_tphy0>;
+ 				status = "disabled";
  			};
  
- 			mdio_bus: mdio-bus {

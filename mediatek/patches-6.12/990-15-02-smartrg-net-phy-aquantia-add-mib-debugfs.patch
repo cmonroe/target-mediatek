@@ -33,7 +33,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  endif
 --- a/drivers/net/phy/aquantia/aquantia.h
 +++ b/drivers/net/phy/aquantia/aquantia.h
-@@ -166,10 +166,26 @@ static const struct aqr107_hw_stat aqr10
+@@ -174,10 +174,26 @@ static const struct aqr107_hw_stat aqr10
  
  #define AQR107_SGMII_STAT_SZ ARRAY_SIZE(aqr107_hw_stats)
  
@@ -60,7 +60,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  };
  
  #if IS_REACHABLE(CONFIG_HWMON)
-@@ -178,6 +194,9 @@ int aqr_hwmon_probe(struct phy_device *p
+@@ -186,6 +202,9 @@ int aqr_hwmon_probe(struct phy_device *p
  static inline int aqr_hwmon_probe(struct phy_device *phydev) { return 0; }
  #endif
  
@@ -72,7 +72,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  int aqr_phy_led_blink_set(struct phy_device *phydev, u8 index,
 --- a/drivers/net/phy/aquantia/aquantia_main.c
 +++ b/drivers/net/phy/aquantia/aquantia_main.c
-@@ -800,9 +800,16 @@ static int aqr107_probe(struct phy_devic
+@@ -924,9 +924,15 @@ static int aqr107_probe(struct phy_devic
  	if (ret)
  		return ret;
  
@@ -85,11 +85,10 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 +{
 +	aqr_mib_remove(phydev);
 +}
-+
- static int aqr111_config_init(struct phy_device *phydev)
+ 
+ static struct phy_driver aqr_driver[] = {
  {
- 	/* AQR111 reports supporting speed up to 10G,
-@@ -852,6 +859,7 @@ static struct phy_driver aqr_driver[] =
+@@ -967,6 +973,7 @@ static struct phy_driver aqr_driver[] =
  	PHY_ID_MATCH_MODEL(PHY_ID_AQR107),
  	.name		= "Aquantia AQR107",
  	.probe		= aqr107_probe,
@@ -97,7 +96,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	.get_rate_matching = aqr107_get_rate_matching,
  	.config_init	= aqr107_config_init,
  	.config_aneg    = aqr_config_aneg,
-@@ -876,6 +884,7 @@ static struct phy_driver aqr_driver[] =
+@@ -991,6 +998,7 @@ static struct phy_driver aqr_driver[] =
  	PHY_ID_MATCH_MODEL(PHY_ID_AQCS109),
  	.name		= "Aquantia AQCS109",
  	.probe		= aqr107_probe,
@@ -105,23 +104,23 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	.get_rate_matching = aqr107_get_rate_matching,
  	.config_init	= aqcs109_config_init,
  	.config_aneg    = aqr_config_aneg,
-@@ -900,6 +909,7 @@ static struct phy_driver aqr_driver[] =
+@@ -1016,6 +1024,7 @@ static struct phy_driver aqr_driver[] =
  	PHY_ID_MATCH_MODEL(PHY_ID_AQR111),
  	.name		= "Aquantia AQR111",
  	.probe		= aqr107_probe,
 +	.remove		= aqr107_remove,
  	.get_rate_matching = aqr107_get_rate_matching,
- 	.config_init	= aqr111_config_init,
+ 	.config_init	= aqr107_config_init,
  	.config_aneg    = aqr_config_aneg,
-@@ -924,6 +934,7 @@ static struct phy_driver aqr_driver[] =
+@@ -1041,6 +1050,7 @@ static struct phy_driver aqr_driver[] =
  	PHY_ID_MATCH_MODEL(PHY_ID_AQR111B0),
  	.name		= "Aquantia AQR111B0",
  	.probe		= aqr107_probe,
 +	.remove		= aqr107_remove,
  	.get_rate_matching = aqr107_get_rate_matching,
- 	.config_init	= aqr111_config_init,
+ 	.config_init	= aqr107_config_init,
  	.config_aneg    = aqr_config_aneg,
-@@ -956,6 +967,7 @@ static struct phy_driver aqr_driver[] =
+@@ -1074,6 +1084,7 @@ static struct phy_driver aqr_driver[] =
  	PHY_ID_MATCH_MODEL(PHY_ID_AQR112),
  	.name		= "Aquantia AQR112",
  	.probe		= aqr107_probe,
@@ -129,7 +128,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	.config_aneg    = aqr_config_aneg_set_prot,
  	.config_intr	= aqr_config_intr,
  	.handle_interrupt = aqr_handle_interrupt,
-@@ -979,6 +991,7 @@ static struct phy_driver aqr_driver[] =
+@@ -1097,6 +1108,7 @@ static struct phy_driver aqr_driver[] =
  	PHY_ID_MATCH_MODEL(PHY_ID_AQR412),
  	.name		= "Aquantia AQR412",
  	.probe		= aqr107_probe,
@@ -137,29 +136,29 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	.config_aneg    = aqr_config_aneg_set_prot,
  	.config_intr	= aqr_config_intr,
  	.handle_interrupt = aqr_handle_interrupt,
-@@ -997,6 +1010,7 @@ static struct phy_driver aqr_driver[] =
+@@ -1115,6 +1127,7 @@ static struct phy_driver aqr_driver[] =
  	PHY_ID_MATCH_MODEL(PHY_ID_AQR113),
  	.name		= "Aquantia AQR113",
  	.probe          = aqr107_probe,
 +	.remove		= aqr107_remove,
  	.get_rate_matching = aqr107_get_rate_matching,
- 	.config_init    = aqr107_config_init,
+ 	.config_init    = aqr113c_config_init,
  	.config_aneg    = aqr_config_aneg,
-@@ -1021,6 +1035,7 @@ static struct phy_driver aqr_driver[] =
+@@ -1139,6 +1152,7 @@ static struct phy_driver aqr_driver[] =
  	PHY_ID_MATCH_MODEL(PHY_ID_AQR113C),
  	.name           = "Aquantia AQR113C",
  	.probe          = aqr107_probe,
 +	.remove		= aqr107_remove,
  	.get_rate_matching = aqr107_get_rate_matching,
- 	.config_init    = aqr107_config_init,
+ 	.config_init    = aqr113c_config_init,
  	.config_aneg    = aqr_config_aneg,
-@@ -1045,6 +1060,7 @@ static struct phy_driver aqr_driver[] =
+@@ -1163,6 +1177,7 @@ static struct phy_driver aqr_driver[] =
  	PHY_ID_MATCH_MODEL(PHY_ID_AQR114C),
  	.name           = "Aquantia AQR114C",
  	.probe          = aqr107_probe,
 +	.remove		= aqr107_remove,
  	.get_rate_matching = aqr107_get_rate_matching,
- 	.config_init    = aqr111_config_init,
+ 	.config_init    = aqr107_config_init,
  	.config_aneg    = aqr_config_aneg,
 --- /dev/null
 +++ b/drivers/net/phy/aquantia/aquantia_mib.c

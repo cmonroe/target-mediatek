@@ -13,7 +13,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 
 --- a/drivers/net/ethernet/mediatek/mtk_ppe.c
 +++ b/drivers/net/ethernet/mediatek/mtk_ppe.c
-@@ -253,9 +253,6 @@ int mtk_foe_entry_prepare(struct mtk_eth
+@@ -256,9 +256,6 @@ int mtk_foe_entry_prepare(struct mtk_eth
  		      FIELD_PREP(MTK_FOE_IB2_PORT_AG, 0x1f);
  	}
  

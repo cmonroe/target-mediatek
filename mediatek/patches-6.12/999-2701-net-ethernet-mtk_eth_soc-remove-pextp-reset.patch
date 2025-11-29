@@ -56,7 +56,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: remove pextp reset
  	.mac_finish = mtk_mac_finish,
  	.mac_link_down = mtk_mac_link_down,
  	.mac_link_up = mtk_mac_link_up,
-@@ -3792,9 +3772,6 @@ static int mtk_open(struct net_device *d
+@@ -3790,9 +3770,6 @@ static int mtk_open(struct net_device *d
  
  	ppe_num = eth->soc->ppe_num;
  
@@ -66,7 +66,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: remove pextp reset
  	err = phylink_of_phy_connect(mac->phylink, mac->of_node, 0);
  	if (err) {
  		netdev_err(dev, "%s: could not attach PHY: %d\n", __func__,
-@@ -3956,9 +3933,6 @@ static int mtk_stop(struct net_device *d
+@@ -3951,9 +3928,6 @@ static int mtk_stop(struct net_device *d
  		mtk_ppe_roaming_stop(eth);
  	}
  
@@ -76,7 +76,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: remove pextp reset
  	return 0;
  }
  
-@@ -5330,17 +5304,6 @@ static int mtk_add_mac(struct mtk_eth *e
+@@ -5329,17 +5303,6 @@ static int mtk_add_mac(struct mtk_eth *e
  		}
  	}
  
@@ -96,7 +96,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: remove pextp reset
  
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.h
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.h
-@@ -1508,7 +1508,6 @@ struct mtk_mac {
+@@ -1509,7 +1509,6 @@ struct mtk_mac {
  	struct phylink_config		phylink_config;
  	struct phylink_pcs		*sgmii_pcs;
  	struct phylink_pcs		*usxgmii_pcs;
