@@ -657,7 +657,7 @@
 	status = "okay";
 	ethernet-pse@26 {
 		compatible = "skyworks,si3474";
-		reg-names = "main", "slave";
+		reg-names = "main", "secondary";
 		reg = <0x26>, <0x27>;
 		channels {
 			#address-cells = <1>;
@@ -726,7 +726,7 @@
 	};
 	ethernet-pse@36 {
 		compatible = "skyworks,si3474";
-		reg-names = "main", "slave";
+		reg-names = "main", "secondary";
 		reg = <0x36>, <0x37>;
 		channels {
 			#address-cells = <1>;
