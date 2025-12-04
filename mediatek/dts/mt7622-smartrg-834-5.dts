@@ -184,7 +184,7 @@
 		switch@1f {
 			compatible = "mediatek,mt7531";
 			reg = <0x1f>;
-			reset-gpios = <&pio 54 0>;
+			reset-gpios = <&pio 54 GPIO_ACTIVE_HIGH>;
 
 			mdio {
 				#address-cells = <1>;
