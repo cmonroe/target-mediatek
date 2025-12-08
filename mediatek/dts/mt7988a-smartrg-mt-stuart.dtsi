@@ -383,15 +383,15 @@
 };
 
 &mdio_bus {
+	reset-gpios = <&pio 71 GPIO_ACTIVE_LOW>;
+	reset-delay-us = <100000>;
+	reset-post-delay-us = <1000000>;
+
 	phy0: ethernet-phy@0 {
 		/* AQR113C */
 		compatible = "ethernet-phy-ieee802.3-c45";
 		reg = <0>;
 		#thermal-sensor-cells = <0>;
-
-		reset-gpios = <&pio 62 GPIO_ACTIVE_LOW>;
-		reset-assert-us = <100000>;
-		reset-deassert-us = <1000000>;
 
 		marvell,led-config = <0xC000 0x60 0x80>;
 		marvell,hwmon_temp_high = <90000>;
@@ -427,10 +427,6 @@
 		compatible = "ethernet-phy-ieee802.3-c45";
 		reg = <8>;
 		#thermal-sensor-cells = <0>;
-
-		reset-gpios = <&pio 71 GPIO_ACTIVE_LOW>;
-		reset-assert-us = <100000>;
-		reset-deassert-us = <1000000>;
 
 		marvell,led-config = <0xC000 0x60 0x80>;
 		marvell,hwmon_temp_high = <90000>;
