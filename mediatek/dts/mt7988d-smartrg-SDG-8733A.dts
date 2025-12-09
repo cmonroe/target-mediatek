@@ -94,6 +94,8 @@
 };
 
 &mdio_bus {
+	reset-gpios = <&pio 62 GPIO_ACTIVE_LOW>;
+
 	/delete-node/ ethernet-phy@0;
 };
 
@@ -128,7 +130,6 @@
 };
 
 &phy8 {
-	reset-gpios = <&pio 62 GPIO_ACTIVE_LOW>;
 	marvell,mdi-cfg-order = <0>;
 };
 
