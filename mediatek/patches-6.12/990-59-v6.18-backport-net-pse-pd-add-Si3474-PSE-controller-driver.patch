@@ -25,8 +25,6 @@ Signed-off-by: Paolo Abeni <pabeni@redhat.com>
  3 files changed, 590 insertions(+)
  create mode 100644 drivers/net/pse-pd/si3474.c
 
-diff --git a/drivers/net/pse-pd/Kconfig b/drivers/net/pse-pd/Kconfig
-index 7fab916a7f46..7ef29657ee5d 100644
 --- a/drivers/net/pse-pd/Kconfig
 +++ b/drivers/net/pse-pd/Kconfig
 @@ -32,6 +32,17 @@ config PSE_PD692X0
@@ -47,19 +45,14 @@ index 7fab916a7f46..7ef29657ee5d 100644
  config PSE_TPS23881
  	tristate "TPS23881 PSE controller"
  	depends on I2C
-diff --git a/drivers/net/pse-pd/Makefile b/drivers/net/pse-pd/Makefile
-index 9d2898b36737..cc78f7ea7f5f 100644
 --- a/drivers/net/pse-pd/Makefile
 +++ b/drivers/net/pse-pd/Makefile
-@@ -5,4 +5,5 @@ obj-$(CONFIG_PSE_CONTROLLER) += pse_core.o
+@@ -5,4 +5,5 @@ obj-$(CONFIG_PSE_CONTROLLER) += pse_core
  
  obj-$(CONFIG_PSE_REGULATOR) += pse_regulator.o
  obj-$(CONFIG_PSE_PD692X0) += pd692x0.o
 +obj-$(CONFIG_PSE_SI3474) += si3474.o
  obj-$(CONFIG_PSE_TPS23881) += tps23881.o
-diff --git a/drivers/net/pse-pd/si3474.c b/drivers/net/pse-pd/si3474.c
-new file mode 100644
-index 000000000000..aa07ffbce54d
 --- /dev/null
 +++ b/drivers/net/pse-pd/si3474.c
 @@ -0,0 +1,578 @@
@@ -641,6 +634,3 @@ index 000000000000..aa07ffbce54d
 +MODULE_AUTHOR("Piotr Kubik <piotr.kubik@adtran.com>");
 +MODULE_DESCRIPTION("Skyworks Si3474 PoE PSE Controller driver");
 +MODULE_LICENSE("GPL");
--- 
-2.47.3
-

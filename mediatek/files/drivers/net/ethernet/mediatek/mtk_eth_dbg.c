@@ -67,7 +67,61 @@ struct mtk_eth *g_eth;
 
 struct mtk_eth_debug eth_debug;
 
-static ssize_t qdma_sched_show(struct file *file, char __user *user_buf,
+static int mtk_qdma_pppq_show(struct seq_file *m, void *v)
+{
+	struct mtk_eth *eth = m->private;
+	int i;
+
+	seq_puts(m, "Usage of the QDMA PPPQ for the HW path:\n");
+	for (i = 0; i < MTK_QDMA_NUM_QUEUES; i++)
+		seq_printf(m, "qdma_txq%d:	%5d Mbps %8d refcnt\n",
+			   i, eth->qdma_shaper.speed[i],
+			   atomic_read(&eth->qdma_shaper.refcnt[i]));
+	seq_printf(m, "qdma_thres:	%5d Mbps\n", eth->qdma_shaper.threshold);
+
+	return 0;
+}
+
+static int mtk_qdma_pppq_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, mtk_qdma_pppq_show, inode->i_private);
+}
+
+static ssize_t mtk_qdma_pppq_write(struct file *file, const char __user *buffer,
+				   size_t count, loff_t *data)
+{
+	struct seq_file *m = (struct seq_file *)file->private_data;
+	struct mtk_eth *eth = m->private;
+	char buf[8] = {0};
+	u32 threshold;
+	int len = count;
+
+	if ((len > 8) || copy_from_user(buf, buffer, len))
+		return -EFAULT;
+
+	if (sscanf(buf, "%6d", &threshold) != 1)
+		return -EFAULT;
+
+	if (threshold > 10000 || threshold < 0) {
+		pr_warn("Threshold must be between 0 and 10000 Mbps\n");
+		return -EINVAL;
+	}
+
+	eth->qdma_shaper.threshold = threshold;
+
+	return len;
+}
+
+static const struct file_operations mtk_eth_debugfs_qdma_pppq_fops = {
+	.owner = THIS_MODULE,
+	.open = mtk_qdma_pppq_open,
+	.read = seq_read,
+	.write = mtk_qdma_pppq_write,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
+static ssize_t qdma_sched_read(struct file *file, char __user *user_buf,
 			       size_t count, loff_t *ppos)
 {
 	struct mtk_eth *eth = g_eth;
@@ -190,7 +244,7 @@ static ssize_t qdma_sched_write(struct file *file, const char __user *buf,
 
 static const struct file_operations qdma_sched_fops = {
 	.open = simple_open,
-	.read = qdma_sched_show,
+	.read = qdma_sched_read,
 	.write = qdma_sched_write,
 	.llseek = default_llseek,
 };
@@ -796,6 +850,10 @@ int mtketh_debugfs_init(struct mtk_eth *eth)
 				    eth_debug.root, eth,
 				    &fops_mt7530sw_reg_w);
 	}
+
+	if (mtk_is_netsys_v3_or_greater(eth))
+		debugfs_create_file("qdma_pppq", 0444, eth_debug.root,
+				    eth, &mtk_eth_debugfs_qdma_pppq_fops);
 
 	for (i = 0; i < (mtk_is_netsys_v2_or_greater(eth) ? 4 : 2); i++) {
 		ret = snprintf(name, sizeof(name), "qdma_sch%d", i);

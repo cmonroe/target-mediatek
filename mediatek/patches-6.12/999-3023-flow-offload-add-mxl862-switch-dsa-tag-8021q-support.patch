@@ -63,7 +63,7 @@ Subject: [PATCH] flow offload add mxl862 switch dsa tag 8021q support
  int mtk_foe_entry_set_pppoe(struct mtk_eth *eth, struct mtk_foe_entry *entry,
 --- a/drivers/net/ethernet/mediatek/mtk_ppe_offload.c
 +++ b/drivers/net/ethernet/mediatek/mtk_ppe_offload.c
-@@ -167,7 +167,7 @@ mtk_flow_mangle_ipv4(const struct flow_a
+@@ -169,7 +169,7 @@ mtk_flow_mangle_ipv4(const struct flow_a
  }
  
  static int
@@ -72,7 +72,7 @@ Subject: [PATCH] flow offload add mxl862 switch dsa tag 8021q support
  {
  #if IS_ENABLED(CONFIG_NET_DSA)
  	struct dsa_port *dp;
-@@ -176,11 +176,15 @@ mtk_flow_get_dsa_port(struct net_device
+@@ -178,11 +178,15 @@ mtk_flow_get_dsa_port(struct net_device
  	if (IS_ERR(dp))
  		return -ENODEV;
  
@@ -89,25 +89,25 @@ Subject: [PATCH] flow offload add mxl862 switch dsa tag 8021q support
  	return dp->index;
  #else
  	return -ENODEV;
-@@ -193,7 +197,7 @@ mtk_flow_set_output_device(struct mtk_et
- 			   int *wed_index)
- {
- 	struct mtk_wdma_info info = {};
+@@ -199,7 +203,7 @@ mtk_flow_set_output_device(struct mtk_et
+ 	struct nf_conn *ct = NULL;
+ 	struct mtk_mac *mac;
+ 	u32 ct_mark = 0;
 -	int pse_port, dsa_port, queue;
 +	int pse_port, dsa_port, dsa_proto, queue;
  
- 	if (mtk_flow_get_wdma_info(dev, dest_mac, &info) == 0) {
+ 	if (mtk_flow_get_wdma_info(odev, dest_mac, &info) == 0) {
  		mtk_foe_entry_set_wdma(eth, foe, info.wdma_idx, info.queue,
-@@ -219,7 +223,7 @@ mtk_flow_set_output_device(struct mtk_et
+@@ -225,7 +229,7 @@ mtk_flow_set_output_device(struct mtk_et
  		goto out;
  	}
  
--	dsa_port = mtk_flow_get_dsa_port(&dev);
-+	dsa_port = mtk_flow_get_dsa_port(&dev, &dsa_proto);
+-	dsa_port = mtk_flow_get_dsa_port(&odev);
++	dsa_port = mtk_flow_get_dsa_port(&odev, &dsa_proto);
  
- 	if (dev == eth->netdev[0])
- 		pse_port = PSE_GDM1_PORT;
-@@ -231,7 +235,7 @@ mtk_flow_set_output_device(struct mtk_et
+ 	if (odev == eth->netdev[0]) {
+ 		mac = eth->mac[0];
+@@ -240,7 +244,7 @@ mtk_flow_set_output_device(struct mtk_et
  		return -EOPNOTSUPP;
  
  	if (dsa_port >= 0) {
@@ -115,8 +115,8 @@ Subject: [PATCH] flow offload add mxl862 switch dsa tag 8021q support
 +		mtk_foe_entry_set_dsa(eth, foe, dsa_proto, dsa_port);
  		queue = 3 + dsa_port;
  	} else {
- 		queue = pse_port - 1;
-@@ -270,6 +274,7 @@ mtk_flow_offload_replace(struct mtk_eth
+ 		queue = (pse_port == PSE_GDM3_PORT) ? 2 : pse_port - 1;
+@@ -302,6 +306,7 @@ mtk_flow_offload_replace(struct mtk_eth
  		flow_rule_match_meta(rule, &match);
  		if (mtk_is_netsys_v2_or_greater(eth)) {
  			idev = __dev_get_by_index(&init_net, match.key->ingress_ifindex);
@@ -124,12 +124,12 @@ Subject: [PATCH] flow offload add mxl862 switch dsa tag 8021q support
  			if (idev && idev->netdev_ops == eth->netdev[0]->netdev_ops) {
  				struct mtk_mac *mac = netdev_priv(idev);
  
-@@ -452,6 +457,14 @@ mtk_flow_offload_replace(struct mtk_eth
+@@ -484,6 +489,14 @@ mtk_flow_offload_replace(struct mtk_eth
  			return err;
  	}
  
-+	err = mtk_flow_set_output_device(eth, &foe, odev, data.eth.h_dest,
-+					 &wed_index);
++	err = mtk_flow_set_output_device(eth, &foe, idev, odev, f,
++					 data.eth.h_dest, &wed_index);
 +	if (err)
 +		return err;
 +
@@ -139,12 +139,12 @@ Subject: [PATCH] flow offload add mxl862 switch dsa tag 8021q support
  	if (offload_type == MTK_PPE_PKT_TYPE_BRIDGE)
  		foe.bridge.vlan = data.vlan_in;
  
-@@ -461,14 +474,6 @@ mtk_flow_offload_replace(struct mtk_eth
+@@ -493,14 +506,6 @@ mtk_flow_offload_replace(struct mtk_eth
  	if (data.pppoe.num == 1)
  		mtk_foe_entry_set_pppoe(eth, &foe, data.pppoe.sid);
  
--	err = mtk_flow_set_output_device(eth, &foe, odev, data.eth.h_dest,
--					 &wed_index);
+-	err = mtk_flow_set_output_device(eth, &foe, idev, odev, f,
+-					 data.eth.h_dest, &wed_index);
 -	if (err)
 -		return err;
 -
