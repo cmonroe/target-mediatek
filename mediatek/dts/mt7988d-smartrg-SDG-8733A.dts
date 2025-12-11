@@ -116,7 +116,7 @@
 };
 
 &pcie0 {
-	wifi-reset-gpios = <&pio 9 GPIO_ACTIVE_HIGH>;
+	wifi-reset-gpios = <&pio 9 GPIO_ACTIVE_LOW>;
 };
 
 &pcie1 {

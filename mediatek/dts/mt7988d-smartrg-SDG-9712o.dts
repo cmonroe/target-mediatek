@@ -18,7 +18,7 @@
 
 &pcie0 {
 	pinctrl-0 = <&pcie0_1_pins>;
-	wifi-reset-gpios = <&pio 7 GPIO_ACTIVE_HIGH>;
+	wifi-reset-gpios = <&pio 7 GPIO_ACTIVE_LOW>;
 };
 
 &pio {
