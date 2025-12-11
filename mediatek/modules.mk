@@ -38,6 +38,24 @@ define KernelPackage/iio-mt6577-auxadc
 endef
 $(eval $(call KernelPackage,iio-mt6577-auxadc))
 
+define KernelPackage/dsa-mxl862xx
+  SUBMENU:=$(NETWORK_DEVICES_MENU)
+  TITLE:=MaxLinear MxL862xx DSA Switch
+  DEPENDS:=+kmod-dsa
+  KCONFIG:= \
+    CONFIG_NET_DSA_MXL862 \
+    CONFIG_NET_DSA_TAG_MXL862=y \
+    CONFIG_NET_DSA_TAG_MXL862_8021Q=y
+  FILES:=$(LINUX_DIR)/drivers/net/dsa/mxl862xx/mxl862xx_dsa.ko
+  AUTOLOAD:=$(call AutoProbe,mxl862xx_dsa)
+endef
+
+define KernelPackage/dsa-mxl862xx/description
+  Common kernel module for MaxLinear MxL862xx DSA switch family
+endef
+
+$(eval $(call KernelPackage,dsa-mxl862xx))
+
 define KernelPackage/switch-rtl8367s
   SUBMENU:=Network Devices
   TITLE:=Realtek RTL8367S switch support
