@@ -1,6 +1,6 @@
 .NOTPARALLEL:
 
-SRGRUN:= TARGET_DIR=$(TARGET_DIR) KDIR=$(KDIR) STAGING_DIR=$(STAGING_DIR_HOST) BIN_DIR=$(BIN_DIR) PACKAGE_DIR=$(PACKAGE_DIR) $(TARGET_DIR)/../flash-images/files/srg-image.sh
+SRGRUN:= TARGET_DIR=$(TARGET_DIR) KDIR=$(KDIR) STAGING_DIR=$(STAGING_DIR_HOST) BIN_DIR=$(BIN_DIR) PACKAGE_DIR=$(TOPDIR)/bin/packages/$(ARCH_PACKAGES) $(TARGET_DIR)/../flash-images/files/srg-image.sh
 BINNAME:=$(IMG_PREFIX)-polecat-root.squashfs
 VERNAME:=$(VERSION_NUMBER)-$(subst DEVICE_,,$(PROFILE))
 
@@ -53,7 +53,7 @@ define Device/polecat
   IMAGE/img := srgImage
   export DEVICE_DTS
 endef
-TARGET_DEVICES := polecat 
+TARGET_DEVICES := polecat
 #TARGET_DEVICES += elecom_wrc-2533gent
 #TARGET_DEVICES += smartrg_sr402ac
 #TARGET_DEVICES += mediatek_mt7622-rfb1
@@ -143,7 +143,7 @@ define Build/SrgDiskSquashfs
 	$(STAGING_DIR_HOST)/bin/mksquashfs4 $(TARGET_DIR) $(KDIR)/root.squashfs.run \
 		-nopad -noappend -root-owned \
 		-comp $(SQUASHFSCOMP) $(SQUASHFSOPT)
-	$(CP) $(KDIR)/root.squashfs.run $(KDIR)/root.squashfs.run.bin 
+	$(CP) $(KDIR)/root.squashfs.run $(KDIR)/root.squashfs.run.bin
 	dd if=/dev/zero bs=128k count=1 >> $(KDIR)/root.squashfs.run.bin
 	sha256sum  $(KDIR)/root.squashfs.run.bin  | cut -d ' ' -f 1 | xargs echo -n  >> $(KDIR)/root.squashfs.run.bin
 	$(CP) $(KDIR)/root.squashfs.run.bin $(KDIR)/$(BINNAME).run.bin
@@ -153,7 +153,7 @@ define Build/SrgDiskSquashfs
 	$(STAGING_DIR_HOST)/bin/mksquashfs4 $(TARGET_DIR) $(KDIR)/root.squashfs \
 		-nopad -noappend -root-owned \
 		-comp $(SQUASHFSCOMP) $(SQUASHFSOPT)
-	$(CP) $(KDIR)/root.squashfs $(KDIR)/root.squashfs.bin 
+	$(CP) $(KDIR)/root.squashfs $(KDIR)/root.squashfs.bin
 	dd if=/dev/zero bs=128k count=1 >> $(KDIR)/root.squashfs.bin
 	sha256sum  $(KDIR)/root.squashfs.bin  | cut -d ' ' -f 1 | xargs echo -n  >> $(KDIR)/root.squashfs.bin
 	$(CP) $(KDIR)/root.squashfs.bin $(KDIR)/$(BINNAME).bin
@@ -168,9 +168,9 @@ endef
 
 define Build/srgImage
 	@echo "Build generic image and .run image"
-	bash -c "$(SRGRUN) SRGImages $(BINNAME).bin $(VERNAME)"  
-	bash -c "CDT= $(SRGRUN) RUNIMG $(BINNAME) $(VERNAME) $(IMG_PREFIX)"  
-	bash -c "CDT=factory $(SRGRUN) RUNIMG $(BINNAME) $(VERNAME) $(IMG_PREFIX)"  
+	bash -c "$(SRGRUN) SRGImages $(BINNAME).bin $(VERNAME)"
+	bash -c "CDT= $(SRGRUN) RUNIMG $(BINNAME) $(VERNAME) $(IMG_PREFIX)"
+	bash -c "CDT=factory $(SRGRUN) RUNIMG $(BINNAME) $(VERNAME) $(IMG_PREFIX)"
 endef
 
 define Build/srgImageRun
@@ -222,12 +222,12 @@ define Build/srgImageRun
 	mkdir -p $(BIN_DIR)/alt-os-images
 	$(STAGING_DIR_HOST)/bin/alt-os-images/transition.sh -f plumeos -t sos -i $(BIN_DIR)/$(BINNAME)$(if $(1),-$(1)-$(CDT_VERSION),).run -d $(BIN_DIR)/alt-os-images
 
-	# Create SOS_HOT_FIX version. Will install image on the system without shutdown/reboot. 
+	# Create SOS_HOT_FIX version. Will install image on the system without shutdown/reboot.
 	# Next boot will use the installed image.
 #	@echo "#!/usr/bin/env bash" > $(KDIR)/post_sos_hot_fix.sh
 #	@echo "echo \"Running post_sos_hot_fix.sh\"" >> $(KDIR)/post_sos_hot_fix.sh
 #	@echo "exit 1" >> $(KDIR)/post_sos_hot_fix.sh
-#	
+#
 #	$(STAGING_DIR_HOST)/bin/sos_bld_run.py \
 		--lsm $(KDIR)/metadata \
 		--img_type SOS_HOT_FIX \
