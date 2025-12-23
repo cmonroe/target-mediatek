@@ -1,0 +1,164 @@
+From: Chad Monroe <chad@monroe.io>
+Date: Mon, 15 Dec 2025 21:01:51 -0800
+Subject: [PATCH] netfilter: nf_flow_table: delay hardware offload until
+ bidirectional traffic
+
+Avoid wasting hardware offload resources on short-lived or unidirectional
+flows by requiring bidirectional traffic before offloading.
+
+Threshold is configurable via nf_flow_table.flowtable_hw_delay_per_dir
+module parameter (default 25 packets per direction, 0 disables).
+
+Signed-off-by: Chad Monroe <chad@monroe.io>
+---
+ include/net/netfilter/nf_flow_table.h |    8 +++
+ net/netfilter/nf_flow_table_core.c    |   56 ++++++++++++++++++++++--
+ net/netfilter/nf_flow_table_ip.c      |    6 ++
+ 3 files changed, 66 insertions(+), 4 deletions(-)
+
+--- a/include/net/netfilter/nf_flow_table.h
++++ b/include/net/netfilter/nf_flow_table.h
+@@ -1,6 +1,7 @@
+ #ifndef _NF_FLOW_TABLE_H
+ #define _NF_FLOW_TABLE_H
+ 
++#include <linux/atomic.h>
+ #include <linux/in.h>
+ #include <linux/in6.h>
+ #include <linux/netdevice.h>
+@@ -18,6 +19,8 @@ struct nf_flow_rule;
+ struct flow_offload;
+ enum flow_offload_tuple_dir;
+ 
++extern unsigned int nf_flowtable_hw_delay_per_dir;
++
+ struct nf_flow_key {
+ 	struct flow_dissector_key_meta			meta;
+ 	struct flow_dissector_key_control		control;
+@@ -181,6 +184,7 @@ struct flow_offload {
+ 	struct flow_offload_tuple_rhash		tuplehash[FLOW_OFFLOAD_DIR_MAX];
+ 	struct nf_conn				*ct;
+ 	unsigned long				flags;
++	atomic_t				slowpath_pkts[FLOW_OFFLOAD_DIR_MAX];
+ 	u16					type;
+ 	u32					timeout;
+ 	struct rcu_head				rcu_head;
+@@ -191,6 +195,10 @@ struct flow_offload {
+ 
+ unsigned long flow_offload_get_timeout(struct flow_offload *flow);
+ 
++void nf_flow_offload_account(struct nf_flowtable *flow_table,
++			     struct flow_offload *flow,
++			     enum flow_offload_tuple_dir dir);
++
+ static inline __s32 nf_flow_timeout_delta(unsigned int timeout)
+ {
+ 	return (__s32)(timeout - nf_flowtable_time_stamp);
+--- a/net/netfilter/nf_flow_table_core.c
++++ b/net/netfilter/nf_flow_table_core.c
+@@ -13,6 +13,11 @@
+ #include <net/netfilter/nf_conntrack_l4proto.h>
+ #include <net/netfilter/nf_conntrack_tuple.h>
+ 
++unsigned int nf_flowtable_hw_delay_per_dir __read_mostly = 25;
++module_param_named(flowtable_hw_delay_per_dir, nf_flowtable_hw_delay_per_dir, uint, 0644);
++MODULE_PARM_DESC(flowtable_hw_delay_per_dir,
++		 "Packets per direction required on slow path before enabling hardware offload (0 disables delay)");
++
+ static DEFINE_MUTEX(flowtable_lock);
+ static LIST_HEAD(flowtables);
+ 
+@@ -271,6 +276,46 @@ unsigned long flow_offload_get_timeout(s
+ 	return timeout;
+ }
+ 
++void nf_flow_offload_account(struct nf_flowtable *flow_table,
++			     struct flow_offload *flow,
++			     enum flow_offload_tuple_dir dir)
++{
++	unsigned int threshold;
++	atomic_t *cnt;
++	int old;
++
++	if (!nf_flowtable_hw_offload(flow_table))
++		return;
++
++	if (test_bit(NF_FLOW_HW, &flow->flags))
++		return;
++
++	threshold = READ_ONCE(nf_flowtable_hw_delay_per_dir);
++	if (!threshold)
++		goto activate;
++
++	cnt = &flow->slowpath_pkts[dir];
++	for (;;) {
++		old = atomic_read(cnt);
++		if (old >= threshold)
++			break;
++
++		if (atomic_cmpxchg(cnt, old, old + 1) == old)
++			break;
++	}
++
++	if (atomic_read(cnt) < threshold)
++		return;
++
++	if (atomic_read(&flow->slowpath_pkts[!dir]) < threshold)
++		return;
++
++activate:
++	if (!test_and_set_bit(NF_FLOW_HW, &flow->flags))
++		nf_flow_offload_add(flow_table, flow);
++}
++EXPORT_SYMBOL_GPL(nf_flow_offload_account);
++
+ int flow_offload_add(struct nf_flowtable *flow_table, struct flow_offload *flow)
+ {
+ 	int err;
+@@ -295,10 +340,10 @@ int flow_offload_add(struct nf_flowtable
+ 
+ 	nf_ct_offload_timeout(flow->ct);
+ 
+-	if (nf_flowtable_hw_offload(flow_table)) {
+-		__set_bit(NF_FLOW_HW, &flow->flags);
+-		nf_flow_offload_add(flow_table, flow);
+-	}
++	if (nf_flowtable_hw_offload(flow_table) &&
++	    !READ_ONCE(nf_flowtable_hw_delay_per_dir))
++		nf_flow_offload_account(flow_table, flow,
++					FLOW_OFFLOAD_DIR_ORIGINAL);
+ 
+ 	return 0;
+ }
+@@ -318,6 +363,9 @@ void flow_offload_refresh(struct nf_flow
+ 	if (likely(!nf_flowtable_hw_offload(flow_table)))
+ 		return;
+ 
++	if (!test_bit(NF_FLOW_HW, &flow->flags))
++		return;
++
+ 	nf_flow_offload_add(flow_table, flow);
+ }
+ EXPORT_SYMBOL_GPL(flow_offload_refresh);
+--- a/net/netfilter/nf_flow_table_ip.c
++++ b/net/netfilter/nf_flow_table_ip.c
+@@ -393,6 +393,9 @@ static int nf_flow_offload_forward(struc
+ 	if (skb_try_make_writable(skb, thoff + ctx->hdrsize))
+ 		return -1;
+ 
++	if (!test_bit(NF_FLOW_HW, &flow->flags))
++		nf_flow_offload_account(flow_table, flow, dir);
++
+ 	flow_offload_refresh(flow_table, flow, false);
+ 
+ 	nf_flow_encap_pop(skb, tuplehash);
+@@ -672,6 +675,9 @@ static int nf_flow_offload_ipv6_forward(
+ 	if (skb_try_make_writable(skb, thoff + ctx->hdrsize))
+ 		return -1;
+ 
++	if (!test_bit(NF_FLOW_HW, &flow->flags))
++		nf_flow_offload_account(flow_table, flow, dir);
++
+ 	flow_offload_refresh(flow_table, flow, false);
+ 
+ 	nf_flow_encap_pop(skb, tuplehash);
