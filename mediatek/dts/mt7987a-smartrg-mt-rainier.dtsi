@@ -23,6 +23,7 @@
 	chosen {
 		bootargs = "console=ttyS0,115200n1 earlycon=uart8250,mmio32,0x11000000";
 		stdout-path = "serial0:115200n8";
+		linux,usable-memory-range = <0x0 0x40000000 0x0 0x3fc00000>;
 	};
 
 	memory@40000000 {
