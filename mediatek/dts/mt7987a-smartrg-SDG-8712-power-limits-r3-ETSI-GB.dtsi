@@ -1,0 +1,21 @@
+// SPDX-License-Identifier: (GPL-2.0 OR MIT)
+/*
+ * Copyright (C) 2026 SmartRG Inc.
+ * Author: Chad Monroe <chad.monroe@smartrg.com>
+ */
+
+&radio0 {
+	power-limits {
+		r3 {
+			country = "GB";
+
+			txpower-2g {
+				edcca-threshold-bw20 = /bits/ 8 <0xbe>; /* -66 dBm */
+			};
+
+			txpower-5g {
+				edcca-threshold-bw20 = /bits/ 8 <0xb4>; /* -76 dBm */
+			};
+		};
+	};
+};
