@@ -36,91 +36,35 @@
 
 &gmac1 {
 	label = "lan1";
-	phy-connection-type = "usxgmii";
-	phy = <&phy28>;
+	phy = <&phy1>;
 };
 
 &gmac2 {
 	label = "wan";
-	phy = <&phy29>;
+	phy = <&phy0>;
 };
 
 &mdio_bus {
-	/* Make PHY Firmware Download Great Again */
-	/* clock-frequency = <10500000>; */
-
-	phy28: ethernet-phy@1c {
-		/* Aeonsemi AS21010 */
+	phy0: ethernet-phy@0 {
+		/* Realtek RTL8261 - WAN */
 		compatible = "ethernet-phy-ieee802.3-c45";
-		reg = <0x1c>;
+		reg = <0x0>;
 		#thermal-sensor-cells = <0>;
-
-		firmware-name = "as21x1x_fw.bin";
-
-		reset-gpios = <&pio 62 GPIO_ACTIVE_LOW>;
-		reset-assert-us = <200000>;
-		reset-deassert-us = <350000>;
-
-		leds {
-			#address-cells = <1>;
-			#size-cells = <0>;
-
-			led@0 {
-				reg = <0>;
-				function = LED_FUNCTION_LAN;
-				color = <LED_COLOR_ID_WHITE>;
-				active-low;
-			};
-
-			led@1 {
-				reg = <3>;
-				function = LED_FUNCTION_LAN;
-				color = <LED_COLOR_ID_ORANGE>;
-			};
-
-			led@2 {
-				reg = <4>;
-				function = LED_FUNCTION_LAN;
-				color = <LED_COLOR_ID_GREEN>;
-			};
-		};
-	};
-
-	phy29: ethernet-phy@1d {
-		/* Aeonsemi AS21010 */
-		compatible = "ethernet-phy-ieee802.3-c45";
-		reg = <0x1d>;
-		#thermal-sensor-cells = <0>;
-
-		firmware-name = "as21x1x_fw.bin";
 
 		reset-gpios = <&pio 71 GPIO_ACTIVE_LOW>;
-		reset-assert-us = <200000>;
-		reset-deassert-us = <350000>;
+		reset-assert-us = <40000>;
+		reset-deassert-us = <150000>;
+	};
 
-		leds {
-			#address-cells = <1>;
-			#size-cells = <0>;
+	phy1: ethernet-phy@1 {
+		/* Realtek RTL8261 - LAN */
+		compatible = "ethernet-phy-ieee802.3-c45";
+		reg = <0x1>;
+		#thermal-sensor-cells = <0>;
 
-			led@0 {
-				reg = <0>;
-				function = LED_FUNCTION_WAN;
-				color = <LED_COLOR_ID_WHITE>;
-				active-low;
-			};
-
-			led@1 {
-				reg = <3>;
-				function = LED_FUNCTION_WAN;
-				color = <LED_COLOR_ID_ORANGE>;
-			};
-
-			led@2 {
-				reg = <4>;
-				function = LED_FUNCTION_WAN;
-				color = <LED_COLOR_ID_GREEN>;
-			};
-		};
+		reset-gpios = <&pio 62 GPIO_ACTIVE_LOW>;
+		reset-assert-us = <40000>;
+		reset-deassert-us = <150000>;
 	};
 };
 
@@ -131,6 +75,7 @@
 &pcie1 {
 	wifi-reset-gpios = <&pio 7 GPIO_ACTIVE_LOW>;
 	wifi-reset-msleep = <100>;
+	wifi-deassert-msleep = <500>;
 	status = "okay";
 
 	pcie@0,0 {

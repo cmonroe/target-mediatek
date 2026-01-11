@@ -1,6 +1,6 @@
 --- a/sound/soc/codecs/Makefile
 +++ b/sound/soc/codecs/Makefile
-@@ -671,6 +671,7 @@ obj-$(CONFIG_SND_SOC_SIGMADSP)	+= snd-so
+@@ -673,6 +673,7 @@ obj-$(CONFIG_SND_SOC_SIGMADSP)	+= snd-so
  obj-$(CONFIG_SND_SOC_SIGMADSP_I2C)	+= snd-soc-sigmadsp-i2c.o
  obj-$(CONFIG_SND_SOC_SIGMADSP_REGMAP)	+= snd-soc-sigmadsp-regmap.o
  obj-$(CONFIG_SND_SOC_SI476X)	+= snd-soc-si476x.o
@@ -10,7 +10,7 @@
  obj-$(CONFIG_SND_SOC_SRC4XXX)	+= snd-soc-src4xxx.o
 --- a/sound/soc/codecs/Kconfig
 +++ b/sound/soc/codecs/Kconfig
-@@ -2596,4 +2596,7 @@ config SND_SOC_LPASS_TX_MACRO
+@@ -2601,4 +2601,7 @@ config SND_SOC_LPASS_TX_MACRO
  	select SND_SOC_LPASS_MACRO_COMMON
  	tristate "Qualcomm TX Macro in LPASS(Low Power Audio SubSystem)"
  
