@@ -6,23 +6,16 @@
 
 &radio0 {
 	power-limits {
-		r0 {
-			country = "AU";
+		r2 {
+			country = "CA";
 
 			txpower-2g {
 			};
 
 			txpower-5g {
 			};
-		};
 
-		r1 {
-			country = "NZ";
-
-			txpower-2g {
-			};
-
-			txpower-5g {
+			txpower-6g {
 			};
 		};
 	};

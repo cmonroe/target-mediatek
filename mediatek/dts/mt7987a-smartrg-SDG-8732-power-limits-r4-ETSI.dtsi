@@ -6,23 +6,18 @@
 
 &radio0 {
 	power-limits {
-		r0 {
-			country = "AU";
+		r4 {
+			regdomain = "ETSI";
 
 			txpower-2g {
 			};
 
 			txpower-5g {
-			};
-		};
-
-		r1 {
-			country = "NZ";
-
-			txpower-2g {
+				edcca-threshold-bw20 = /bits/ 8 <0xb5>; /* -75 dBm */
 			};
 
-			txpower-5g {
+			txpower-6g {
+				edcca-threshold-bw20 = /bits/ 8 <0xb0>; /* -80 dBm */
 			};
 		};
 	};
