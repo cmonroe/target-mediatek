@@ -262,7 +262,7 @@
 };
 
 &gmac0 {
-	nvmem-cells = <&macaddr 0x0>;
+	nvmem-cells = <&macaddr 0x1>;
 	nvmem-cell-names = "mac-address";
 	label = "dsa0";
 

@@ -18,7 +18,7 @@
 
 &gmac0 {
 	label = "dsa0";
-	nvmem-cells = <&macaddr 0x0>;
+	nvmem-cells = <&macaddr 0x1>;
 
 	fixed-link {
 		speed = <2500>;
