@@ -1,0 +1,43 @@
+From: Chad Monroe <chad@monroe.io>
+Date: Wed, 06 Aug 2025 09:49:17 -0700
+Subject: [PATCH] net: ethernet: mediatek: respect deferred probe timeout
+ for MAC address
+
+When MAC address retrieval returns -EPROBE_DEFER, check if the kernel's
+deferred probe timeout has expired before falling back to random MAC.
+This allows recovery/initramfs environments to proceed when nvmem
+providers are unavailable while still waiting for deferred probes
+during normal boot.
+
+Signed-off-by: Chad Monroe <chad@monroe.io>
+---
+ drivers/net/ethernet/mediatek/mtk_eth_soc.c |    3 ---
+ 1 file changed, 3 deletions(-)
+
+--- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
++++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
+@@ -5459,15 +5459,21 @@ free_netdev:
+ static int mtk_mac_assign_address(struct mtk_eth *eth, int i, bool test_defer_only)
+ {
+ 	int err = of_get_ethdev_address(eth->mac[i]->of_node, eth->netdev[i]);
++	bool timeout = false;
+ 
+-	if (err == -EPROBE_DEFER)
+-		return err;
++	if (err == -EPROBE_DEFER) {
++		err = driver_deferred_probe_check_state(eth->dev);
++		if (err == -EPROBE_DEFER)
++			return err;
++		timeout = true;
++	}
+ 
+ 	if (test_defer_only)
+ 		return 0;
+ 
+ 	if (err) {
+-		/* If the mac address is invalid, use random mac address */
++		if (timeout)
++			dev_warn(eth->dev, "MAC address defer timeout, using random MAC\n");
+ 		eth_hw_addr_random(eth->netdev[i]);
+ 		dev_err(eth->dev, "generated random MAC address %pM\n",
+ 			eth->netdev[i]);
