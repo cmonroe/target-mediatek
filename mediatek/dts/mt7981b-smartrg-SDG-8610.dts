@@ -195,8 +195,8 @@
 		reg = <0x18>;
 
 		reset-gpios = <&pio 39 GPIO_ACTIVE_LOW>;
-		reset-assert-us = <10000>;
-		reset-deassert-us = <20000>;
+		reset-assert-us = <200000>;
+		reset-deassert-us = <300000>;
 	};
 };
 
