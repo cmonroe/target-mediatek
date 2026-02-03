@@ -22,7 +22,7 @@ Signed-off-by: René van Dorst <opensource@vdorst.com>
  	const __be32 *_id = of_get_property(np, "reg", NULL);
  	struct device_node *pcs_np;
  	phy_interface_t phy_mode;
-@@ -5445,6 +5446,9 @@ static int mtk_add_mac(struct mtk_eth *e
+@@ -5448,6 +5449,9 @@ static int mtk_add_mac(struct mtk_eth *e
  						NETDEV_XDP_ACT_NDO_XMIT |
  						NETDEV_XDP_ACT_NDO_XMIT_SG;
  

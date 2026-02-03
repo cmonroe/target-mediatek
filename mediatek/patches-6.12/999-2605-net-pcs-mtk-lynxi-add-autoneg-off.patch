@@ -22,7 +22,7 @@ Subject: [PATCH] net: pcs: mtk-lynxi: add autoneg off
  #define SGMII_DUPLEX_HALF		BIT(4)
  #define SGMII_REMOTE_FAULT_DIS		BIT(8)
  #define SGMII_TRXBUF_THR_MASK		GENMASK(31, 16)
-@@ -144,23 +144,40 @@ static void mtk_pcs_lynxi_get_state(stru
+@@ -143,23 +143,40 @@ static void mtk_pcs_lynxi_get_state(stru
  				    struct phylink_link_state *state)
  {
  	struct mtk_pcs_lynxi *mpcs = pcs_to_mtk_pcs_lynxi(pcs);
@@ -71,7 +71,7 @@ Subject: [PATCH] net: pcs: mtk-lynxi: add autoneg off
  
  	/* Continuously repeat re-configuration sequence until link comes up */
  	if (!state->link && time_after(jiffies, mpcs->link_poll_expire)) {
-@@ -269,7 +286,7 @@ static int mtk_pcs_lynxi_config(struct p
+@@ -268,7 +285,7 @@ static int mtk_pcs_lynxi_config(struct p
  	/* Update the sgmsys mode register */
  	regmap_update_bits(mpcs->regmap, SGMSYS_SGMII_MODE,
  			   SGMII_TRXBUF_THR_MASK |

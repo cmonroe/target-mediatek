@@ -191,7 +191,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	.ndo_change_mtu		= mtk_change_mtu,
  	.ndo_tx_timeout		= mtk_tx_timeout,
  	.ndo_get_stats64        = mtk_get_stats64,
-@@ -5852,6 +5872,9 @@ static int mtk_probe(struct platform_dev
+@@ -5855,6 +5875,9 @@ static int mtk_probe(struct platform_dev
  	netif_napi_add(eth->dummy_dev, &eth->tx_napi, mtk_napi_tx);
  	netif_napi_add(eth->dummy_dev, &eth->rx_napi, mtk_napi_rx);
  

@@ -50,7 +50,7 @@ Subject: [PATCH] net: pcs: mtk-lynxi: add pextp reset
  static struct mtk_pcs_lynxi *pcs_to_mtk_pcs_lynxi(struct phylink_pcs *pcs)
  {
  	return container_of(pcs, struct mtk_pcs_lynxi, pcs);
-@@ -150,6 +161,13 @@ static void mtk_pcs_lynxi_get_state(stru
+@@ -149,6 +160,13 @@ static void mtk_pcs_lynxi_get_state(stru
  
  	regmap_read(mpcs->regmap, SGMSYS_PCS_ADVERTISE, &adv);
  	phylink_mii_c22_pcs_decode_state(state, bmsr, FIELD_GET(SGMII_LPA, adv));
@@ -64,7 +64,7 @@ Subject: [PATCH] net: pcs: mtk-lynxi: add pextp reset
  }
  
  static void mtk_sgmii_reset(struct mtk_pcs_lynxi *mpcs)
-@@ -203,7 +221,7 @@ static int mtk_pcs_lynxi_config(struct p
+@@ -202,7 +220,7 @@ static int mtk_pcs_lynxi_config(struct p
  		trxbuf_thr = 0x2111;
  	}
  
@@ -73,7 +73,7 @@ Subject: [PATCH] net: pcs: mtk-lynxi: add pextp reset
  		link_timer = phylink_get_link_timer_ns(interface);
  		if (link_timer < 0)
  			return link_timer;
-@@ -213,6 +231,9 @@ static int mtk_pcs_lynxi_config(struct p
+@@ -212,6 +230,9 @@ static int mtk_pcs_lynxi_config(struct p
  				SGMII_PHYA_PWD);
  
  		/* Reset SGMII PCS state */
@@ -83,7 +83,7 @@ Subject: [PATCH] net: pcs: mtk-lynxi: add pextp reset
  		mtk_sgmii_reset(mpcs);
  		regmap_set_bits(mpcs->regmap, SGMSYS_RESERVED_0,
  				SGMII_SW_RESET);
-@@ -236,6 +257,8 @@ static int mtk_pcs_lynxi_config(struct p
+@@ -235,6 +256,8 @@ static int mtk_pcs_lynxi_config(struct p
  			     SGMII_LINK_TIMER_VAL(link_timer));
  
  		mpcs->interface = interface;
@@ -92,7 +92,7 @@ Subject: [PATCH] net: pcs: mtk-lynxi: add pextp reset
  		mode_changed = true;
  	}
  
-@@ -266,6 +289,10 @@ static int mtk_pcs_lynxi_config(struct p
+@@ -265,6 +288,10 @@ static int mtk_pcs_lynxi_config(struct p
  	usleep_range(50, 100);
  	regmap_write(mpcs->regmap, SGMSYS_QPHY_PWR_STATE_CTRL, 0);
  
@@ -103,7 +103,7 @@ Subject: [PATCH] net: pcs: mtk-lynxi: add pextp reset
  	return changed || mode_changed;
  }
  
-@@ -311,6 +338,9 @@ static int mtk_pcs_lynxi_enable(struct p
+@@ -310,6 +337,9 @@ static int mtk_pcs_lynxi_enable(struct p
  		clk_prepare_enable(mpcs->sgmii_tx);
  	}
  
@@ -113,7 +113,7 @@ Subject: [PATCH] net: pcs: mtk-lynxi: add pextp reset
  	return 0;
  }
  
-@@ -326,6 +356,9 @@ static void mtk_pcs_lynxi_disable(struct
+@@ -325,6 +355,9 @@ static void mtk_pcs_lynxi_disable(struct
  	}
  
  	mpcs->interface = PHY_INTERFACE_MODE_NA;
@@ -123,7 +123,7 @@ Subject: [PATCH] net: pcs: mtk-lynxi: add pextp reset
  }
  
  static const struct phylink_pcs_ops mtk_pcs_lynxi_ops = {
-@@ -383,6 +416,7 @@ static struct phylink_pcs *mtk_pcs_lynxi
+@@ -382,6 +415,7 @@ static struct phylink_pcs *mtk_pcs_lynxi
  	mpcs->pcs.neg_mode = true;
  	mpcs->pcs.poll = true;
  	mpcs->interface = PHY_INTERFACE_MODE_NA;
@@ -131,7 +131,7 @@ Subject: [PATCH] net: pcs: mtk-lynxi: add pextp reset
  
  	return &mpcs->pcs;
  };
-@@ -448,6 +482,13 @@ static int mtk_pcs_lynxi_probe(struct pl
+@@ -447,6 +481,13 @@ static int mtk_pcs_lynxi_probe(struct pl
  	if (IS_ERR(mpcs->sgmii_tx))
  		return PTR_ERR(mpcs->sgmii_tx);
  

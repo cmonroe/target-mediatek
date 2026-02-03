@@ -222,7 +222,7 @@ Reviewed-on: https://gerrit.mediatek.inc/c/openwrt/feeds/mtk_openwrt_feeds/+/797
  static int mtk_add_mac(struct mtk_eth *eth, struct device_node *np)
  {
  	const __be32 *_id = of_get_property(np, "reg", NULL);
-@@ -5388,7 +5534,7 @@ static int mtk_sgmii_init(struct mtk_eth
+@@ -5391,7 +5537,7 @@ static int mtk_sgmii_init(struct mtk_eth
  static int mtk_probe(struct platform_device *pdev)
  {
  	struct resource *res = NULL, *res_sram;
@@ -231,7 +231,7 @@ Reviewed-on: https://gerrit.mediatek.inc/c/openwrt/feeds/mtk_openwrt_feeds/+/797
  	struct mtk_eth *eth;
  	int err, i;
  
-@@ -5602,6 +5748,26 @@ static int mtk_probe(struct platform_dev
+@@ -5605,6 +5751,26 @@ static int mtk_probe(struct platform_dev
  			goto err_deinit_hw;
  	}
  

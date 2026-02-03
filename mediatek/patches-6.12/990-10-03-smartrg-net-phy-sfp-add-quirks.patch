@@ -162,7 +162,7 @@ Subject: [PATCH] OWRT-7643 Adtran quirks added
  
  	// Alcatel Lucent G-010S-A can operate at 2500base-X, but report 3.2GBd
  	// NRZ in their EEPROM
-@@ -599,7 +673,7 @@ static const struct sfp_quirk sfp_quirks
+@@ -601,7 +675,7 @@ static const struct sfp_quirk sfp_quirks
  	// Huawei MA5671A can operate at 2500base-X, but report 1.2GBd NRZ in
  	// their EEPROM
  	SFP_QUIRK("HUAWEI", "MA5671A", sfp_quirk_2500basex,
@@ -171,7 +171,7 @@ Subject: [PATCH] OWRT-7643 Adtran quirks added
  
  	// Lantech 8330-262D-E can operate at 2500base-X, but incorrectly report
  	// 2500MBd NRZ in their EEPROM
-@@ -626,6 +700,28 @@ static const struct sfp_quirk sfp_quirks
+@@ -628,6 +702,28 @@ static const struct sfp_quirk sfp_quirks
  	SFP_QUIRK_F("Turris", "RTSFP-2.5G", sfp_fixup_rollball),
  	SFP_QUIRK_F("Turris", "RTSFP-10", sfp_fixup_rollball),
  	SFP_QUIRK_F("Turris", "RTSFP-10G", sfp_fixup_rollball),

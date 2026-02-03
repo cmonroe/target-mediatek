@@ -15,7 +15,7 @@
  				     <GIC_SPI 199 IRQ_TYPE_LEVEL_HIGH>;
 --- a/arch/arm64/boot/dts/mediatek/mt7981b.dtsi
 +++ b/arch/arm64/boot/dts/mediatek/mt7981b.dtsi
-@@ -439,7 +439,11 @@
+@@ -437,7 +437,11 @@
  			reg = <0 0x15100000 0 0x80000>;
  			#address-cells = <1>;
  			#size-cells = <0>;

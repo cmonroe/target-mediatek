@@ -76,10 +76,11 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: remove pextp reset
  	return 0;
  }
  
-@@ -5341,17 +5315,6 @@ static int mtk_add_mac(struct mtk_eth *e
+@@ -5342,18 +5316,6 @@ static int mtk_add_mac(struct mtk_eth *e
+ 			goto free_netdev;
  		}
  	}
- 
+-
 -	if (mtk_is_netsys_v3_or_greater(eth) && (mac->sgmii_pcs || mac->usxgmii_pcs)) {
 -		mac->pextp = devm_of_phy_optional_get(eth->dev, mac->of_node, NULL);
 -		if (IS_ERR(mac->pextp)) {
@@ -87,13 +88,13 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: remove pextp reset
 -				dev_err(eth->dev, "cannot get PHY, error %ld\n",
 -					PTR_ERR(mac->pextp));
 -
--			return PTR_ERR(mac->pextp);
+-			err = PTR_ERR(mac->pextp);
+-			goto free_netdev;
 -		}
 -	}
--
+ 
  	memset(mac->hwlro_ip, 0, sizeof(mac->hwlro_ip));
  	mac->hwlro_ip_cnt = 0;
- 
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.h
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.h
 @@ -1509,7 +1509,6 @@ struct mtk_mac {
