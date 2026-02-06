@@ -94,7 +94,7 @@ cat /sys/kernel/debug/mtketh/qdma_pppq
  }
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
-@@ -4087,6 +4087,51 @@ static bool mtk_uses_dsa(struct net_devi
+@@ -4088,6 +4088,51 @@ static bool mtk_uses_dsa(struct net_devi
  #endif
  }
  
@@ -146,7 +146,7 @@ cat /sys/kernel/debug/mtketh/qdma_pppq
  static int mtk_device_event(struct notifier_block *n, unsigned long event, void *ptr)
  {
  	struct mtk_mac *mac = container_of(n, struct mtk_mac, device_notifier);
-@@ -4097,6 +4142,7 @@ static int mtk_device_event(struct notif
+@@ -4098,6 +4143,7 @@ static int mtk_device_event(struct notif
  	struct list_head *iter;
  	struct dsa_port *dp;
  	unsigned int queue;
@@ -154,7 +154,7 @@ cat /sys/kernel/debug/mtketh/qdma_pppq
  
  	if (event != NETDEV_CHANGE || dev->priv_flags & IFF_EBRIDGE)
  		return NOTIFY_DONE;
-@@ -4121,8 +4167,15 @@ found:
+@@ -4122,8 +4168,15 @@ found:
  		return NOTIFY_DONE;
  
  	if (dsa_user_dev_check(dev)) {
@@ -171,7 +171,7 @@ cat /sys/kernel/debug/mtketh/qdma_pppq
  	} else
  		queue = mac->id;
  
-@@ -5725,10 +5778,12 @@ static u16 mtk_select_queue(struct net_d
+@@ -5715,10 +5768,12 @@ static u16 mtk_select_queue(struct net_d
  			    struct net_device *sb_dev)
  {
  	struct mtk_mac *mac = netdev_priv(dev);
@@ -204,7 +204,7 @@ cat /sys/kernel/debug/mtketh/qdma_pppq
  	unsigned long			sysclk;
  	struct regmap			*ethsys;
  	struct regmap			*infra;
-@@ -1617,6 +1619,7 @@ struct mtk_eth {
+@@ -1614,6 +1616,7 @@ struct mtk_eth {
   * @of_node:		Our devicetree node
   * @hw:			Backpointer to our main datastruture
   * @hw_stats:		Packet statistics counter
@@ -212,7 +212,7 @@ cat /sys/kernel/debug/mtketh/qdma_pppq
   */
  struct mtk_mac {
  	int				id;
-@@ -1636,6 +1639,7 @@ struct mtk_mac {
+@@ -1633,6 +1636,7 @@ struct mtk_mac {
  	int				hwlro_ip_cnt;
  	unsigned int			syscfg0;
  	struct notifier_block		device_notifier;
@@ -220,7 +220,7 @@ cat /sys/kernel/debug/mtketh/qdma_pppq
  };
  
  /* struct mtk_mux_data -	the structure that holds the private data about the
-@@ -1816,4 +1820,7 @@ void mtk_flow_offload_cleanup(struct mtk
+@@ -1813,4 +1817,7 @@ void mtk_flow_offload_cleanup(struct mtk
  void mtk_eth_set_dma_device(struct mtk_eth *eth, struct device *dma_dev);
  
  

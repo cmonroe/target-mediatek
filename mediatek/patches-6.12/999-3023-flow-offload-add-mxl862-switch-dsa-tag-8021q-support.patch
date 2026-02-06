@@ -11,7 +11,7 @@ Subject: [PATCH] flow offload add mxl862 switch dsa tag 8021q support
 
 --- a/drivers/net/ethernet/mediatek/mtk_ppe.c
 +++ b/drivers/net/ethernet/mediatek/mtk_ppe.c
-@@ -527,20 +527,29 @@ int mtk_foe_entry_set_ipv6_tuple(struct
+@@ -526,20 +526,29 @@ int mtk_foe_entry_set_ipv6_tuple(struct
  }
  
  int mtk_foe_entry_set_dsa(struct mtk_eth *eth, struct mtk_foe_entry *entry,
@@ -52,7 +52,7 @@ Subject: [PATCH] flow offload add mxl862 switch dsa tag 8021q support
  int mtk_foe_entry_set_vlan(struct mtk_eth *eth, struct mtk_foe_entry *entry,
 --- a/drivers/net/ethernet/mediatek/mtk_ppe.h
 +++ b/drivers/net/ethernet/mediatek/mtk_ppe.h
-@@ -397,7 +397,7 @@ int mtk_foe_entry_set_ipv6_tuple(struct
+@@ -395,7 +395,7 @@ int mtk_foe_entry_set_ipv6_tuple(struct
  				 __be32 *src_addr, __be16 src_port,
  				 __be32 *dest_addr, __be16 dest_port);
  int mtk_foe_entry_set_dsa(struct mtk_eth *eth, struct mtk_foe_entry *entry,

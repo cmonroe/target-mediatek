@@ -32,8 +32,8 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 +	u8				qos_toggle;
  	struct mtk_ppe			*ppe[3];
  	struct rhashtable		flow_table;
- 	struct socket			*ppe_roam_sock;
-@@ -1785,6 +1787,18 @@ static inline u32 mtk_get_ib2_multicast_
+ 
+@@ -1782,6 +1784,18 @@ static inline u32 mtk_get_ib2_multicast_
  	return MTK_FOE_IB2_MULTICAST;
  }
  

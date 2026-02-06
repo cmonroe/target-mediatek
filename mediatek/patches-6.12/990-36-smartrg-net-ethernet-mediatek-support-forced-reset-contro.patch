@@ -24,7 +24,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  }
  
  static irqreturn_t mtk_handle_irq_rx(int irq, void *_eth)
-@@ -4352,7 +4353,7 @@ static void mtk_hw_reset_monitor_work(st
+@@ -4342,7 +4343,7 @@ static void mtk_hw_reset_monitor_work(st
  		goto out;
  
  	/* DMA stuck checks */
@@ -33,7 +33,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  		schedule_work(&eth->pending_work);
  
  out:
-@@ -5628,6 +5629,7 @@ static int mtk_probe(struct platform_dev
+@@ -5618,6 +5619,7 @@ static int mtk_probe(struct platform_dev
  
  	eth->rx_dim.mode = DIM_CQ_PERIOD_MODE_START_FROM_EQE;
  	INIT_WORK(&eth->rx_dim.work, mtk_dim_rx);
@@ -43,7 +43,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	eth->tx_dim.mode = DIM_CQ_PERIOD_MODE_START_FROM_EQE;
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.h
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.h
-@@ -1481,6 +1481,7 @@ struct mtk_eth {
+@@ -1478,6 +1478,7 @@ struct mtk_eth {
  
  	struct {
  		struct delayed_work monitor_work;

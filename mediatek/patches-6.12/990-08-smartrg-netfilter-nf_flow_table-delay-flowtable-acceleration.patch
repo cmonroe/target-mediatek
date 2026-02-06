@@ -35,7 +35,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  struct nf_flow_key {
  	struct flow_dissector_key_meta			meta;
  	struct flow_dissector_key_control		control;
-@@ -181,6 +184,7 @@ struct flow_offload {
+@@ -191,6 +194,7 @@ struct flow_offload {
  	struct flow_offload_tuple_rhash		tuplehash[FLOW_OFFLOAD_DIR_MAX];
  	struct nf_conn				*ct;
  	unsigned long				flags;
@@ -43,7 +43,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	u16					type;
  	u32					timeout;
  	struct rcu_head				rcu_head;
-@@ -191,6 +195,10 @@ struct flow_offload {
+@@ -201,6 +205,10 @@ struct flow_offload {
  
  unsigned long flow_offload_get_timeout(struct flow_offload *flow);
  
@@ -56,9 +56,9 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	return (__s32)(timeout - nf_flowtable_time_stamp);
 --- a/net/netfilter/nf_flow_table_core.c
 +++ b/net/netfilter/nf_flow_table_core.c
-@@ -13,6 +13,11 @@
- #include <net/netfilter/nf_conntrack_l4proto.h>
- #include <net/netfilter/nf_conntrack_tuple.h>
+@@ -17,6 +17,11 @@
+ #include <net/switchdev.h>
+ #endif
  
 +unsigned int nf_flowtable_offload_delay_per_dir __read_mostly = 25;
 +module_param_named(offload_delay_per_dir, nf_flowtable_offload_delay_per_dir, uint, 0644);
@@ -68,7 +68,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  static DEFINE_MUTEX(flowtable_lock);
  static LIST_HEAD(flowtables);
  
-@@ -271,6 +276,43 @@ unsigned long flow_offload_get_timeout(s
+@@ -285,6 +290,43 @@ unsigned long flow_offload_get_timeout(s
  	return timeout;
  }
  
@@ -112,9 +112,9 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  int flow_offload_add(struct nf_flowtable *flow_table, struct flow_offload *flow)
  {
  	int err;
-@@ -295,11 +337,6 @@ int flow_offload_add(struct nf_flowtable
- 
- 	nf_ct_offload_timeout(flow->ct);
+@@ -315,11 +357,6 @@ int flow_offload_add(struct nf_flowtable
+ 		atomic_inc(&flow_table->direct_xmit_count);
+ #endif
  
 -	if (nf_flowtable_hw_offload(flow_table)) {
 -		__set_bit(NF_FLOW_HW, &flow->flags);
@@ -124,7 +124,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	return 0;
  }
  EXPORT_SYMBOL_GPL(flow_offload_add);
-@@ -318,6 +355,9 @@ void flow_offload_refresh(struct nf_flow
+@@ -338,6 +375,9 @@ void flow_offload_refresh(struct nf_flow
  	if (likely(!nf_flowtable_hw_offload(flow_table)))
  		return;
  

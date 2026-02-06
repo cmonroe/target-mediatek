@@ -306,7 +306,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  	return 0;
  }
  
-@@ -3983,6 +4110,13 @@ static int mtk_open(struct net_device *d
+@@ -3977,6 +4104,13 @@ static int mtk_open(struct net_device *d
  			}
  		}
  
@@ -320,7 +320,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  		refcount_set(&eth->dma_refcnt, 1);
  	} else {
  		refcount_inc(&eth->dma_refcnt);
-@@ -4078,6 +4212,14 @@ static int mtk_stop(struct net_device *d
+@@ -4072,6 +4206,14 @@ static int mtk_stop(struct net_device *d
  		}
  	}
  
@@ -335,7 +335,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  	cancel_work_sync(&eth->rx_dim.work);
  	cancel_work_sync(&eth->tx_dim.work);
  
-@@ -4531,6 +4673,14 @@ static int mtk_napi_init(struct mtk_eth
+@@ -4521,6 +4663,14 @@ static int mtk_napi_init(struct mtk_eth
  		}
  	}
  
@@ -350,7 +350,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  	return 0;
  }
  
-@@ -5118,7 +5268,7 @@ static int mtk_get_rxnfc(struct net_devi
+@@ -5108,7 +5258,7 @@ static int mtk_get_rxnfc(struct net_devi
  	switch (cmd->cmd) {
  	case ETHTOOL_GRXRINGS:
  		if (dev->hw_features & NETIF_F_LRO) {
@@ -359,7 +359,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  			ret = 0;
  		} else if (MTK_HAS_CAPS(eth->soc->caps, MTK_RSS)) {
  			cmd->data = MTK_RX_RSS_NUM;
-@@ -6094,6 +6244,18 @@ static int mtk_probe(struct platform_dev
+@@ -6084,6 +6234,18 @@ static int mtk_probe(struct platform_dev
  						goto err_free_dev;
  				}
  			}
@@ -378,7 +378,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  		} else {
  			err = devm_request_irq(eth->dev, eth->irq_fe[2],
  					       mtk_handle_irq_rx, 0,
-@@ -6166,6 +6328,13 @@ static int mtk_probe(struct platform_dev
+@@ -6156,6 +6318,13 @@ static int mtk_probe(struct platform_dev
  				       mtk_napi_rx);
  	}
  
@@ -392,7 +392,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  	mtketh_debugfs_init(eth);
  	debug_proc_init(eth);
  
-@@ -6223,6 +6392,11 @@ static void mtk_remove(struct platform_d
+@@ -6213,6 +6382,11 @@ static void mtk_remove(struct platform_d
  			netif_napi_del(&eth->rx_napi[MTK_RSS_RING(i)].napi);
  	}
  
@@ -510,7 +510,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  
  struct mtk_tx_dma_desc_info {
  	dma_addr_t	addr;
-@@ -1616,6 +1618,7 @@ struct mtk_mux {
+@@ -1613,6 +1615,7 @@ struct mtk_mux {
  
  /* the struct describing the SoC. these are declared in the soc_xyz.c files */
  extern const struct of_device_id of_mtk_match[];

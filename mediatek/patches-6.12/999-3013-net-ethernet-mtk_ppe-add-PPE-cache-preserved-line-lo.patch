@@ -16,7 +16,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 
 --- a/drivers/net/ethernet/mediatek/mtk_ppe.c
 +++ b/drivers/net/ethernet/mediatek/mtk_ppe.c
-@@ -79,6 +79,21 @@ static int mtk_ppe_wait_busy(struct mtk_
+@@ -78,6 +78,21 @@ static int mtk_ppe_wait_busy(struct mtk_
  	return ret;
  }
  
@@ -38,7 +38,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  static int mtk_ppe_mib_wait_busy(struct mtk_ppe *ppe)
  {
  	int ret;
-@@ -142,15 +157,147 @@ struct mtk_foe_accounting *mtk_ppe_mib_e
+@@ -141,15 +156,147 @@ struct mtk_foe_accounting *mtk_ppe_mib_e
  	return acct;
  }
  
@@ -188,7 +188,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  
  	ppe_m32(ppe, MTK_PPE_CACHE_CTL, MTK_PPE_CACHE_CTL_EN,
  		enable * MTK_PPE_CACHE_CTL_EN);
-@@ -540,6 +687,7 @@ __mtk_foe_entry_clear(struct mtk_ppe *pp
+@@ -516,6 +663,7 @@ __mtk_foe_entry_clear(struct mtk_ppe *pp
  		      bool set_state)
  {
  	struct hlist_node *tmp;
@@ -196,7 +196,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  
  	if (entry->type == MTK_FLOW_TYPE_L2) {
  		rhashtable_remove_fast(&ppe->l2_flows, &entry->l2_node,
-@@ -553,10 +701,13 @@ __mtk_foe_entry_clear(struct mtk_ppe *pp
+@@ -529,10 +677,13 @@ __mtk_foe_entry_clear(struct mtk_ppe *pp
  	if (entry->hash != 0xffff && set_state) {
  		struct mtk_foe_entry *hwe = mtk_foe_get_entry(ppe, entry->hash);
  
@@ -211,7 +211,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	}
  	entry->hash = 0xffff;
  
-@@ -715,8 +866,6 @@ __mtk_foe_entry_commit(struct mtk_ppe *p
+@@ -691,8 +842,6 @@ __mtk_foe_entry_commit(struct mtk_ppe *p
  		acct->packets = 0;
  		acct->bytes = 0;
  	}
@@ -220,7 +220,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  }
  
  void mtk_foe_entry_clear(struct mtk_ppe *ppe, struct mtk_flow_entry *entry)
-@@ -967,6 +1116,8 @@ struct mtk_ppe *mtk_ppe_init(struct mtk_
+@@ -943,6 +1092,8 @@ struct mtk_ppe *mtk_ppe_init(struct mtk_
  		ppe->acct_table = acct;
  	}
  
@@ -229,7 +229,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	return ppe;
  
  err_free_l2_flows:
-@@ -1040,8 +1191,6 @@ void mtk_ppe_start(struct mtk_ppe *ppe)
+@@ -1016,8 +1167,6 @@ void mtk_ppe_start(struct mtk_ppe *ppe)
  	ppe_w32(ppe, MTK_PPE_IP_PROTO_CHK,
  		MTK_PPE_IP_PROTO_CHK_IPV4 | MTK_PPE_IP_PROTO_CHK_IPV6);
  
@@ -238,7 +238,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	val = MTK_PPE_FLOW_CFG_IP6_3T_ROUTE |
  	      MTK_PPE_FLOW_CFG_IP6_5T_ROUTE |
  	      MTK_PPE_FLOW_CFG_IP6_6RD |
-@@ -1093,6 +1242,8 @@ void mtk_ppe_start(struct mtk_ppe *ppe)
+@@ -1069,6 +1218,8 @@ void mtk_ppe_start(struct mtk_ppe *ppe)
  	}
  	ppe_w32(ppe, MTK_PPE_GLO_CFG, val);
  
@@ -258,7 +258,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  };
  
  struct mtk_ppe *mtk_ppe_init(struct mtk_eth *eth, void __iomem *base, int index);
-@@ -357,7 +359,6 @@ int mtk_ppe_prepare_reset(struct mtk_ppe
+@@ -355,7 +357,6 @@ int mtk_ppe_prepare_reset(struct mtk_ppe
  struct mtk_foe_accounting *mtk_ppe_mib_entry_read(struct mtk_ppe *ppe, u16 index);
  
  void __mtk_ppe_check_skb(struct mtk_ppe *ppe, struct sk_buff *skb, u16 hash);

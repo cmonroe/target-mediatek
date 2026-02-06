@@ -16,7 +16,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
-@@ -5870,6 +5870,8 @@ static int mtk_probe(struct platform_dev
+@@ -5860,6 +5860,8 @@ static int mtk_probe(struct platform_dev
  			if (err)
  				goto err_deinit_ppe;
  		}
@@ -27,7 +27,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	for (i = 0; i < MTK_MAX_DEVS; i++) {
 --- a/drivers/net/ethernet/mediatek/mtk_ppe.c
 +++ b/drivers/net/ethernet/mediatek/mtk_ppe.c
-@@ -930,6 +930,7 @@ struct mtk_ppe *mtk_ppe_init(struct mtk_
+@@ -906,6 +906,7 @@ struct mtk_ppe *mtk_ppe_init(struct mtk_
  	ppe->eth = eth;
  	ppe->dev = dev;
  	ppe->version = eth->soc->offload_version;
@@ -35,7 +35,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	ppe->accounting = accounting;
  
  	foe = dmam_alloc_coherent(ppe->dev,
-@@ -965,8 +966,6 @@ struct mtk_ppe *mtk_ppe_init(struct mtk_
+@@ -941,8 +942,6 @@ struct mtk_ppe *mtk_ppe_init(struct mtk_
  		ppe->acct_table = acct;
  	}
  
@@ -55,7 +55,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	bool accounting;
  
  	void *foe_table;
-@@ -402,7 +402,7 @@ int mtk_foe_entry_set_queue(struct mtk_e
+@@ -400,7 +400,7 @@ int mtk_foe_entry_set_queue(struct mtk_e
  			    unsigned int queue);
  int mtk_foe_entry_commit(struct mtk_ppe *ppe, struct mtk_flow_entry *entry);
  void mtk_foe_entry_clear(struct mtk_ppe *ppe, struct mtk_flow_entry *entry);
