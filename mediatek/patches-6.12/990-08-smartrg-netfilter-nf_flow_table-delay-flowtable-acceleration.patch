@@ -3,18 +3,21 @@ Date: Sun, 18 Jan 2026 19:21:14 -0800
 Subject: [PATCH] netfilter: nf_flow_table: delay flowtable acceleration
 
 Delay flowtable acceleration (both software and hardware) until sufficient
-bidirectional traffic has been observed. This allows packet inspection
-tools to analyze early flow packets before they are accelerated.
+traffic has been observed. This allows packet inspection tools to analyze
+early flow packets before they are accelerated.
 
 Threshold is configurable via nf_flow_table.offload_delay_per_dir
 module parameter/sysfs (default 25 packets per direction, 0 disables).
 
+Non-TCP flows only require the threshold in a single direction
+since they may be unidirectional.
+
 Signed-off-by: Chad Monroe <chad@monroe.io>
 ---
- include/net/netfilter/nf_flow_table.h |    8 +++
- net/netfilter/nf_flow_table_core.c    |   50 +++++++++++++++++++++---
- net/netfilter/nf_flow_table_ip.c      |   18 +++++---
- 3 files changed, 65 insertions(+), 11 deletions(-)
+ include/net/netfilter/nf_flow_table.h |    8 ++++
+ net/netfilter/nf_flow_table_core.c    |   55 ++++++++++++++++++++++++++++++----
+ net/netfilter/nf_flow_table_ip.c      |   18 +++++++----
+ 3 files changed, 70 insertions(+), 11 deletions(-)
 
 --- a/include/net/netfilter/nf_flow_table.h
 +++ b/include/net/netfilter/nf_flow_table.h
@@ -68,7 +71,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  static DEFINE_MUTEX(flowtable_lock);
  static LIST_HEAD(flowtables);
  
-@@ -285,6 +290,43 @@ unsigned long flow_offload_get_timeout(s
+@@ -285,6 +290,48 @@ unsigned long flow_offload_get_timeout(s
  	return timeout;
  }
  
@@ -95,10 +98,11 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 +	}
 +
 +	if (atomic_read(cnt) < threshold)
-+		return false;
++		goto not_ready;
 +
-+	if (atomic_read(&flow->slowpath_pkts[!dir]) < threshold)
-+		return false;
++	if (nf_ct_protonum(flow->ct) == IPPROTO_TCP &&
++	    atomic_read(&flow->slowpath_pkts[!dir]) < threshold)
++		goto not_ready;
 +
 +ready:
 +	if (nf_flowtable_hw_offload(flow_table) &&
@@ -106,13 +110,17 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 +		nf_flow_offload_add(flow_table, flow);
 +
 +	return true;
++
++not_ready:
++	flow_offload_refresh(flow_table, flow, false);
++	return false;
 +}
 +EXPORT_SYMBOL_GPL(nf_flow_offload_ready);
 +
  int flow_offload_add(struct nf_flowtable *flow_table, struct flow_offload *flow)
  {
  	int err;
-@@ -315,11 +357,6 @@ int flow_offload_add(struct nf_flowtable
+@@ -315,11 +362,6 @@ int flow_offload_add(struct nf_flowtable
  		atomic_inc(&flow_table->direct_xmit_count);
  #endif
  
@@ -124,7 +132,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	return 0;
  }
  EXPORT_SYMBOL_GPL(flow_offload_add);
-@@ -338,6 +375,9 @@ void flow_offload_refresh(struct nf_flow
+@@ -338,6 +380,9 @@ void flow_offload_refresh(struct nf_flow
  	if (likely(!nf_flowtable_hw_offload(flow_table)))
  		return;
  
