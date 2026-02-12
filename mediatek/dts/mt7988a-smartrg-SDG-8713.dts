@@ -44,9 +44,9 @@
 };
 
 &mdio_bus {
-	/delete-node/ reset-gpios;
-	/delete-node/ reset-delay-us;
-	/delete-node/ reset-post-delay-us;
+	/delete-property/ reset-gpios;
+	/delete-property/ reset-delay-us;
+	/delete-property/ reset-post-delay-us;
 
 	phy1: ethernet-phy@1 {
 		/* Realtek RTL8261 - LAN1 */
@@ -57,7 +57,6 @@
 		reset-gpios = <&pio 62 GPIO_ACTIVE_LOW>;
 		reset-assert-us = <100000>;
 		reset-deassert-us = <221000>;
-		/* mdi-reversal = /bits/ 16 <0>; */
 
 		leds {
 			#address-cells = <1>;
@@ -95,7 +94,6 @@
 		reset-gpios = <&pio 71 GPIO_ACTIVE_LOW>;
 		reset-assert-us = <100000>;
 		reset-deassert-us = <221000>;
-		/* mdi-reversal = /bits/ 16 <0>; */
 
 		leds {
 			#address-cells = <1>;
