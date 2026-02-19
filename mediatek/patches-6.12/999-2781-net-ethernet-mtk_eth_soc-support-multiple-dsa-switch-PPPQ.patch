@@ -200,7 +200,7 @@ cat /sys/kernel/debug/mtketh/qdma_pppq
  	int				irq_fe[MTK_FE_IRQ_NUM];
  	int				irq_pdma[MTK_PDMA_IRQ_NUM];
  	u32				msg_enable;
-+	u32				pppq_ofs[MTK_MAX_DEVS];
++	u32				pppq_ofs[MTK_MAX_DEVS+1];
  	unsigned long			sysclk;
  	struct regmap			*ethsys;
  	struct regmap			*infra;
