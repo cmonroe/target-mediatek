@@ -9,7 +9,7 @@ Subject: [PATCH] OWRT-7643 Adtran quirks added
 
 --- a/drivers/net/phy/sfp.c
 +++ b/drivers/net/phy/sfp.c
-@@ -441,13 +441,33 @@ static void sfp_fixup_rollball_cc(struct
+@@ -441,31 +441,67 @@ static void sfp_fixup_rollball_cc(struct
  	sfp->id.base.extended_cc = SFF8024_ECC_10GBASE_T_SFI;
  }
  
@@ -26,56 +26,62 @@ Subject: [PATCH] OWRT-7643 Adtran quirks added
 +{
 +	dev_warn(sfp->dev, "%s: applied", __FUNCTION__);
 +
-+	sfp->id.base.e1000_base_t=0;
++	sfp->id.base.e1000_base_t = 0;
 +}
 +
  static void sfp_quirk_2500basex(struct sfp *sfp,
  				const struct sfp_eeprom_id *id,
- 				unsigned long *modes,
- 				unsigned long *interfaces)
+ 				struct sfp_module_caps *caps)
  {
-+	dev_warn(sfp->dev, "%s: entry modes 0x%016lx", __FUNCTION__, *modes);
++	dev_warn(sfp->dev, "%s: entry modes 0x%016lx",
++		 __FUNCTION__, *caps->link_modes);
 +
- 	linkmode_set_bit(ETHTOOL_LINK_MODE_2500baseX_Full_BIT, modes);
- 	__set_bit(PHY_INTERFACE_MODE_2500BASEX, interfaces);
+ 	linkmode_set_bit(ETHTOOL_LINK_MODE_2500baseX_Full_BIT,
+ 			 caps->link_modes);
+ 	__set_bit(PHY_INTERFACE_MODE_2500BASEX, caps->interfaces);
 +
-+	dev_warn(sfp->dev, "%s: exit modes 0x%016lx", __FUNCTION__, *modes);
++	dev_warn(sfp->dev, "%s: exit modes 0x%016lx",
++		 __FUNCTION__, *caps->link_modes);
  }
  
  static void sfp_quirk_disable_autoneg(struct sfp *sfp,
-@@ -455,7 +475,11 @@ static void sfp_quirk_disable_autoneg(st
- 				      unsigned long *modes,
- 				      unsigned long *interfaces)
+ 				      const struct sfp_eeprom_id *id,
+ 				      struct sfp_module_caps *caps)
  {
-+	dev_warn(sfp->dev, "%s: entry modes 0x%016lx", __FUNCTION__, *modes);
++	dev_warn(sfp->dev, "%s: entry modes 0x%016lx",
++		 __FUNCTION__, *caps->link_modes);
 +
- 	linkmode_clear_bit(ETHTOOL_LINK_MODE_Autoneg_BIT, modes);
+ 	linkmode_clear_bit(ETHTOOL_LINK_MODE_Autoneg_BIT, caps->link_modes);
 +
-+	dev_warn(sfp->dev, "%s: exit modes 0x%016lx", __FUNCTION__, *modes);
++	dev_warn(sfp->dev, "%s: exit modes 0x%016lx",
++		 __FUNCTION__, *caps->link_modes);
  }
  
  static void sfp_quirk_oem_2_5g(struct sfp *sfp,
-@@ -463,10 +487,15 @@ static void sfp_quirk_oem_2_5g(struct sf
- 			       unsigned long *modes,
- 			       unsigned long *interfaces)
+ 			       const struct sfp_eeprom_id *id,
+ 			       struct sfp_module_caps *caps)
  {
-+	dev_warn(sfp->dev, "%s: entry modes 0x%016lx", __FUNCTION__, *modes);
++	dev_warn(sfp->dev, "%s: entry modes 0x%016lx",
++		 __FUNCTION__, *caps->link_modes);
 +
  	/* Copper 2.5G SFP */
-+	linkmode_set_bit(ETHTOOL_LINK_MODE_2500baseX_Full_BIT, modes);
- 	linkmode_set_bit(ETHTOOL_LINK_MODE_2500baseT_Full_BIT, modes);
- 	__set_bit(PHY_INTERFACE_MODE_2500BASEX, interfaces);
- 	sfp_quirk_disable_autoneg(sfp, id, modes, interfaces);
++	linkmode_set_bit(ETHTOOL_LINK_MODE_2500baseX_Full_BIT,
++			 caps->link_modes);
+ 	linkmode_set_bit(ETHTOOL_LINK_MODE_2500baseT_Full_BIT,
+ 			 caps->link_modes);
+ 	__set_bit(PHY_INTERFACE_MODE_2500BASEX, caps->interfaces);
+ 	sfp_quirk_disable_autoneg(sfp, id, caps);
 +
-+	dev_warn(sfp->dev, "%s: exit modes 0x%016lx", __FUNCTION__, *modes);
++	dev_warn(sfp->dev, "%s: exit modes 0x%016lx",
++		 __FUNCTION__, *caps->link_modes);
  }
  
  static void sfp_quirk_ubnt_uf_instant(struct sfp *sfp,
-@@ -482,13 +511,52 @@ static void sfp_quirk_ubnt_uf_instant(st
- 	linkmode_set_bit(ETHTOOL_LINK_MODE_1000baseX_Full_BIT, modes);
+@@ -483,6 +519,44 @@ static void sfp_quirk_ubnt_uf_instant(st
+ 	__set_bit(PHY_INTERFACE_MODE_1000BASEX, caps->interfaces);
  }
  
-+#define SFP_SERDES_SPEED			250
++#define SFP_SERDES_SPEED		250
 +#define SFP_SERDES_SPEED_AUTO		0x0
 +#define SFP_SERDES_SPEED_1000M		0x1
 +#define SFP_SERDES_SPEED_2500M		0x2
@@ -93,65 +99,39 @@ Subject: [PATCH] OWRT-7643 Adtran quirks added
 +		return;
 +
 +	switch (speed) {
-+		case 1000:
-+			serdes_speed = SFP_SERDES_SPEED_1000M;
-+			break;
-+		case 2500:
-+			serdes_speed = SFP_SERDES_SPEED_2500M;
-+			break;
-+		default:
-+			break;
++	case 1000:
++		serdes_speed = SFP_SERDES_SPEED_1000M;
++		break;
++	case 2500:
++		serdes_speed = SFP_SERDES_SPEED_2500M;
++		break;
++	default:
++		break;
 +	}
 +
 +	dev_warn(sfp->dev, "%s: speed: %d set serdes_speed: 0x%02x",
-+			__FUNCTION__, speed, serdes_speed);
++		 __FUNCTION__, speed, serdes_speed);
 +
-+	err = sfp->write(sfp, true, SFP_SERDES_SPEED, &serdes_speed, sizeof(serdes_speed));
++	err = sfp->write(sfp, true, SFP_SERDES_SPEED, &serdes_speed,
++			 sizeof(serdes_speed));
 +	if (err != sizeof(serdes_speed))
 +		dev_err(sfp->dev, "failed to set serdes_speed: 0x%02x err: %pe",
-+				serdes_speed, ERR_PTR(err));
++			serdes_speed, ERR_PTR(err));
 +}
 +
- #define SFP_QUIRK(_v, _p, _m, _f) \
- 	{ .vendor = _v, .part = _p, .modes = _m, .fixup = _f, }
- #define SFP_QUIRK_M(_v, _p, _m) SFP_QUIRK(_v, _p, _m, NULL)
- #define SFP_QUIRK_F(_v, _p, _f) SFP_QUIRK(_v, _p, NULL, _f)
- 
- static void sfp_quirk_phy_mode(struct sfp *sfp,
--				const struct sfp_eeprom_id *id, unsigned long *modes)
-+				const struct sfp_eeprom_id *id,
-+				unsigned long *modes,
-+				unsigned long *interfaces)
- {
- 	int speed;
- 	struct device_node *mac_np, *sfp_np;
-@@ -525,7 +593,9 @@ static void sfp_quirk_phy_mode(struct sf
- 		case PHY_INTERFACE_MODE_2500BASEX:
- 			linkmode_zero(modes);
- 			//linkmode_set_bit(ETHTOOL_LINK_MODE_1000baseX_Full_BIT, modes);
-+			//__set_bit(PHY_INTERFACE_MODE_1000BASEX, interfaces);
- 			linkmode_set_bit(ETHTOOL_LINK_MODE_2500baseX_Full_BIT, modes);
-+			__set_bit(PHY_INTERFACE_MODE_2500BASEX, interfaces);
- 			speed = 2500;
- 			break;
- 		case PHY_INTERFACE_MODE_5GBASER:
-@@ -541,11 +611,14 @@ static void sfp_quirk_phy_mode(struct sf
- 		default:
- 			linkmode_zero(modes);
- 			linkmode_set_bit(ETHTOOL_LINK_MODE_1000baseX_Full_BIT, modes);
-+			__set_bit(PHY_INTERFACE_MODE_1000BASEX, interfaces);
- 			speed = 1000;
- 			break;
--
+ #define SFP_QUIRK(_v, _p, _s, _f) \
+ 	{ .vendor = _v, .part = _p, .support = _s, .fixup = _f, }
+ #define SFP_QUIRK_S(_v, _p, _s) SFP_QUIRK(_v, _p, _s, NULL)
+@@ -548,6 +622,8 @@ static void sfp_quirk_phy_mode(struct sf
+ 		break;
  	}
  
-+	/* if this fails for some reason, don't abort SFP attachment */
 +	sfp_i2c_set_adtran_serdes_speed(sfp, id, speed);
 +
  	dev_warn(sfp->dev, "%s: set speed: %d based on bus phy-mode: %s",
- 			__FUNCTION__, speed, phy_modes(interface));
- 	dev_warn(sfp->dev, "%s: exit modes 0x%016lx", __FUNCTION__, *modes);
-@@ -562,8 +635,9 @@ static const struct sfp_quirk sfp_quirk_
+ 		 __FUNCTION__, speed, phy_modes(interface));
+ 	dev_warn(sfp->dev, "%s: exit modes 0x%016lx",
+@@ -565,8 +641,9 @@ static const struct sfp_quirk sfp_quirk_
  static const struct sfp_quirk sfp_quirks[] = {
  	// Alcatel Lucent G-010S-P can operate at 2500base-X, but incorrectly
  	// report 2500MBd NRZ in their EEPROM
@@ -162,7 +142,7 @@ Subject: [PATCH] OWRT-7643 Adtran quirks added
  
  	// Alcatel Lucent G-010S-A can operate at 2500base-X, but report 3.2GBd
  	// NRZ in their EEPROM
-@@ -601,7 +675,7 @@ static const struct sfp_quirk sfp_quirks
+@@ -604,7 +681,7 @@ static const struct sfp_quirk sfp_quirks
  	// Huawei MA5671A can operate at 2500base-X, but report 1.2GBd NRZ in
  	// their EEPROM
  	SFP_QUIRK("HUAWEI", "MA5671A", sfp_quirk_2500basex,
@@ -171,7 +151,7 @@ Subject: [PATCH] OWRT-7643 Adtran quirks added
  
  	// Lantech 8330-262D-E can operate at 2500base-X, but incorrectly report
  	// 2500MBd NRZ in their EEPROM
-@@ -628,6 +702,28 @@ static const struct sfp_quirk sfp_quirks
+@@ -631,6 +708,28 @@ static const struct sfp_quirk sfp_quirks
  	SFP_QUIRK_F("Turris", "RTSFP-2.5G", sfp_fixup_rollball),
  	SFP_QUIRK_F("Turris", "RTSFP-10", sfp_fixup_rollball),
  	SFP_QUIRK_F("Turris", "RTSFP-10G", sfp_fixup_rollball),

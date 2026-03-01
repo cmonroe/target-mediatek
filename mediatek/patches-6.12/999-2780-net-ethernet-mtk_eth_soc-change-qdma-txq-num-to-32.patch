@@ -22,7 +22,7 @@ when supporting multiple switch PPPQ.
  	old_val = mtk_r32(eth, soc->reg_map->qdma.qtx_sch + ofs);
  
  	if (mtk_is_netsys_v2_or_greater(eth))
-@@ -3031,6 +3032,8 @@ static int mtk_tx_alloc(struct mtk_eth *
+@@ -3060,6 +3061,8 @@ static int mtk_tx_alloc(struct mtk_eth *
  		mtk_w32(eth, ring->last_free_ptr, soc->reg_map->qdma.drx_ptr);
  
  		for (i = 0, ofs = 0; i < MTK_QDMA_NUM_QUEUES; i++) {
@@ -31,7 +31,7 @@ when supporting multiple switch PPPQ.
  			val = (QDMA_RES_THRES << 8) | QDMA_RES_THRES;
  			mtk_w32(eth, val, soc->reg_map->qdma.qtx_cfg + ofs);
  
-@@ -3054,7 +3057,7 @@ static int mtk_tx_alloc(struct mtk_eth *
+@@ -3083,7 +3086,7 @@ static int mtk_tx_alloc(struct mtk_eth *
  				val |= FIELD_PREP(MTK_QTX_SCH_TX_SEL_V2, 2);
  
  			mtk_w32(eth, val, soc->reg_map->qdma.qtx_sch + ofs);

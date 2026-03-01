@@ -1,27 +1,42 @@
+From: Chad Monroe <chad@monroe.io>
+Date: Tue, 24 Feb 2026 04:31:48 -0800
+Subject: [PATCH] net: phy: sfp: limit advertised modes to MAC phy-mode
+
+SFP modules may advertise speeds the MAC port cannot support causing
+link failures. Read the MAC node's phy-mode from the device tree and
+clamp the module's link modes and interfaces accordingly. Applied as
+a default quirk for unrecognized modules with nominal bitrate > 3.2 GBd.
+
+Signed-off-by: Chip Gusler <chip.gusler@adtran.com>
+Signed-off-by: Chad Monroe <chad@monroe.io>
+---
+ drivers/net/phy/sfp-bus.c |    2
+ drivers/net/phy/sfp.c     |  109 ++++++++++++++++++++++++++++++++++--
+ drivers/net/phy/sfp.h     |    2
+ 3 files changed, 106 insertions(+), 7 deletions(-)
+
 --- a/drivers/net/phy/sfp-bus.c
 +++ b/drivers/net/phy/sfp-bus.c
-@@ -340,7 +340,7 @@ void sfp_parse_support(struct sfp_bus *b
- 	phylink_set(modes, Asym_Pause);
+@@ -374,7 +374,7 @@ static void sfp_init_module(struct sfp_b
+ 	sfp_module_parse_may_have_phy(bus, id);
  
- 	if (bus->sfp_quirk && bus->sfp_quirk->modes)
--		bus->sfp_quirk->modes(id, modes, interfaces);
-+		bus->sfp_quirk->modes(bus->sfp, id, modes, interfaces);
- 
- 	linkmode_or(support, support, modes);
+ 	if (quirk && quirk->support)
+-		quirk->support(id, &bus->caps);
++		quirk->support(bus->sfp, id, &bus->caps);
  }
+ 
+ /**
 --- a/drivers/net/phy/sfp.h
 +++ b/drivers/net/phy/sfp.h
-@@ -9,8 +9,8 @@ struct sfp;
+@@ -9,7 +9,7 @@ struct sfp;
  struct sfp_quirk {
  	const char *vendor;
  	const char *part;
--	void (*modes)(const struct sfp_eeprom_id *id, unsigned long *modes,
--		      unsigned long *interfaces);
-+	void (*modes)(struct sfp *sfp,  const struct sfp_eeprom_id *id,
-+		      unsigned long *modes, unsigned long *interfaces);
+-	void (*support)(const struct sfp_eeprom_id *id,
++	void (*support)(struct sfp *sfp, const struct sfp_eeprom_id *id,
+ 			struct sfp_module_caps *caps);
  	void (*fixup)(struct sfp *sfp);
  };
- 
 --- a/drivers/net/phy/sfp.c
 +++ b/drivers/net/phy/sfp.c
 @@ -1,6 +1,7 @@
@@ -50,63 +65,61 @@
 -static void sfp_quirk_2500basex(const struct sfp_eeprom_id *id,
 +static void sfp_quirk_2500basex(struct sfp *sfp,
 +				const struct sfp_eeprom_id *id,
- 				unsigned long *modes,
- 				unsigned long *interfaces)
+ 				struct sfp_module_caps *caps)
  {
-@@ -446,24 +450,27 @@ static void sfp_quirk_2500basex(const st
- 	__set_bit(PHY_INTERFACE_MODE_2500BASEX, interfaces);
+ 	linkmode_set_bit(ETHTOOL_LINK_MODE_2500baseX_Full_BIT,
+@@ -446,23 +450,26 @@ static void sfp_quirk_2500basex(const st
+ 	__set_bit(PHY_INTERFACE_MODE_2500BASEX, caps->interfaces);
  }
  
 -static void sfp_quirk_disable_autoneg(const struct sfp_eeprom_id *id,
 +static void sfp_quirk_disable_autoneg(struct sfp *sfp,
 +				      const struct sfp_eeprom_id *id,
- 				      unsigned long *modes,
- 				      unsigned long *interfaces)
+ 				      struct sfp_module_caps *caps)
  {
- 	linkmode_clear_bit(ETHTOOL_LINK_MODE_Autoneg_BIT, modes);
+ 	linkmode_clear_bit(ETHTOOL_LINK_MODE_Autoneg_BIT, caps->link_modes);
  }
  
 -static void sfp_quirk_oem_2_5g(const struct sfp_eeprom_id *id,
 +static void sfp_quirk_oem_2_5g(struct sfp *sfp,
 +			       const struct sfp_eeprom_id *id,
- 			       unsigned long *modes,
- 			       unsigned long *interfaces)
+ 			       struct sfp_module_caps *caps)
  {
  	/* Copper 2.5G SFP */
- 	linkmode_set_bit(ETHTOOL_LINK_MODE_2500baseT_Full_BIT, modes);
- 	__set_bit(PHY_INTERFACE_MODE_2500BASEX, interfaces);
--	sfp_quirk_disable_autoneg(id, modes, interfaces);
-+	sfp_quirk_disable_autoneg(sfp, id, modes, interfaces);
+ 	linkmode_set_bit(ETHTOOL_LINK_MODE_2500baseT_Full_BIT,
+ 			 caps->link_modes);
+ 	__set_bit(PHY_INTERFACE_MODE_2500BASEX, caps->interfaces);
+-	sfp_quirk_disable_autoneg(id, caps);
++	sfp_quirk_disable_autoneg(sfp, id, caps);
  }
  
 -static void sfp_quirk_ubnt_uf_instant(const struct sfp_eeprom_id *id,
 +static void sfp_quirk_ubnt_uf_instant(struct sfp *sfp,
 +				      const struct sfp_eeprom_id *id,
- 				      unsigned long *modes,
- 				      unsigned long *interfaces)
+ 				      struct sfp_module_caps *caps)
  {
-@@ -480,6 +487,78 @@ static void sfp_quirk_ubnt_uf_instant(co
- #define SFP_QUIRK_M(_v, _p, _m) SFP_QUIRK(_v, _p, _m, NULL)
+ 	/* Ubiquiti U-Fiber Instant module claims that support all transceiver
+@@ -481,6 +488,80 @@ static void sfp_quirk_ubnt_uf_instant(co
+ #define SFP_QUIRK_S(_v, _p, _s) SFP_QUIRK(_v, _p, _s, NULL)
  #define SFP_QUIRK_F(_v, _p, _f) SFP_QUIRK(_v, _p, NULL, _f)
  
 +static void sfp_quirk_phy_mode(struct sfp *sfp,
-+				const struct sfp_eeprom_id *id, unsigned long *modes)
++				const struct sfp_eeprom_id *id,
++				struct sfp_module_caps *caps)
 +{
 +	int speed;
 +	struct device_node *mac_np, *sfp_np;
 +	phy_interface_t interface = PHY_INTERFACE_MODE_NA;
 +
-+	dev_warn(sfp->dev, "%s: entry modes 0x%016lx", __FUNCTION__, *modes);
++	dev_warn(sfp->dev, "%s: entry modes 0x%016lx",
++		 __FUNCTION__, *caps->link_modes);
 +
 +	if (!sfp->dev->of_node) {
-+		dev_warn(sfp->dev, "%s: OF node is empty, bailing!", __FUNCTION__);
++		dev_warn(sfp->dev, "%s: OF node is empty, bailing!",
++			 __FUNCTION__);
 +		return;
 +	}
 +
-+	/**
-+	 * scan thru each node with sfp property and find the
-+	 * one which has our current sfp bus bound to it.
-+	 */
 +	for_each_node_with_property(mac_np, "sfp") {
 +		sfp_np = of_parse_phandle(mac_np, "sfp", 0);
 +		if (sfp_np && (sfp->dev->of_node == sfp_np)) {
@@ -124,47 +137,50 @@
 +	}
 +
 +	switch (interface) {
-+		case PHY_INTERFACE_MODE_2500BASEX:
-+			linkmode_zero(modes);
-+			//linkmode_set_bit(ETHTOOL_LINK_MODE_1000baseX_Full_BIT, modes);
-+			linkmode_set_bit(ETHTOOL_LINK_MODE_2500baseX_Full_BIT, modes);
-+			speed = 2500;
-+			break;
-+		case PHY_INTERFACE_MODE_5GBASER:
-+			/* do nothing for now */
-+			speed = 5000;
-+			break;
-+		case PHY_INTERFACE_MODE_USXGMII:
-+		case PHY_INTERFACE_MODE_10GBASER:
-+		case PHY_INTERFACE_MODE_10GKR:
-+			/* do nothing for now */
-+			speed = 10000;
-+			break;
-+		default:
-+			linkmode_zero(modes);
-+			linkmode_set_bit(ETHTOOL_LINK_MODE_1000baseX_Full_BIT, modes);
-+			speed = 1000;
-+			break;
-+
++	case PHY_INTERFACE_MODE_2500BASEX:
++		linkmode_zero(caps->link_modes);
++		linkmode_set_bit(ETHTOOL_LINK_MODE_2500baseX_Full_BIT,
++				 caps->link_modes);
++		phy_interface_zero(caps->interfaces);
++		__set_bit(PHY_INTERFACE_MODE_2500BASEX, caps->interfaces);
++		speed = 2500;
++		break;
++	case PHY_INTERFACE_MODE_5GBASER:
++		speed = 5000;
++		break;
++	case PHY_INTERFACE_MODE_USXGMII:
++	case PHY_INTERFACE_MODE_10GBASER:
++	case PHY_INTERFACE_MODE_10GKR:
++		speed = 10000;
++		break;
++	default:
++		linkmode_zero(caps->link_modes);
++		linkmode_set_bit(ETHTOOL_LINK_MODE_1000baseX_Full_BIT,
++				 caps->link_modes);
++		phy_interface_zero(caps->interfaces);
++		__set_bit(PHY_INTERFACE_MODE_1000BASEX, caps->interfaces);
++		speed = 1000;
++		break;
 +	}
 +
 +	dev_warn(sfp->dev, "%s: set speed: %d based on bus phy-mode: %s",
-+			__FUNCTION__, speed, phy_modes(interface));
-+	dev_warn(sfp->dev, "%s: exit modes 0x%016lx", __FUNCTION__, *modes);
++		 __FUNCTION__, speed, phy_modes(interface));
++	dev_warn(sfp->dev, "%s: exit modes 0x%016lx",
++		 __FUNCTION__, *caps->link_modes);
 +}
 +
 +// default quirk to use when unknown 10G devices are found
 +static const struct sfp_quirk sfp_quirk_default_phy_mode = {
 +	.vendor = "ADTRAN",
 +	.part = "DEFAULT-PHY-MODE",
-+	.modes = sfp_quirk_phy_mode,
++	.support = sfp_quirk_phy_mode,
 +	.fixup = NULL,
 +};
 +
  static const struct sfp_quirk sfp_quirks[] = {
  	// Alcatel Lucent G-010S-P can operate at 2500base-X, but incorrectly
  	// report 2500MBd NRZ in their EEPROM
-@@ -2393,6 +2472,24 @@ static int sfp_sm_mod_probe(struct sfp *
+@@ -2394,6 +2475,24 @@ static int sfp_sm_mod_probe(struct sfp *
  		sfp->mdio_protocol = MDIO_I2C_NONE;
  
  	sfp->quirk = sfp_lookup_quirk(&id);
