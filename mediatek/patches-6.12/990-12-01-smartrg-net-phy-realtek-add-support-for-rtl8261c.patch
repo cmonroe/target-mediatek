@@ -10,14 +10,14 @@ get_features.
 
 Signed-off-by: Chad Monroe <chad@monroe.io>
 ---
- drivers/net/phy/realtek/phy_patch_rtl826x.c |   53 +++++
+ drivers/net/phy/realtek/phy_patch_rtl826x.c |   55 ++++
  drivers/net/phy/realtek/phy_patch_rtl826x.h |    1 
- drivers/net/phy/realtek/realtek_main.c      |  187 ++++++++++++++++++
- 3 files changed, 241 insertions(+)
+ drivers/net/phy/realtek/realtek_main.c      |  218 ++++++++++++++++++
+ 3 files changed, 273 insertions(+), 1 deletion(-)
 
 --- a/drivers/net/phy/realtek/phy_patch_rtl826x.c
 +++ b/drivers/net/phy/realtek/phy_patch_rtl826x.c
-@@ -214,6 +214,60 @@ static int phy_patch_rtl826x_op(struct p
+@@ -214,6 +214,58 @@ static int phy_patch_rtl826x_op(struct p
  	return ret;
  }
  
@@ -37,18 +37,16 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 +	}
 +	patches = (struct rtk_hwpatch *)fw->data;
 +
-+	patch_db = kmalloc(sizeof(struct rt_phy_patch_db), GFP_ATOMIC);
++	patch_db = kzalloc(sizeof(struct rt_phy_patch_db), GFP_KERNEL);
 +	if (!patch_db) {
 +		ret = -ENOMEM;
 +		goto out;
 +	}
 +
-+	memset(patch_db, 0x0, sizeof(struct rt_phy_patch_db));
-+
 +	patch_db->patch_op = phy_patch_rtl826x_op;
 +	patch_db->size = fw->size;
 +
-+	patch_db->conf = kmalloc(patch_db->size, GFP_ATOMIC);
++	patch_db->conf = kmalloc(patch_db->size, GFP_KERNEL);
 +	if (!patch_db->conf) {
 +		ret = -ENOMEM;
 +		goto out;
@@ -78,7 +76,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  int phy_patch_rtl8261n_db_init(struct phy_device *phydev)
  {
  	int ret = 0, i;
-@@ -360,5 +414,6 @@ out:
+@@ -360,5 +412,6 @@ out:
  	return ret;
  }
  
@@ -136,7 +134,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 +#define RTL8261C_VND1_RESET_CTRL		0x145
 +
 +#define RTL8261C_VND2_THERMAL_SENSOR_CTRL	0xB54C
-+#define RTL8261C_THERMAL_SENSOR_ENABLE		BIT(3)
++#define RTL8261C_THERMAL_OVERTEMP_DWNSPD_EN	BIT(3)
 +
 +/* RTL8261C-CG indirect register addresses */
 +#define RTL8261C_INDIRECT_PATCH_VER		0x801E
@@ -162,7 +160,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	return ETHTOOL_A_CABLE_RESULT_CODE_UNSPEC;
  }
  
-@@ -2416,6 +2451,121 @@ static int rtl8264b_probe(struct phy_dev
+@@ -2416,6 +2451,148 @@ static int rtl8264b_probe(struct phy_dev
  	return 0;
  }
  
@@ -185,29 +183,42 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 +		return -EPROBE_DEFER;
 +
 +	phy_set_bits_mmd(phydev, MDIO_MMD_VEND2, RTL8261C_VND2_THERMAL_SENSOR_CTRL,
-+			 RTL8261C_THERMAL_SENSOR_ENABLE);
++			 RTL8261C_THERMAL_OVERTEMP_DWNSPD_EN);
 +
 +	return 0;
 +}
 +
 +static int rtl8261c_cg_read_indirect(struct phy_device *phydev, u16 reg)
 +{
-+	phy_write_mmd(phydev, MDIO_MMD_VEND2, RTL8261C_VND2_INDIRECT_ADDR, reg);
++	int ret;
++
++	ret = phy_write_mmd(phydev, MDIO_MMD_VEND2, RTL8261C_VND2_INDIRECT_ADDR, reg);
++	if (ret < 0)
++		return ret;
++
 +	return phy_read_mmd(phydev, MDIO_MMD_VEND2, RTL8261C_VND2_INDIRECT_DATA);
 +}
 +
-+static void rtl8261c_cg_write_indirect(struct phy_device *phydev, u16 reg, u16 val)
++static int rtl8261c_cg_write_indirect(struct phy_device *phydev, u16 reg, u16 val)
 +{
-+	phy_write_mmd(phydev, MDIO_MMD_VEND2, RTL8261C_VND2_INDIRECT_ADDR, reg);
-+	phy_write_mmd(phydev, MDIO_MMD_VEND2, RTL8261C_VND2_INDIRECT_DATA, val);
++	int ret;
++
++	ret = phy_write_mmd(phydev, MDIO_MMD_VEND2, RTL8261C_VND2_INDIRECT_ADDR, reg);
++	if (ret < 0)
++		return ret;
++
++	return phy_write_mmd(phydev, MDIO_MMD_VEND2, RTL8261C_VND2_INDIRECT_DATA, val);
 +}
 +
 +static int rtl8261c_cg_config_init(struct phy_device *phydev)
 +{
 +	struct rtl826x_priv *priv = phydev->priv;
-+	int ret, val;
++	int ret, ret2, val;
 +
 +	ret = phy_read_mmd(phydev, MDIO_MMD_VEND2, RTL8261C_VND2_PHY_STATE);
++	if (ret < 0)
++		return ret;
++
 +	if ((ret & RTL8261C_VND2_PHY_STATE_READY_MASK) == 0) {
 +		phy_set_bits_mmd(phydev, MDIO_MMD_VEND1,
 +				 RTL8261C_VND1_RESET_CTRL, BIT(0));
@@ -225,6 +236,8 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 +		return ret;
 +
 +	val = rtl8261c_cg_read_indirect(phydev, RTL8261C_INDIRECT_PATCH_VER);
++	if (val < 0)
++		return val;
 +	if (val == 0x1515)
 +		goto configure;
 +
@@ -239,32 +252,44 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 +					val & RTL8261C_PATCH_MODE_READY,
 +					10000, 1000000, false);
 +	if (ret)
-+		return ret;
++		goto patch_exit;
 +
-+	rtl8261c_cg_write_indirect(phydev, RTL8261C_INDIRECT_PATCH_SETUP,
-+				   RTL8261C_PATCH_SETUP_VAL);
-+	rtl8261c_cg_write_indirect(phydev, RTL8261C_VND2_PATCH_CTRL, 0x0001);
-+	phy_write_mmd(phydev, MDIO_MMD_VEND2, RTL8261C_VND2_PATCH_MODE_CTRL,
-+		      RTL8261C_PATCH_MODE_SETUP);
++	ret = rtl8261c_cg_write_indirect(phydev, RTL8261C_INDIRECT_PATCH_SETUP,
++					 RTL8261C_PATCH_SETUP_VAL);
++	if (ret < 0)
++		goto patch_exit;
++
++	ret = phy_write_mmd(phydev, MDIO_MMD_VEND2, RTL8261C_VND2_PATCH_CTRL,
++			    0x0001);
++	if (ret < 0)
++		goto patch_exit;
++
++	ret = phy_write_mmd(phydev, MDIO_MMD_VEND2,
++			    RTL8261C_VND2_PATCH_MODE_CTRL,
++			    RTL8261C_PATCH_MODE_SETUP);
++	if (ret < 0)
++		goto patch_exit;
 +
 +	ret = phy_patch(phydev);
-+	if (ret)
-+		return ret;
 +
++patch_exit:
 +	phy_clear_bits_mmd(phydev, MDIO_MMD_VEND2,
 +			   RTL8261C_VND2_PATCH_CTRL, BIT(0));
-+	rtl8261c_cg_write_indirect(phydev, RTL8261C_INDIRECT_PATCH_SETUP, 0x0000);
++	rtl8261c_cg_write_indirect(phydev, RTL8261C_INDIRECT_PATCH_SETUP,
++				   0x0000);
 +
 +	phy_clear_bits_mmd(phydev, MDIO_MMD_VEND2,
 +			   RTL8261C_VND2_PATCH_MODE_CTRL,
 +			   RTL8261C_PATCH_MODE_ENTER);
 +
-+	ret = phy_read_mmd_poll_timeout(phydev, MDIO_MMD_VEND2,
-+					RTL8261C_VND2_PATCH_MODE_STAT, val,
-+					!(val & RTL8261C_PATCH_MODE_READY),
-+					10000, 1000000, false);
++	ret2 = phy_read_mmd_poll_timeout(phydev, MDIO_MMD_VEND2,
++					 RTL8261C_VND2_PATCH_MODE_STAT, val,
++					 !(val & RTL8261C_PATCH_MODE_READY),
++					 10000, 1000000, false);
 +	if (ret)
 +		return ret;
++	if (ret2)
++		return ret2;
 +
 +	rtl8261c_cg_write_indirect(phydev, RTL8261C_INDIRECT_PATCH_VER, 0x1515);
 +
@@ -284,7 +309,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  static int rtl826x_config_init(struct phy_device *phydev)
  {
  	struct rtl826x_priv *priv = phydev->priv;
-@@ -2459,6 +2609,24 @@ static int rtl826x_get_features(struct p
+@@ -2459,6 +2636,24 @@ static int rtl826x_get_features(struct p
  	return 0;
  }
  
@@ -309,7 +334,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  static int rtl825xb_get_features(struct phy_device *phydev)
  {
  	int ret;
-@@ -3143,6 +3311,25 @@ static struct phy_driver realtek_drvs[]
+@@ -3143,6 +3338,25 @@ static struct phy_driver realtek_drvs[]
  		.get_tunable    = rtl826x_get_tunable,
  		.set_tunable    = rtl826x_set_tunable,
  	}, {
