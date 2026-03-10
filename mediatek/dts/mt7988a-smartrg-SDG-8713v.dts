@@ -72,16 +72,18 @@
 
 			led@1 {
 				reg = <1>;
-				color = <LED_COLOR_ID_ORANGE>;
-				function = LED_FUNCTION_LAN;
-				function-enumerator = <1>;
-			};
-
-			led@2 {
-				reg = <4>;
 				color = <LED_COLOR_ID_GREEN>;
 				function = LED_FUNCTION_LAN;
 				function-enumerator = <1>;
+				active-low;
+			};
+
+			led@3 {
+				reg = <3>;
+				color = <LED_COLOR_ID_ORANGE>;
+				function = LED_FUNCTION_LAN;
+				function-enumerator = <1>;
+				active-low;
 			};
 		};
 	};
@@ -103,22 +105,20 @@
 			led@0 {
 				reg = <0>;
 				color = <LED_COLOR_ID_WHITE>;
-				function = LED_FUNCTION_LAN;
-				function-enumerator = <1>;
+				function = LED_FUNCTION_WAN;
+				active-low;
 			};
 
 			led@1 {
 				reg = <1>;
 				color = <LED_COLOR_ID_ORANGE>;
-				function = LED_FUNCTION_LAN;
-				function-enumerator = <1>;
+				function = LED_FUNCTION_WAN;
 			};
 
-			led@2 {
-				reg = <4>;
+			led@3 {
+				reg = <3>;
 				color = <LED_COLOR_ID_GREEN>;
-				function = LED_FUNCTION_LAN;
-				function-enumerator = <1>;
+				function = LED_FUNCTION_WAN;
 			};
 		};
 	};
