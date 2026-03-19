@@ -103,9 +103,9 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  
  
  #define MXL862XX_API_WRITE(dev, cmd, data) \
-@@ -3148,6 +3149,10 @@ static int mxl862xx_setup(struct dsa_swi
- 	if (ret)
- 		return ret;
+@@ -3114,6 +3115,10 @@ static int mxl862xx_setup(struct dsa_swi
+ 	gpiod_set_value_cansleep(priv->reset, 0);
+ 	usleep_range(4000000, 6000000);
  
 +	ret = mxl862xx_firmware_load(priv);
 +	if (ret)
