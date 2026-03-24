@@ -1,0 +1,67 @@
+From: Cezary Wilmanski <cezary.wilmanski@adtran.com>
+Date: Thu, 24 Mar 2026 10:29:33 +0100
+Subject: [PATCH] net: dsa: mxl862xx: always program VLAN ID in FDB entries
+
+The driver currently sets the TCI (VLAN ID) field in MAC table
+entries only when using the MXL862 DSA tag protocol. In all other
+cases, FDB entries are programmed with TCI = 0, effectively making
+them VLAN-unaware.
+
+This leads to incorrect forwarding behavior in VLAN-aware bridge
+configurations, where MAC addresses may be shared across multiple
+VLANs. As a result, the switch may perform ambiguous lookups,
+flood traffic, or fall back to the CPU, degrading performance.
+
+In particular, this was observed to limit throughput between a
+10G port and 2.5G ports, where traffic was incorrectly constrained
+to the lower-speed port due to improper FDB resolution.
+
+Fix this by always programming the VLAN ID into the TCI field
+when adding and removing MAC table entries.
+
+This ensures correct VLAN-aware forwarding and restores proper
+hardware offload performance.
+
+Signed-off-by: Cezary Wilmanski <cezary.wilmanski@adtran.com>
+---
+ drivers/net/dsa/mxl862xx/mxl862xx.c |   10 ++--------
+ 1 file changed, 2 insertions(+), 8 deletions(-)
+
+--- a/drivers/net/dsa/mxl862xx/mxl862xx.c
++++ b/drivers/net/dsa/mxl862xx/mxl862xx.c
+@@ -3530,7 +3530,7 @@
+ {
+ 	struct mxl862xx_mac_table_add param = {
+ 		.port_id = DSA_MXL_PORT(port),
+-		.tci = 0,
++		.tci = vid & 0xFFF,
+ 		.static_entry = true,
+ 	};
+ 	struct mxl862xx_priv *priv = ds->priv;
+@@ -3549,9 +3549,6 @@
+ 			continue;
+ 
+ 		param.fid = priv->port_info[i].bridge_id;
+-		if (priv->port_info[priv->cpu_port].tag_protocol == DSA_TAG_PROTO_MXL862) {
+-			param.tci = (vid & 0xFFF);
+-		}
+ 		ret = MXL862XX_API_READ(ds->priv, MXL862XX_MAC_TABLEENTRYADD, param);
+ 		if (ret) {
+ 			dev_err(ds->dev, "failed to add FDB entry on port %d / fid %d\n",
+@@ -3567,15 +3564,12 @@
+ 				 const unsigned char *addr, u16 vid, struct dsa_db db)
+ {
+ 	struct mxl862xx_mac_table_remove param = {
+-		.tci = 0,
++		.tci = vid & 0xFFF,
+ 	};
+ 	struct mxl862xx_priv *priv = ds->priv;
+ 	int ret, i;
+ 
+ 	memcpy(param.mac, addr, ETH_ALEN);
+-	if (priv->port_info[priv->cpu_port].tag_protocol == DSA_TAG_PROTO_MXL862) {
+-		param.tci = (vid & 0xFFF);
+-	}
+ 
+ 	for (i = 0; i < priv->hw_info->max_ports; i++) {
+ 		if (dsa_is_unused_port(ds, i))
