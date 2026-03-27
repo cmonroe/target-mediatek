@@ -29,7 +29,7 @@ Signed-off-by: Cezary Wilmanski <cezary.wilmanski@adtran.com>
 
 --- a/drivers/net/dsa/mxl862xx/mxl862xx.c
 +++ b/drivers/net/dsa/mxl862xx/mxl862xx.c
-@@ -3530,7 +3530,7 @@
+@@ -3530,7 +3530,7 @@ static int mxl862xx_port_fdb_add(struct
  {
  	struct mxl862xx_mac_table_add param = {
  		.port_id = DSA_MXL_PORT(port),
@@ -38,7 +38,7 @@ Signed-off-by: Cezary Wilmanski <cezary.wilmanski@adtran.com>
  		.static_entry = true,
  	};
  	struct mxl862xx_priv *priv = ds->priv;
-@@ -3549,9 +3549,6 @@
+@@ -3549,9 +3549,6 @@ static int mxl862xx_port_fdb_add(struct
  			continue;
  
  		param.fid = priv->port_info[i].bridge_id;
@@ -48,7 +48,7 @@ Signed-off-by: Cezary Wilmanski <cezary.wilmanski@adtran.com>
  		ret = MXL862XX_API_READ(ds->priv, MXL862XX_MAC_TABLEENTRYADD, param);
  		if (ret) {
  			dev_err(ds->dev, "failed to add FDB entry on port %d / fid %d\n",
-@@ -3567,15 +3564,12 @@
+@@ -3567,15 +3564,12 @@ static int mxl862xx_port_fdb_del(struct
  				 const unsigned char *addr, u16 vid, struct dsa_db db)
  {
  	struct mxl862xx_mac_table_remove param = {
