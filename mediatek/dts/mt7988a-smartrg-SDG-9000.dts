@@ -213,12 +213,16 @@
 			color = <LED_COLOR_ID_GREEN>;
 			function = "sfp";
 			gpios = <&pio 67 GPIO_ACTIVE_LOW>;
+			linux,default-trigger = "gpio";
+			trigger-sources = <&pio 81 GPIO_ACTIVE_LOW>;
 		};
 
 		sfp_red {
 			color = <LED_COLOR_ID_RED>;
 			function = "sfp";
 			gpios = <&pio 66 GPIO_ACTIVE_HIGH>;
+			linux,default-trigger = "gpio";
+			trigger-sources = <&pio 82 GPIO_ACTIVE_LOW>;
 		};
 
 		lan1_white {
@@ -449,7 +453,7 @@
 	sfp1: sfp1 {
 		compatible = "sff,sfp";
 		i2c-bus = <&i2c1>;
-		los-gpios = <&pio 81 GPIO_ACTIVE_HIGH>;
+		los-gpios = <&pio 81 GPIO_ACTIVE_LOW>;
 		mod-def0-gpios = <&pio 82 GPIO_ACTIVE_LOW>;
 		rate-select0-gpios = <&pio 83 GPIO_ACTIVE_HIGH>;
 		rate-select1-gpios = <&pio 80 GPIO_ACTIVE_HIGH>;

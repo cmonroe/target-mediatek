@@ -1,0 +1,35 @@
+From: Piotr Kubik <piotr.kubik@adtran.com>
+Date: Mon, 30 Mar 2026
+Subject: [PATCH] leds: trigger: gpio: use GPIOD_FLAGS_BIT_NONEXCLUSIVE for trigger-sources
+
+When a GPIO is shared between the LED trigger driver and another driver,
+the LED trigger driver needs to request the GPIO with GPIOD_FLAGS_BIT_NONEXCLUSIVE to allow
+both drivers to monitor the same GPIO pin.
+
+Without this flag, if another driver has already claimed the GPIO, theLED trigger driver's
+gpiod_get_optional() call fails silently, and the LED trigger doesn't work.
+
+This is needed for scenarios like:
+- SFP module presence LED triggered by SFP Mod_ABS
+- SFP link status LED triggered by SFP Rx_LOS
+
+Both GPIOs are also monitored by the SFP driver for module state
+management, so they need to be shared.
+
+Signed-off-by: Piotr Kubik <piotr.kubik@adtran.com>
+---
+ drivers/leds/trigger/ledtrig-gpio.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/drivers/leds/trigger/ledtrig-gpio.c
++++ b/drivers/leds/trigger/ledtrig-gpio.c
+@@ -86,7 +86,8 @@ static int gpio_trig_activate(struct led
+ 	 * The generic property "trigger-sources" is followed,
+ 	 * and we hope that this is a GPIO.
+ 	 */
+-	gpio_data->gpiod = gpiod_get_optional(dev, "trigger-sources", GPIOD_IN);
++	gpio_data->gpiod = gpiod_get_optional(dev, "trigger-sources",
++					      GPIOD_IN | GPIOD_FLAGS_BIT_NONEXCLUSIVE);
+ 	if (IS_ERR(gpio_data->gpiod)) {
+ 		ret = PTR_ERR(gpio_data->gpiod);
+ 		kfree(gpio_data);

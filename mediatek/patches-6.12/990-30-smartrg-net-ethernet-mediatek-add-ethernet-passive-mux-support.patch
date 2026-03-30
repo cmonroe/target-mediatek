@@ -193,7 +193,7 @@ Reviewed-on: https://gerrit.mediatek.inc/c/openwrt/feeds/mtk_openwrt_feeds/+/797
 +
 +	mux->gpio[0] = fwnode_gpiod_get_index(of_fwnode_handle(np),
 +					      "mod-def0", 0,
-+					      GPIOD_IN, "?");
++					      GPIOD_IN | GPIOD_FLAGS_BIT_NONEXCLUSIVE, "?");
 +	if (IS_ERR(mux->gpio[0]))
 +		dev_err(eth->dev, "failed to requset gpio for mod-def0-gpios\n");
 +
