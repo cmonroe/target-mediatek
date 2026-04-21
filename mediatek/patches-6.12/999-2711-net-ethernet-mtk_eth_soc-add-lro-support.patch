@@ -335,7 +335,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  	cancel_work_sync(&eth->rx_dim.work);
  	cancel_work_sync(&eth->tx_dim.work);
  
-@@ -4521,6 +4663,14 @@ static int mtk_napi_init(struct mtk_eth
+@@ -4530,6 +4672,14 @@ static int mtk_napi_init(struct mtk_eth
  		}
  	}
  
@@ -350,7 +350,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  	return 0;
  }
  
-@@ -5108,7 +5258,7 @@ static int mtk_get_rxnfc(struct net_devi
+@@ -5117,7 +5267,7 @@ static int mtk_get_rxnfc(struct net_devi
  	switch (cmd->cmd) {
  	case ETHTOOL_GRXRINGS:
  		if (dev->hw_features & NETIF_F_LRO) {
@@ -359,7 +359,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  			ret = 0;
  		} else if (MTK_HAS_CAPS(eth->soc->caps, MTK_RSS)) {
  			cmd->data = MTK_RX_RSS_NUM;
-@@ -6084,6 +6234,18 @@ static int mtk_probe(struct platform_dev
+@@ -6093,6 +6243,18 @@ static int mtk_probe(struct platform_dev
  						goto err_free_dev;
  				}
  			}
@@ -378,7 +378,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  		} else {
  			err = devm_request_irq(eth->dev, eth->irq_fe[2],
  					       mtk_handle_irq_rx, 0,
-@@ -6156,6 +6318,13 @@ static int mtk_probe(struct platform_dev
+@@ -6165,6 +6327,13 @@ static int mtk_probe(struct platform_dev
  				       mtk_napi_rx);
  	}
  
@@ -392,7 +392,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add hw lro support
  	mtketh_debugfs_init(eth);
  	debug_proc_init(eth);
  
-@@ -6213,6 +6382,11 @@ static void mtk_remove(struct platform_d
+@@ -6222,6 +6391,11 @@ static void mtk_remove(struct platform_d
  			netif_napi_del(&eth->rx_napi[MTK_RSS_RING(i)].napi);
  	}
  

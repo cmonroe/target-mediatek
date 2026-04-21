@@ -20,7 +20,7 @@ Subject: [PATCH] 999-2730-net-phy-sfp-change-shared-mod-def0-and-los
  	GPIOD_IN,
  	GPIOD_ASIS,
  	GPIOD_ASIS,
-@@ -785,7 +785,7 @@ static unsigned int sfp_gpio_get_state(s
+@@ -790,7 +790,7 @@ static unsigned int sfp_gpio_get_state(s
  	unsigned int i, state, v;
  
  	for (i = state = 0; i < GPIO_MAX; i++) {
@@ -29,7 +29,7 @@ Subject: [PATCH] 999-2730-net-phy-sfp-change-shared-mod-def0-and-los
  			continue;
  
  		v = gpiod_get_value_cansleep(sfp->gpio[i]);
-@@ -3299,7 +3299,7 @@ static int sfp_probe(struct platform_dev
+@@ -3304,7 +3304,7 @@ static int sfp_probe(struct platform_dev
  	}
  
  	for (i = 0; i < GPIO_MAX; i++) {

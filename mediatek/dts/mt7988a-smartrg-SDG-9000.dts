@@ -909,6 +909,8 @@
 };
 
 &mdio_bus {
+	/* clock-frequency = <12500000>; */
+
 	phy0: ethernet-phy@0 {
 		/* CUX3410 - LAN */
 		compatible = "ethernet-phy-ieee802.3-c45";
@@ -990,8 +992,8 @@
 	switch@10 {
 		#address-cells = <1>;
 		#size-cells = <0>;
-		compatible = "mxl,86282";
-		reg = <0x10>;
+		compatible = "maxlinear,mxl86282";
+		reg = <16>;
 		dsa,member = <1 0>;
 
 		status = "okay";
@@ -1005,76 +1007,76 @@
 			#address-cells = <1>;
 			#size-cells = <0>;
 
-			port@0 {
-				reg = <0>;
+			port@1 {
+				reg = <1>;
 				label = "lan1";
 				phy-handle = <&swphy0>;
 				phy-mode = "internal";
 				status = "okay";
 			};
 
-			port@1 {
-				reg = <1>;
+			port@2 {
+				reg = <2>;
 				label = "lan2";
 				phy-handle = <&swphy1>;
 				phy-mode = "internal";
 				status = "okay";
 			};
 
-			port@2 {
-				reg = <2>;
+			port@3 {
+				reg = <3>;
 				label = "lan3";
 				phy-handle = <&swphy2>;
 				phy-mode = "internal";
 				status = "okay";
 			};
 
-			port@3 {
-				reg = <3>;
+			port@4 {
+				reg = <4>;
 				label = "lan4";
 				phy-handle = <&swphy3>;
 				phy-mode = "internal";
 				status = "okay";
 			};
 
-			port@4 {
-				reg = <4>;
+			port@5 {
+				reg = <5>;
 				label = "lan5";
 				phy-handle = <&swphy4>;
 				phy-mode = "internal";
 				status = "okay";
 			};
 
-			port@5 {
-				reg = <5>;
+			port@6 {
+				reg = <6>;
 				label = "lan6";
 				phy-handle = <&swphy5>;
 				phy-mode = "internal";
 				status = "okay";
 			};
 
-			port@6 {
-				reg = <6>;
+			port@7 {
+				reg = <7>;
 				label = "lan7";
 				phy-handle = <&swphy6>;
 				phy-mode = "internal";
 				status = "okay";
 			};
 
-			port@7 {
-				reg = <7>;
+			port@8 {
+				reg = <8>;
 				label = "lan8";
 				phy-handle = <&swphy7>;
 				phy-mode = "internal";
 				status = "okay";
 			};
 
-			port@8 {
-				reg = <8>;
+			port@9 {
+				reg = <9>;
 				label = "cpu";
-				phy-mode = "usxgmii";
+				phy-mode = "10gbase-r";
 				ethernet = <&gmac1>;
-				dsa-tag-protocol = "mxl862_8021q";
+				dsa-tag-protocol = "mxl862xx-8021q";
 
 				fixed-link {
 					speed = <10000>;
@@ -1082,8 +1084,8 @@
 				};
 			};
 
-			port@9 {
-				reg = <12>;
+			port@13 {
+				reg = <13>;
 				label = "lan9";
 				phy-handle = <&phy0>;
 				phy-mode = "usxgmii";

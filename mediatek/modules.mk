@@ -38,23 +38,24 @@ define KernelPackage/iio-mt6577-auxadc
 endef
 $(eval $(call KernelPackage,iio-mt6577-auxadc))
 
-define KernelPackage/dsa-mxl862xx
+
+define KernelPackage/phy-mediatek-2p5g
   SUBMENU:=$(NETWORK_DEVICES_MENU)
-  TITLE:=MaxLinear MxL862xx DSA Switch
-  DEPENDS:=+kmod-dsa
-  KCONFIG:= \
-    CONFIG_NET_DSA_MXL862 \
-    CONFIG_NET_DSA_TAG_MXL862=y \
-    CONFIG_NET_DSA_TAG_MXL862_8021Q=y
-  FILES:=$(LINUX_DIR)/drivers/net/dsa/mxl862xx/mxl862xx_dsa.ko
-  AUTOLOAD:=$(call AutoProbe,mxl862xx_dsa)
+  TITLE:=MediaTek 2.5G Ethernet PHY
+  DEPENDS:=@TARGET_mediatek_filogic @!LINUX_6_12 +kmod-libphy
+  KCONFIG:=CONFIG_MEDIATEK_2P5GE_PHY
+  FILES:= \
+   $(LINUX_DIR)/drivers/net/phy/mediatek/mtk-2p5ge.ko
+  AUTOLOAD:=$(call AutoLoad,18,mtk-2p5ge,1)
 endef
 
-define KernelPackage/dsa-mxl862xx/description
-  Common kernel module for MaxLinear MxL862xx DSA switch family
+define KernelPackage/phy-mediatek-2p5g/description
+  Kernel modules for 2.5G Ethernet PHY built-into the MediaTek MT7988
+  and MT7987 SoCs.
 endef
 
-$(eval $(call KernelPackage,dsa-mxl862xx))
+$(eval $(call KernelPackage,phy-mediatek-2p5g))
+
 
 define KernelPackage/switch-rtl8367s
   SUBMENU:=Network Devices

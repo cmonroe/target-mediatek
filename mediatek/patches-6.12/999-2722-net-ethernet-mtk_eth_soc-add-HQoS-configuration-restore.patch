@@ -19,7 +19,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
-@@ -5100,6 +5100,54 @@ static int mtk_siocdevprivate(struct net
+@@ -5109,6 +5109,54 @@ static int mtk_siocdevprivate(struct net
  	return mtk_do_priv_ioctl(dev, ifr, cmd);
  }
  
@@ -74,7 +74,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  static void mtk_prepare_for_reset(struct mtk_eth *eth)
  {
  	u32 val;
-@@ -5143,6 +5191,7 @@ static void mtk_pending_work(struct work
+@@ -5152,6 +5200,7 @@ static void mtk_pending_work(struct work
  
  	mtk_hw_dump(eth);
  
@@ -82,7 +82,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	mtk_prepare_for_reset(eth);
  	mtk_wed_fe_reset();
  	/* Run again reset preliminary configuration in order to avoid any
-@@ -5194,6 +5243,7 @@ static void mtk_pending_work(struct work
+@@ -5203,6 +5252,7 @@ static void mtk_pending_work(struct work
  	clear_bit(MTK_RESETTING, &eth->state);
  
  	mtk_wed_fe_reset_complete();

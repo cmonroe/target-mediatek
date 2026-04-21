@@ -171,7 +171,7 @@ cat /sys/kernel/debug/mtketh/qdma_pppq
  	} else
  		queue = mac->id;
  
-@@ -5729,10 +5782,12 @@ static u16 mtk_select_queue(struct net_d
+@@ -5738,10 +5791,12 @@ static u16 mtk_select_queue(struct net_d
  			    struct net_device *sb_dev)
  {
  	struct mtk_mac *mac = netdev_priv(dev);
