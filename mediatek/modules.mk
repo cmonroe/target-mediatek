@@ -18,7 +18,8 @@ $(eval $(call KernelPackage,ata-ahci-mtk))
 define KernelPackage/btmtkuart
   SUBMENU:=Other modules
   TITLE:=MediaTek HCI UART driver
-  DEPENDS:=@(TARGET_mediatek_mt7622||TARGET_mediatek_filogic) +kmod-bluetooth +kmod-btmtk +mt7622bt-firmware
+  DEPENDS:=@(TARGET_mediatek_mt7622||TARGET_mediatek_filogic) +kmod-bluetooth +kmod-btmtk +mt7622bt-firmware \
+	   +!LINUX_6_12:kmod-hci-uart
   KCONFIG:=CONFIG_BT_MTKUART
   FILES:= \
 	$(LINUX_DIR)/drivers/bluetooth/btmtkuart.ko
@@ -29,7 +30,7 @@ $(eval $(call KernelPackage,btmtkuart))
 
 define KernelPackage/iio-mt6577-auxadc
   TITLE:=Mediatek AUXADC driver
-  DEPENDS:=@(TARGET_mediatek_mt7622||TARGET_mediatek_mt7623||TARGET_mediatek_filogic)
+  DEPENDS:=@(TARGET_mediatek_mt7622||TARGET_mediatek_filogic)
   KCONFIG:=CONFIG_MEDIATEK_MT6577_AUXADC
   FILES:= \
 	$(LINUX_DIR)/drivers/iio/adc/mt6577_auxadc.ko

@@ -23,10 +23,10 @@ Signed-off-by: Cezary Wilmanski <cezary.wilmanski@adtran.com>
  #include <linux/delay.h>
  #include <linux/etherdevice.h>
 +#include <linux/gpio/consumer.h>
+ #include <linux/icmpv6.h>
  #include <linux/if_bridge.h>
  #include <linux/if_vlan.h>
- #include <linux/module.h>
-@@ -4390,6 +4391,11 @@ static int mxl862xx_probe(struct mdio_de
+@@ -4396,6 +4397,11 @@ static int mxl862xx_probe(struct mdio_de
  
  	dev_set_drvdata(dev, ds);
  
@@ -48,7 +48,7 @@ Signed-off-by: Cezary Wilmanski <cezary.wilmanski@adtran.com>
  #include <linux/mdio.h>
  #include <linux/workqueue.h>
  #include <net/dsa.h>
-@@ -393,6 +394,7 @@ union mxl862xx_fw_version {
+@@ -391,6 +392,7 @@ union mxl862xx_fw_version {
  struct mxl862xx_priv {
  	struct dsa_switch *ds;
  	struct mdio_device *mdiodev;

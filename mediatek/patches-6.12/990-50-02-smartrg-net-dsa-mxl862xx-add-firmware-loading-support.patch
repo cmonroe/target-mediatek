@@ -155,7 +155,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  #endif /* __MXL862XX_FW_H */
 --- a/drivers/net/dsa/mxl862xx/mxl862xx.c
 +++ b/drivers/net/dsa/mxl862xx/mxl862xx.c
-@@ -317,7 +317,7 @@ static int mxl862xx_phy_write_c45_mii_bu
+@@ -289,7 +289,7 @@ static int mxl862xx_phy_write_c45_mii_bu
  	return mxl862xx_phy_write_mmd(bus->priv, addr, devadd, regnum, val);
  }
  
@@ -164,7 +164,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  {
  	struct mxl862xx_sys_fw_image_version ver = {};
  	unsigned long start = jiffies, timeout;
-@@ -1064,6 +1064,12 @@ static int mxl862xx_setup(struct dsa_swi
+@@ -1067,6 +1067,12 @@ static int mxl862xx_setup(struct dsa_swi
  		return ret;
  
  	ret = mxl862xx_wait_ready(ds);

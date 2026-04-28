@@ -17,83 +17,34 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 
 --- a/drivers/net/phy/realtek/phy_patch_rtl826x.c
 +++ b/drivers/net/phy/realtek/phy_patch_rtl826x.c
-@@ -214,6 +214,58 @@ static int phy_patch_rtl826x_op(struct p
+@@ -273,6 +273,11 @@ out:
  	return ret;
  }
  
-+int phy_patch_rtl8261c_db_init(struct phy_device *phydev)
++int rtl8261c_phy_patch_db_init(struct phy_device *phydev)
 +{
-+	int ret = 0, i;
-+	struct device *dev = &phydev->mdio.dev;
-+	struct rtl826x_priv *priv = phydev->priv;
-+	struct rt_phy_patch_db *patch_db = NULL;
-+	const struct firmware *fw = NULL;
-+	struct rtk_hwpatch *patches;
-+
-+	ret = request_firmware_direct(&fw, "rtl8261c.bin", dev);
-+	if (ret) {
-+		phydev_err(phydev, "Failed to request rtl8261c.bin\n");
-+		goto out;
-+	}
-+	patches = (struct rtk_hwpatch *)fw->data;
-+
-+	patch_db = kzalloc(sizeof(struct rt_phy_patch_db), GFP_KERNEL);
-+	if (!patch_db) {
-+		ret = -ENOMEM;
-+		goto out;
-+	}
-+
-+	patch_db->patch_op = phy_patch_rtl826x_op;
-+	patch_db->size = fw->size;
-+
-+	patch_db->conf = kmalloc(patch_db->size, GFP_KERNEL);
-+	if (!patch_db->conf) {
-+		ret = -ENOMEM;
-+		goto out;
-+	}
-+
-+	for (i = 0; i < fw->size / sizeof(struct rtk_hwpatch); i++) {
-+		patch_db->conf[i].patch_op = patches[i].patch_op;
-+		patch_db->conf[i].portmask = patches[i].portmask;
-+		patch_db->conf[i].pagemmd = le16_to_cpu(patches[i].pagemmd);
-+		patch_db->conf[i].addr = le16_to_cpu(patches[i].addr);
-+		patch_db->conf[i].msb = patches[i].msb;
-+		patch_db->conf[i].lsb = patches[i].lsb;
-+		patch_db->conf[i].data = le16_to_cpu(patches[i].data);
-+	}
-+
-+	priv->patch = patch_db;
-+
-+out:
-+	if (ret)
-+		kfree(patch_db);
-+	if (fw && !IS_ERR(fw))
-+		release_firmware(fw);
-+
-+	return ret;
++	return rtl826x_phy_patch_db_init(phydev, "rtl8261c.bin");
 +}
 +
- int phy_patch_rtl8261n_db_init(struct phy_device *phydev)
+ int rtl8261n_phy_patch_db_init(struct phy_device *phydev)
  {
- 	int ret = 0, i;
-@@ -360,5 +412,6 @@ out:
- 	return ret;
+ 	return rtl826x_phy_patch_db_init(phydev, "rtl8261n.bin");
+@@ -283,5 +288,6 @@ int rtl8264b_phy_patch_db_init(struct ph
+ 	return rtl826x_phy_patch_db_init(phydev, "rtl8264b.bin");
  }
  
 +MODULE_FIRMWARE("rtl8261c.bin");
  MODULE_FIRMWARE("rtl8261n.bin");
--MODULE_FIRMWARE("rtl8264b.bin");
-\ No newline at end of file
-+MODULE_FIRMWARE("rtl8264b.bin");
+ MODULE_FIRMWARE("rtl8264b.bin");
 --- a/drivers/net/phy/realtek/phy_patch_rtl826x.h
 +++ b/drivers/net/phy/realtek/phy_patch_rtl826x.h
-@@ -3,6 +3,7 @@
+@@ -5,6 +5,7 @@
  
- #include "phy_patch.h"
+ #include <linux/phy.h>
  
-+int phy_patch_rtl8261c_db_init(struct phy_device *phydev);
- int phy_patch_rtl8261n_db_init(struct phy_device *phydev);
- int phy_patch_rtl8264b_db_init(struct phy_device *phydev);
++int rtl8261c_phy_patch_db_init(struct phy_device *phydev);
+ int rtl8261n_phy_patch_db_init(struct phy_device *phydev);
+ int rtl8264b_phy_patch_db_init(struct phy_device *phydev);
  
 --- a/drivers/net/phy/realtek/realtek_main.c
 +++ b/drivers/net/phy/realtek/realtek_main.c
@@ -106,16 +57,16 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  #define RTL8224_SRAM_RTCT_FAULT_OPEN		BIT(3)
  #define RTL8224_SRAM_RTCT_FAULT_SAME_SHORT	BIT(4)
  #define RTL8224_SRAM_RTCT_FAULT_OK		BIT(5)
-@@ -225,6 +227,8 @@
- #define PHYID_RTL8224				0x001ccad0
- #define PHYID_RTL8264				0x001ccaf2
- #define PHYID_RTL8261N				0x001ccaf3
-+#define PHYID_RTL8261C_CG			0x001cc898
-+#define PHYID_RTL8261D_CG			0x001cc898
- #define PHYID_RTL9000A				0x001ccb00
+@@ -207,6 +209,8 @@
+ #define RTL_8221B_VM_CG				0x001cc84a
+ #define RTL_8251B				0x001cc862
+ #define RTL_8261C				0x001cc890
++#define RTL_8261C_CG				0x001cc898
++#define RTL_8261D_CG				0x001cc898
+ #define RTL_8264				0x001ccaf2
+ #define RTL_8261N				0x001ccaf3
  
- /* RTL8211E and RTL8211F support up to three LEDs */
-@@ -240,6 +244,33 @@
+@@ -223,6 +227,33 @@
  
  #define RTL826X_VND2_INSR				0xA43A
  
@@ -149,7 +100,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  MODULE_DESCRIPTION("Realtek PHY driver");
  MODULE_AUTHOR("Johnson Leung");
  MODULE_LICENSE("GPL");
-@@ -1824,6 +1855,10 @@ static int rtl8224_cable_test_result_tra
+@@ -1813,6 +1844,10 @@ static int rtl8224_cable_test_result_tra
  	if (result & RTL8224_SRAM_RTCT_FAULT_CROSS_SHORT)
  		return ETHTOOL_A_CABLE_RESULT_CODE_CROSS_SHORT;
  
@@ -160,14 +111,14 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	return ETHTOOL_A_CABLE_RESULT_CODE_UNSPEC;
  }
  
-@@ -2416,6 +2451,148 @@ static int rtl8264b_probe(struct phy_dev
+@@ -2399,6 +2434,148 @@ static int rtl8264b_probe(struct phy_dev
  	return 0;
  }
  
 +static int rtl8261c_cg_match_phy_device(struct phy_device *phydev,
 +					const struct phy_driver *phydrv)
 +{
-+	return rtlgen_is_c45_match(phydev, PHYID_RTL8261C_CG, true);
++	return rtlgen_is_c45_match(phydev, RTL_8261C_CG, true);
 +}
 +
 +static int rtl8261c_cg_probe(struct phy_device *phydev)
@@ -178,7 +129,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 +	if (ret < 0)
 +		return ret;
 +
-+	ret = phy_patch_rtl8261c_db_init(phydev);
++	ret = rtl8261c_phy_patch_db_init(phydev);
 +	if (ret < 0)
 +		return -EPROBE_DEFER;
 +
@@ -270,7 +221,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 +	if (ret < 0)
 +		goto patch_exit;
 +
-+	ret = phy_patch(phydev);
++	ret = rtlgen_phy_patch(phydev);
 +
 +patch_exit:
 +	phy_clear_bits_mmd(phydev, MDIO_MMD_VEND2,
@@ -309,7 +260,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  static int rtl826x_config_init(struct phy_device *phydev)
  {
  	struct rtl826x_priv *priv = phydev->priv;
-@@ -2459,6 +2636,24 @@ static int rtl826x_get_features(struct p
+@@ -2458,6 +2635,24 @@ static int rtl826x_get_features(struct p
  	return 0;
  }
  
@@ -334,7 +285,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  static int rtl825xb_get_features(struct phy_device *phydev)
  {
  	int ret;
-@@ -3143,6 +3338,25 @@ static struct phy_driver realtek_drvs[]
+@@ -3169,6 +3364,25 @@ static struct phy_driver realtek_drvs[]
  		.get_tunable    = rtl826x_get_tunable,
  		.set_tunable    = rtl826x_set_tunable,
  	}, {
@@ -348,7 +299,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 +		.aneg_done      = genphy_c45_aneg_done,
 +		.read_status    = rtl826x_read_status,
 +		.config_intr    = rtl826x_config_intr,
-+		.handle_interrupt = rtl826x_handle_intr,
++		.handle_interrupt = rtl826x_handle_interrupt,
 +		.match_phy_device = rtl8261c_cg_match_phy_device,
 +		.set_wol        = rtl826x_set_wol,
 +		.get_wol        = rtl826x_get_wol,
@@ -357,6 +308,6 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 +		.cable_test_start = rtl8224_cable_test_start,
 +		.cable_test_get_status = rtl8224_cable_test_get_status,
 +	}, {
- 		PHY_ID_MATCH_EXACT(PHYID_RTL8264),
+ 		PHY_ID_MATCH_EXACT(RTL_8264),
  		.name           = "RTL8264 10Gbps PHY",
  		.config_init    = rtl826x_config_init,

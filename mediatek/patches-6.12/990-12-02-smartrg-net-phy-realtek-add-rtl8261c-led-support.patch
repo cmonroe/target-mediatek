@@ -14,7 +14,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 
 --- a/drivers/net/phy/realtek/realtek_main.c
 +++ b/drivers/net/phy/realtek/realtek_main.c
-@@ -271,6 +271,21 @@
+@@ -254,6 +254,21 @@
  #define RTL8261C_PATCH_MODE_SETUP		0x0090
  #define RTL8261C_PATCH_SETUP_VAL		0x6100
  
@@ -36,7 +36,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  MODULE_DESCRIPTION("Realtek PHY driver");
  MODULE_AUTHOR("Johnson Leung");
  MODULE_LICENSE("GPL");
-@@ -1099,6 +1114,214 @@ static int rtl8211e_led_hw_control_set(s
+@@ -1082,6 +1097,214 @@ static int rtl8211e_led_hw_control_set(s
  	return ret;
  }
  
@@ -251,7 +251,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  static int rtl8211e_config_init(struct phy_device *phydev)
  {
  	u16 val;
-@@ -3354,6 +3577,11 @@ static struct phy_driver realtek_drvs[]
+@@ -3380,6 +3603,11 @@ static struct phy_driver realtek_drvs[]
  		.get_wol        = rtl826x_get_wol,
  		.get_tunable    = rtl826x_get_tunable,
  		.set_tunable    = rtl826x_set_tunable,
@@ -265,10 +265,10 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	}, {
 --- a/drivers/net/phy/realtek/realtek.h
 +++ b/drivers/net/phy/realtek/realtek.h
-@@ -13,6 +13,7 @@ struct rtl826x_priv {
- 	bool pnswap_tx : 1;
- 	bool pnswap_rx : 1;
- 	bool patch_rtk_serdes : 1;
+@@ -12,6 +12,7 @@ struct rtl826x_priv {
+ 	struct rtlgen_phy_patch_db *patch;
+ 	bool pnswap_tx:1;
+ 	bool pnswap_rx:1;
 +	u8 led_active_low;
  };
  
