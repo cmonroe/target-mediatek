@@ -1,0 +1,190 @@
+From: Cezary Wilmanski <cezary.wilmanski@adtran.com>
+Date: Thu, 18 Sep 2025 12:32:03 +0200
+Subject: [PATCH] net: phy: aquantia: hwmon default temperature hack
+
+This patch adds support for overriding the default temperature thresholds
+(`temp1_max` and `temp1_crit`) stored in firmware with values from
+the device tree. This allows board-specific thermal limits to be
+applied at the driver level, independent of firmware defaults.
+
+Moreover, it defers the temperature threshold fix routine to a later point in
+the PHY bring-up sequence. It cannot be executed too early during
+reboot or Netsys SER, because it results in failed or ignored register writes.
+Scheduling the work with a delayed workqueue ensures the thresholds
+are applied reliably once the PHY is ready.
+
+Signed-off-by: Cezary Wilmanski <cezary.wilmanski@adtran.com>
+---
+ drivers/net/phy/aquantia/aquantia.h       |    6 +
+ drivers/net/phy/aquantia/aquantia_hwmon.c |  100 +++++++++++++++++++-
+ drivers/net/phy/aquantia/aquantia_main.c  |    3 +
+ 3 files changed, 105 insertions(+), 4 deletions(-)
+
+--- a/drivers/net/phy/aquantia/aquantia.h
++++ b/drivers/net/phy/aquantia/aquantia.h
+@@ -194,11 +194,17 @@ struct aqr107_priv {
+ 	struct aqr107_mib_stat mib;
+ 	struct task_struct *mib_thread;
+ 	struct dentry *mib_dentry;
++	struct device *hwmon_dev;
++	struct delayed_work fix_temp_work;
+ };
+ 
+ #if IS_REACHABLE(CONFIG_HWMON)
++void aqr_hwmon_schedule_fix_temp_work(struct phy_device *phydev);
++void aqr_hwmon_cancel_fix_temp_work(struct phy_device *phydev);
+ int aqr_hwmon_probe(struct phy_device *phydev);
+ #else
++static inline void aqr_hwmon_schedule_fix_temp_work(struct phy_device *phydev) { return; }
++static inline void aqr_hwmon_cancel_fix_temp_work(struct phy_device *phydev) { return; }
+ static inline int aqr_hwmon_probe(struct phy_device *phydev) { return 0; }
+ #endif
+ 
+--- a/drivers/net/phy/aquantia/aquantia_hwmon.c
++++ b/drivers/net/phy/aquantia/aquantia_hwmon.c
+@@ -10,6 +10,7 @@
+ #include <linux/device.h>
+ #include <linux/ctype.h>
+ #include <linux/hwmon.h>
++#include <linux/of.h>
+ 
+ #include "aquantia.h"
+ 
+@@ -207,12 +208,95 @@ static const struct hwmon_chip_info aqr_
+ 	.info = aqr_hwmon_info,
+ };
+ 
++static int aqr_hwmon_fix_temp_thresholds(struct device *dev)
++{
++	long value;
++	int of_temp;
++	int ret;
++
++	if (!of_property_read_u32(dev->of_node, "marvell,hwmon_temp_high",
++				  &of_temp)) {
++		ret = aqr_hwmon_read(dev, hwmon_temp, hwmon_temp_max, 0,
++				     &value);
++		if (ret < 0)
++			return ret;
++
++		if (value != of_temp) {
++			ret = aqr_hwmon_write(dev, hwmon_temp, hwmon_temp_max,
++					      0, of_temp);
++			if (ret < 0)
++				return ret;
++		}
++	}
++
++	if (!of_property_read_u32(dev->of_node, "marvell,hwmon_temp_crit",
++				  &of_temp)) {
++		ret = aqr_hwmon_read(dev, hwmon_temp, hwmon_temp_crit, 0,
++				     &value);
++		if (ret < 0)
++			return ret;
++
++		if (value != of_temp) {
++			ret = aqr_hwmon_write(dev, hwmon_temp, hwmon_temp_crit,
++					      0, of_temp);
++			if (ret < 0)
++				return ret;
++		}
++	}
++
++	return 0;
++}
++
++static void aqr_hwmon_fix_temp_work(struct work_struct *work)
++{
++	struct aqr107_priv *priv = container_of(to_delayed_work(work),
++				struct aqr107_priv,
++				fix_temp_work);
++	int ret;
++
++	if (!priv->hwmon_dev)
++		return;
++
++	ret = aqr_hwmon_fix_temp_thresholds(priv->hwmon_dev);
++	if (ret < 0)
++		dev_err(priv->hwmon_dev, "Fixing temp thresholds failed, err: %d\n", ret);
++}
++
++void aqr_hwmon_schedule_fix_temp_work(struct phy_device *phydev)
++{
++	struct aqr107_priv *priv = phydev->priv;
++
++	if (!priv->hwmon_dev)
++		return;
++
++	/* Schedule work with 1 second delay */
++	schedule_delayed_work(&priv->fix_temp_work, HZ);
++}
++
++void aqr_hwmon_cancel_fix_temp_work(struct phy_device *phydev)
++{
++	struct aqr107_priv *priv = phydev->priv;
++
++	if (!priv || !priv->hwmon_dev)
++		return;
++
++	/*
++	 * Ensure any scheduled work is cancelled
++	 * and has fully completed before tearing down the device.
++	 *
++	 * This prevents a possible use-after-free if work is still
++	 * queued or running while 'priv' is being destroyed.
++	 * If no work is queued, this is effectively a no-op.
++	 */
++	cancel_delayed_work_sync(&priv->fix_temp_work);
++}
++
+ int aqr_hwmon_probe(struct phy_device *phydev)
+ {
++	struct aqr107_priv *priv = phydev->priv;
+ 	struct device *dev = &phydev->mdio.dev;
+-	struct device *hwmon_dev;
+ 	char *hwmon_name;
+-	int i, j;
++	int i, j, ret;
+ 
+ 	hwmon_name = devm_kstrdup(dev, dev_name(dev), GFP_KERNEL);
+ 	if (!hwmon_name)
+@@ -227,10 +311,18 @@ int aqr_hwmon_probe(struct phy_device *p
+ 	}
+ 	hwmon_name[j] = '\0';
+ 
+-	hwmon_dev = devm_hwmon_device_register_with_info(dev, hwmon_name,
++	priv->hwmon_dev = devm_hwmon_device_register_with_info(dev, hwmon_name,
+ 					phydev, &aqr_hwmon_chip_info, NULL);
+ 
+-	return PTR_ERR_OR_ZERO(hwmon_dev);
++	if (IS_ERR_OR_NULL(priv->hwmon_dev)) {
++		ret = IS_ERR(priv->hwmon_dev) ? PTR_ERR(priv->hwmon_dev) : -ENOMEM;
++		priv->hwmon_dev = NULL;
++		return ret;
++	}
++
++	INIT_DELAYED_WORK(&priv->fix_temp_work, aqr_hwmon_fix_temp_work);
++
++	return 0;
+ }
+ 
+ #endif
+--- a/drivers/net/phy/aquantia/aquantia_main.c
++++ b/drivers/net/phy/aquantia/aquantia_main.c
+@@ -662,6 +662,8 @@ static int aqr107_config_init(struct phy
+ 			return ret;
+ 	}
+ 
++	aqr_hwmon_schedule_fix_temp_work(phydev);
++
+ 	return 0;
+ }
+ 
+@@ -932,6 +934,7 @@ static int aqr107_probe(struct phy_devic
+ static void aqr107_remove(struct phy_device *phydev)
+ {
+ 	aqr_mib_remove(phydev);
++	aqr_hwmon_cancel_fix_temp_work(phydev);
+ }
+ 
+ static struct phy_driver aqr_driver[] = {

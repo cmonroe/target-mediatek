@@ -1,0 +1,17 @@
+--- a/sound/soc/codecs/wm8960.c
++++ b/sound/soc/codecs/wm8960.c
+@@ -1485,11 +1485,14 @@ static int wm8960_i2c_probe(struct i2c_c
+ 		goto bulk_disable;
+ 	}
+ 
++	/* D2 MOD: Remove below code due to no real wm8960 codec in the EVB board */
++#if 0
+ 	ret = wm8960_reset(wm8960->regmap);
+ 	if (ret != 0) {
+ 		dev_err(&i2c->dev, "Failed to issue reset\n");
+ 		goto bulk_disable;
+ 	}
++#endif
+ 
+ 	if (wm8960->pdata.shared_lrclk) {
+ 		ret = regmap_update_bits(wm8960->regmap, WM8960_ADDCTL2,

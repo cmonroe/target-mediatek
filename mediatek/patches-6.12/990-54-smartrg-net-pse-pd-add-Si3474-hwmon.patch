@@ -1,0 +1,169 @@
+net: pse-pd: si3474: Add hwmon feature
+
+Register si3474 as hwmon device reading IC internal temperature.
+
+Failed probe of si3474_hwmon is not considered as a critical error, 
+PSE part should still be operational.
+
+
+Signed-off-by: Piotr Kubik <piotr.kubik@adtran.com>
+---
+--- a/drivers/net/pse-pd/Makefile
++++ b/drivers/net/pse-pd/Makefile
+@@ -5,5 +5,5 @@ obj-$(CONFIG_PSE_CONTROLLER) += pse_core
+ 
+ obj-$(CONFIG_PSE_REGULATOR) += pse_regulator.o
+ obj-$(CONFIG_PSE_PD692X0) += pd692x0.o
+-obj-$(CONFIG_PSE_SI3474) += si3474.o
++obj-$(CONFIG_PSE_SI3474) += si3474.o si3474_hwmon.o
+ obj-$(CONFIG_PSE_TPS23881) += tps23881.o
+--- /dev/null
++++ b/drivers/net/pse-pd/si3474_hwmon.c
+@@ -0,0 +1,66 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/*
++ * HWMON Driver for the Skyworks Si3474 PoE PSE Controller
++ *
++ */
++#if IS_REACHABLE(CONFIG_HWMON)
++
++#include <linux/hwmon.h>
++#include <linux/i2c.h>
++
++#include "si3474.h"
++
++/* Misc registers */
++#define TEMPERATURE_REG 0x2C
++#define TEMP_SCALE_MILLIC 652 // 0.652 * 1000
++
++static umode_t si3474_hwmon_is_visible(const void *drvdata,
++				       enum hwmon_sensor_types type, u32 attr,
++				       int channel)
++{
++	return 0444;
++}
++
++static int si3474_hwmon_read(struct device *dev, enum hwmon_sensor_types type,
++			     u32 attr, int channel, long *value)
++{
++	struct si3474_priv *priv = dev_get_drvdata(dev);
++	int ret;
++
++	ret = i2c_smbus_read_byte_data(priv->client[0], TEMPERATURE_REG);
++	if (ret < 0)
++		return ret;
++
++	*value = (((s8)ret * TEMP_SCALE_MILLIC)) - 20000;
++	return 0;
++};
++
++static const struct hwmon_channel_info *const si3474_hwmon_info[] = {
++	HWMON_CHANNEL_INFO(temp, HWMON_T_INPUT), NULL
++};
++
++static const struct hwmon_ops si3474_hwmon_ops = {
++	.is_visible = si3474_hwmon_is_visible,
++	.read = si3474_hwmon_read,
++};
++
++static const struct hwmon_chip_info si3474_hwmon_chip_info = {
++	.ops = &si3474_hwmon_ops,
++	.info = si3474_hwmon_info,
++};
++
++int si3474_hwmon_probe(struct device *dev, struct si3474_priv *priv)
++{
++	struct device *hwmon_dev;
++
++	hwmon_dev = devm_hwmon_device_register_with_info(
++		dev, "si3474", priv, &si3474_hwmon_chip_info, NULL);
++
++	return PTR_ERR_OR_ZERO(hwmon_dev);
++}
++
++MODULE_AUTHOR("Piotr Kubik <piotr.kubik@adtran.com>");
++MODULE_DESCRIPTION("Skyworks Si3474 PoE PSE Controller hwmon driver");
++MODULE_LICENSE("GPL");
++
++#endif
+--- a/drivers/net/pse-pd/si3474.c
++++ b/drivers/net/pse-pd/si3474.c
+@@ -92,7 +92,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/pse-pd/pse.h>
+ 
+-#define SI3474_MAX_CHANS 8
++#include "si3474.h"
+ 
+ #define MANUFACTURER_ID 0x08
+ #define IC_ID 0x05
+@@ -135,18 +135,6 @@
+ #define CHAN_MASK(chan) (0x03U << (2 * CHAN_IDX(chan)))
+ #define CHAN_REG(base, chan) ((base) + (CHAN_IDX(chan) * 4))
+ 
+-struct si3474_pi_desc {
+-	u8 chan[2];
+-	bool is_4p;
+-};
+-
+-struct si3474_priv {
+-	struct i2c_client *client[2];
+-	struct pse_controller_dev pcdev;
+-	struct device_node *np;
+-	struct si3474_pi_desc pi[SI3474_MAX_CHANS];
+-};
+-
+ static struct si3474_priv *to_si3474_priv(struct pse_controller_dev *pcdev)
+ {
+ 	return container_of(pcdev, struct si3474_priv, pcdev);
+@@ -546,6 +534,10 @@ static int si3474_i2c_probe(struct i2c_c
+ 		return ret;
+ 	}
+ 
++	ret = si3474_hwmon_probe(dev, priv);
++	if (ret < 0)
++		dev_err(dev, "Hwmon probe failed: 0x%x\n", ret);
++
+ 	return 0;
+ }
+ 
+--- /dev/null
++++ b/drivers/net/pse-pd/si3474.h
+@@ -0,0 +1,37 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/*
++ * Driver for the Skyworks Si3474 PoE PSE Controller
++ */
++
++#ifndef SI3474_H
++#define SI3474_H
++
++#include <linux/device.h>
++#include <linux/of.h>
++#include <linux/pse-pd/pse.h>
++
++#define SI3474_MAX_CHANS 8
++
++struct si3474_pi_desc {
++	u8 chan[2];
++	bool is_4p;
++};
++
++struct si3474_priv {
++	struct i2c_client *client[2];
++	struct pse_controller_dev pcdev;
++	struct device_node *np;
++	struct si3474_pi_desc pi[SI3474_MAX_CHANS];
++};
++
++#if IS_REACHABLE(CONFIG_HWMON)
++int si3474_hwmon_probe(struct device *dev, struct si3474_priv *priv);
++#else
++static inline int si3474_hwmon_probe(struct device *dev,
++				     struct si3474_priv *priv)
++{
++	return 0;
++};
++#endif
++
++#endif /* SI3474_H */

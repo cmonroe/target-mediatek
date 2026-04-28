@@ -1,0 +1,22 @@
+From: Piotr Kubik <piotr.kubik@adtran.com>
+Date: Mon, 20 Apr 2026 11:35:00 -0700
+Subject: [PATCH] net: phy: mxl-gpy: register hwmon as thermal zone
+
+This allows the mxl-gpy hwmon temperature sensor to be used as a
+thermal zone input.
+
+Signed-off-by: Piotr Kubik <piotr.kubik@adtran.com>
+---
+ drivers/net/phy/mxl-gpy.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/net/phy/mxl-gpy.c
++++ b/drivers/net/phy/mxl-gpy.c
+@@ -234,6 +234,7 @@ static umode_t gpy_hwmon_is_visible(cons
+ }
+ 
+ static const struct hwmon_channel_info * const gpy_hwmon_info[] = {
++	HWMON_CHANNEL_INFO(chip, HWMON_C_REGISTER_TZ),
+ 	HWMON_CHANNEL_INFO(temp, HWMON_T_INPUT),
+ 	NULL
+ };

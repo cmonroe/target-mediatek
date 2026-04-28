@@ -1,0 +1,182 @@
+From 05f482dfab1f1437767e74ac1592c0cb917f57bd Mon Sep 17 00:00:00 2001
+From: Tim Hayes <tim.hayes@smartrg.com>
+Date: Tue, 28 Feb 2023 13:11:22 -0800
+Subject: [PATCH] OWRT-7643 Adtran quirks added
+
+---
+ drivers/net/phy/sfp.c | 34 ++++++++++++++++++++++++++++++++--
+ 1 file changed, 32 insertions(+), 2 deletions(-)
+
+--- a/drivers/net/phy/sfp.c
++++ b/drivers/net/phy/sfp.c
+@@ -447,31 +447,67 @@ static void sfp_fixup_rollball_cc(struct
+ 	sfp->id.base.extended_cc = SFF8024_ECC_10GBASE_T_SFI;
+ }
+ 
++static void sfp_fixup_gpon_xxx(struct sfp *sfp)
++{
++	dev_warn(sfp->dev, "%s: applied", __FUNCTION__);
++
++	sfp_fixup_long_startup(sfp);
++	sfp_fixup_ignore_tx_fault(sfp);
++	sfp_fixup_ignore_los(sfp);
++}
++
++static void sfp_fixup_copper_xxx(struct sfp *sfp)
++{
++	dev_warn(sfp->dev, "%s: applied", __FUNCTION__);
++
++	sfp->id.base.e1000_base_t = 0;
++}
++
+ static void sfp_quirk_2500basex(struct sfp *sfp,
+ 				const struct sfp_eeprom_id *id,
+ 				struct sfp_module_caps *caps)
+ {
++	dev_warn(sfp->dev, "%s: entry modes 0x%016lx",
++		 __FUNCTION__, *caps->link_modes);
++
+ 	linkmode_set_bit(ETHTOOL_LINK_MODE_2500baseX_Full_BIT,
+ 			 caps->link_modes);
+ 	__set_bit(PHY_INTERFACE_MODE_2500BASEX, caps->interfaces);
++
++	dev_warn(sfp->dev, "%s: exit modes 0x%016lx",
++		 __FUNCTION__, *caps->link_modes);
+ }
+ 
+ static void sfp_quirk_disable_autoneg(struct sfp *sfp,
+ 				      const struct sfp_eeprom_id *id,
+ 				      struct sfp_module_caps *caps)
+ {
++	dev_warn(sfp->dev, "%s: entry modes 0x%016lx",
++		 __FUNCTION__, *caps->link_modes);
++
+ 	linkmode_clear_bit(ETHTOOL_LINK_MODE_Autoneg_BIT, caps->link_modes);
++
++	dev_warn(sfp->dev, "%s: exit modes 0x%016lx",
++		 __FUNCTION__, *caps->link_modes);
+ }
+ 
+ static void sfp_quirk_oem_2_5g(struct sfp *sfp,
+ 			       const struct sfp_eeprom_id *id,
+ 			       struct sfp_module_caps *caps)
+ {
++	dev_warn(sfp->dev, "%s: entry modes 0x%016lx",
++		 __FUNCTION__, *caps->link_modes);
++
+ 	/* Copper 2.5G SFP */
++	linkmode_set_bit(ETHTOOL_LINK_MODE_2500baseX_Full_BIT,
++			 caps->link_modes);
+ 	linkmode_set_bit(ETHTOOL_LINK_MODE_2500baseT_Full_BIT,
+ 			 caps->link_modes);
+ 	__set_bit(PHY_INTERFACE_MODE_2500BASEX, caps->interfaces);
+ 	sfp_quirk_disable_autoneg(sfp, id, caps);
++
++	dev_warn(sfp->dev, "%s: exit modes 0x%016lx",
++		 __FUNCTION__, *caps->link_modes);
+ }
+ 
+ static void sfp_quirk_ubnt_uf_instant(struct sfp *sfp,
+@@ -489,6 +525,44 @@ static void sfp_quirk_ubnt_uf_instant(st
+ 	__set_bit(PHY_INTERFACE_MODE_1000BASEX, caps->interfaces);
+ }
+ 
++#define SFP_SERDES_SPEED		250
++#define SFP_SERDES_SPEED_AUTO		0x0
++#define SFP_SERDES_SPEED_1000M		0x1
++#define SFP_SERDES_SPEED_2500M		0x2
++#define SFP_SERDES_SPEED_10000M		0xA
++
++static void sfp_i2c_set_adtran_serdes_speed(struct sfp *sfp,
++				const struct sfp_eeprom_id *id,
++				int speed)
++{
++	int err;
++	u8 serdes_speed = SFP_SERDES_SPEED_AUTO;
++
++	/* only applies to SDX-630 currently */
++	if (memcmp(id->base.vendor_pn, "1287940F1", 9))
++		return;
++
++	switch (speed) {
++	case 1000:
++		serdes_speed = SFP_SERDES_SPEED_1000M;
++		break;
++	case 2500:
++		serdes_speed = SFP_SERDES_SPEED_2500M;
++		break;
++	default:
++		break;
++	}
++
++	dev_warn(sfp->dev, "%s: speed: %d set serdes_speed: 0x%02x",
++		 __FUNCTION__, speed, serdes_speed);
++
++	err = sfp->write(sfp, true, SFP_SERDES_SPEED, &serdes_speed,
++			 sizeof(serdes_speed));
++	if (err != sizeof(serdes_speed))
++		dev_err(sfp->dev, "failed to set serdes_speed: 0x%02x err: %pe",
++			serdes_speed, ERR_PTR(err));
++}
++
+ #define SFP_QUIRK(_v, _p, _s, _f) \
+ 	{ .vendor = _v, .part = _p, .support = _s, .fixup = _f, }
+ #define SFP_QUIRK_S(_v, _p, _s) SFP_QUIRK(_v, _p, _s, NULL)
+@@ -554,6 +628,8 @@ static void sfp_quirk_phy_mode(struct sf
+ 		break;
+ 	}
+ 
++	sfp_i2c_set_adtran_serdes_speed(sfp, id, speed);
++
+ 	dev_warn(sfp->dev, "%s: set speed: %d based on bus phy-mode: %s",
+ 		 __FUNCTION__, speed, phy_modes(interface));
+ 	dev_warn(sfp->dev, "%s: exit modes 0x%016lx",
+@@ -571,8 +647,9 @@ static const struct sfp_quirk sfp_quirk_
+ static const struct sfp_quirk sfp_quirks[] = {
+ 	// Alcatel Lucent G-010S-P can operate at 2500base-X, but incorrectly
+ 	// report 2500MBd NRZ in their EEPROM
++	// AKA Nokia from James Mouffat
+ 	SFP_QUIRK("ALCATELLUCENT", "G010SP", sfp_quirk_2500basex,
+-		  sfp_fixup_ignore_tx_fault),
++		  sfp_fixup_gpon_xxx),
+ 
+ 	// Alcatel Lucent G-010S-A can operate at 2500base-X, but report 3.2GBd
+ 	// NRZ in their EEPROM
+@@ -610,7 +687,7 @@ static const struct sfp_quirk sfp_quirks
+ 	// Huawei MA5671A can operate at 2500base-X, but report 1.2GBd NRZ in
+ 	// their EEPROM
+ 	SFP_QUIRK("HUAWEI", "MA5671A", sfp_quirk_2500basex,
+-		  sfp_fixup_ignore_tx_fault_and_los),
++		  sfp_fixup_gpon_xxx),
+ 
+ 	// Lantech 8330-262D-E and 8330-265D can operate at 2500base-X, but
+ 	// incorrectly report 2500MBd NRZ in their EEPROM.
+@@ -642,6 +719,28 @@ static const struct sfp_quirk sfp_quirks
+ 	SFP_QUIRK_F("Turris", "RTSFP-2.5G", sfp_fixup_rollball),
+ 	SFP_QUIRK_F("Turris", "RTSFP-10", sfp_fixup_rollball),
+ 	SFP_QUIRK_F("Turris", "RTSFP-10G", sfp_fixup_rollball),
++
++	// FiberMall XGSPON-ONU-STICK (WAS-110)
++	SFP_QUIRK("FiberMall", "XGSPON-ONU-STICK", sfp_quirk_phy_mode,
++		  sfp_fixup_gpon_xxx),
++
++	// F2 ADTRAN 1442535F2, ADTRAN SDX610 GPON ONT, 2.5G serdes
++	SFP_QUIRK("T&W", "TW2362H-CDEL-ADT", sfp_quirk_2500basex,
++		  sfp_fixup_gpon_xxx),
++	// F3 ADTRAN 1442535F3 ADTRAN SDX610 GPON ONT, 1G serdes
++	SFP_QUIRK_F("T&W", "TW2362H-CDEL-AD1", sfp_fixup_gpon_xxx),
++	// 1287940F1 SDX630 10G XGS-PON
++	SFP_QUIRK("ADTRAN", "1287940F1", sfp_quirk_phy_mode,
++		  sfp_fixup_gpon_xxx),
++	// Cogeco EPON SFP #1
++	SFP_QUIRK("CIGE", "XE-99S", sfp_quirk_phy_mode,
++		  sfp_fixup_gpon_xxx),
++	// Cogeco EPON SFP #2  (Note This device was giving eeprom checksum error)
++	SFP_QUIRK("Sercomm", "XES1010C", sfp_quirk_phy_mode,
++		  sfp_fixup_gpon_xxx),
++	// Adtran RTXL185-500-ADT, 10GBase-T Copper 30M, 64B/65B ENC
++	SFP_QUIRK("WTD", "RTXL185-500-ADT", sfp_quirk_phy_mode,
++		  sfp_fixup_copper_xxx),
+ };
+ 
+ static size_t sfp_strlen(const char *str, size_t maxlen)

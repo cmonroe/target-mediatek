@@ -1,0 +1,64 @@
+--- a/drivers/net/phy/aquantia/aquantia_main.c
++++ b/drivers/net/phy/aquantia/aquantia_main.c
+@@ -13,6 +13,7 @@
+ #include <linux/bitfield.h>
+ #include <linux/of.h>
+ #include <linux/phy.h>
++#include <linux/of.h>
+ 
+ #include "aquantia.h"
+ 
+@@ -590,6 +591,27 @@ static int aqr107_config_mdi(struct phy_
+ 			      mdi_conf | PMAPMD_RSVD_VEND_PROV_MDI_FORCE);
+ }
+ 
++static int aqr107_config_led(struct phy_device *phydev)
++{
++	struct device_node *node = phydev->mdio.dev.of_node;
++	u32 led_cfg[AQR_MAX_LEDS];
++	int i, ret;
++
++	if (!IS_ENABLED(CONFIG_OF_MDIO))
++		return 0;
++
++	if (!of_property_read_u32_array(node, "marvell,led-config", led_cfg, AQR_MAX_LEDS)) {
++		/* Write LED register values */
++		for (i = 0; i < AQR_MAX_LEDS; i++) {
++			ret = phy_write_mmd(phydev, MDIO_MMD_VEND1, AQR_LED_PROV(i), (u16)led_cfg[i]);
++			if (ret < 0)
++				return ret;
++		}
++	}
++
++	return 0;
++}
++
+ static int aqr107_config_init(struct phy_device *phydev)
+ {
+ 	struct aqr107_priv *priv = phydev->priv;
+@@ -623,6 +645,10 @@ static int aqr107_config_init(struct phy
+ 	if (ret)
+ 		return ret;
+ 
++	ret = aqr107_config_led(phydev);
++	if (ret < 0)
++		return ret;
++
+ 	/* Restore LED polarity state after reset */
+ 	for_each_set_bit(led_idx, &priv->leds_active_low, AQR_MAX_LEDS) {
+ 		ret = aqr_phy_led_active_low_set(phydev, led_idx, true);
+@@ -1103,10 +1129,10 @@ static struct phy_driver aqr_driver[] =
+ 	.get_strings    = aqr107_get_strings,
+ 	.get_stats      = aqr107_get_stats,
+ 	.link_change_notify = aqr107_link_change_notify,
+-	.led_brightness_set = aqr_phy_led_brightness_set,
+-	.led_hw_is_supported = aqr_phy_led_hw_is_supported,
+-	.led_hw_control_set = aqr_phy_led_hw_control_set,
+-	.led_hw_control_get = aqr_phy_led_hw_control_get,
++	//.led_brightness_set = aqr_phy_led_brightness_set,
++	//.led_hw_is_supported = aqr_phy_led_hw_is_supported,
++	//.led_hw_control_set = aqr_phy_led_hw_control_set,
++	//.led_hw_control_get = aqr_phy_led_hw_control_get,
+ 	.led_polarity_set = aqr_phy_led_polarity_set,
+ },
+ {
