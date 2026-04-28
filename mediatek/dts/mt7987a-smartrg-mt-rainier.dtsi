@@ -142,7 +142,6 @@
 	nvmem-cell-names = "mac-address";
 	label = "lan2";
 	phy-mode = "internal";
-	phy-connection-type = "internal";
 	phy-handle = <&phy15>;
 
 	status = "okay";

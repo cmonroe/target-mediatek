@@ -75,7 +75,6 @@
 	nvmem-cells = <&macaddr 0x1>;
 	nvmem-cell-names = "mac-address";
 	phy-mode = "internal";
-	phy-connection-type = "internal";
 	phy = <&int_2p5g_phy>;
 };
 
@@ -84,7 +83,7 @@
 	nvmem-cells = <&macaddr 0x0>;
 	nvmem-cell-names = "mac-address";
 	phy-mode = "usxgmii";
-	phy-connection-type = "usxgmii";
+	managed = "in-band-status";
 	phy = <&phy8>;
 };
 

@@ -545,7 +545,7 @@
 	nvmem-cell-names = "mac-address";
 	label = "wan";
 	phy-mode = "usxgmii";
-	phy-connection-type = "usxgmii";
+	managed = "in-band-status";
 	phy = <&phy8>;
 
 	status = "okay";
@@ -569,18 +569,20 @@
 
 			chan-sel-gpios = <&pio 53 GPIO_ACTIVE_HIGH>;
 			mod-def0-gpios = <&pio 82 GPIO_ACTIVE_LOW>;
+			sfp-connected-channel = <1>;
 
 			channel0: channel@0 {
 				reg = <0>;
 				phy-mode = "usxgmii";
+				managed = "in-band-status";
 				phy = <&phy8>;
 			};
 
 			channel1: channel@1 {
 				reg = <1>;
 				phy-mode = "usxgmii";
-				sfp = <&sfp1>;
 				managed = "in-band-status";
+				sfp = <&sfp1>;
 			};
 		};
 	};

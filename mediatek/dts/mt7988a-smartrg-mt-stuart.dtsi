@@ -283,7 +283,6 @@
 	nvmem-cell-names = "mac-address";
 	label = "lan1";
 	phy-mode = "usxgmii";
-	phy-connection-type = "usxgmii";
 	phy = <&phy8>;
 
 	status = "okay";

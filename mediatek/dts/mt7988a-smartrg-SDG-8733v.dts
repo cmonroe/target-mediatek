@@ -18,8 +18,12 @@
 };
 
 &gmac1 {
-	phy-connection-type = "usxgmii";
+	managed = "in-band-status";
 	phy = <&phy0>;
+};
+
+&gmac2 {
+	managed = "in-band-status";
 };
 
 &aqr_wan_thermal {

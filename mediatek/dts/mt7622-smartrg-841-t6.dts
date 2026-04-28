@@ -161,7 +161,6 @@
 
 		phy-handle = <&phy5>;
 		phy-mode = "2500base-x";
-		phy-connection-type = "2500base-x";
 	};
 
 	gmac1: mac@1 {

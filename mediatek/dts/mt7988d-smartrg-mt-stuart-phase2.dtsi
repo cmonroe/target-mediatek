@@ -123,7 +123,6 @@
 	nvmem-cell-names = "mac-address";
 	label = "wan";
 	phy-mode = "internal";
-	phy-connection-type = "internal";
 	phy = <&int_2p5g_phy>;
 
 	status = "okay";
