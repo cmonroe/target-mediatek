@@ -13,11 +13,10 @@ Signed-off-by: Tim Hayes <tim.hayes@smartrg.com>
 
 --- a/drivers/net/dsa/mt7530.c
 +++ b/drivers/net/dsa/mt7530.c
-@@ -29,49 +29,93 @@ static struct mt753x_pcs *pcs_to_mt753x_
+@@ -30,17 +30,95 @@ static struct mt753x_pcs *pcs_to_mt753x_
  	return container_of(pcs, struct mt753x_pcs, pcs);
  }
  
--/* String, offset, and register size in bytes if different from 4 bytes */
 +typedef void (*mt7530_mib_stats_fn)(struct rtnl_link_stats64 *, u64);
 +
 +struct mt7530_mib_desc {
@@ -34,6 +33,7 @@ Signed-off-by: Tim Hayes <tim.hayes@smartrg.com>
 +	.stats = (_fn), \
 +	.name = (_n),	\
 +}
++
 +static inline void mt7530_update_tx_bytes(struct rtnl_link_stats64 *s, u64 v) { s->tx_bytes += v; }
 +static inline void mt7530_update_tx_dropped(struct rtnl_link_stats64 *s, u64 v) { s->tx_dropped += v; }
 +static inline void mt7530_update_tx_packets(struct rtnl_link_stats64 *s, u64 v) { s->tx_packets += v; }
@@ -63,93 +63,62 @@ Signed-off-by: Tim Hayes <tim.hayes@smartrg.com>
 +	s->rx_packets += v;
 +}
 +
+ /* String, offset, and register size in bytes if different from 4 bytes */
  static const struct mt7530_mib_desc mt7530_mib[] = {
--	MIB_DESC(1, 0x00, "TxDrop"),
--	MIB_DESC(1, 0x04, "TxCrcErr"),
--	MIB_DESC(1, 0x08, "TxUnicast"),
--	MIB_DESC(1, 0x0c, "TxMulticast"),
--	MIB_DESC(1, 0x10, "TxBroadcast"),
--	MIB_DESC(1, 0x14, "TxCollision"),
--	MIB_DESC(1, 0x18, "TxSingleCollision"),
--	MIB_DESC(1, 0x1c, "TxMultipleCollision"),
--	MIB_DESC(1, 0x20, "TxDeferred"),
--	MIB_DESC(1, 0x24, "TxLateCollision"),
--	MIB_DESC(1, 0x28, "TxExcessiveCollistion"),
--	MIB_DESC(1, 0x2c, "TxPause"),
--	MIB_DESC(1, 0x30, "TxPktSz64"),
--	MIB_DESC(1, 0x34, "TxPktSz65To127"),
--	MIB_DESC(1, 0x38, "TxPktSz128To255"),
--	MIB_DESC(1, 0x3c, "TxPktSz256To511"),
--	MIB_DESC(1, 0x40, "TxPktSz512To1023"),
--	MIB_DESC(1, 0x44, "Tx1024ToMax"),
--	MIB_DESC(2, 0x48, "TxBytes"),
--	MIB_DESC(1, 0x60, "RxDrop"),
--	MIB_DESC(1, 0x64, "RxFiltering"),
--	MIB_DESC(1, 0x68, "RxUnicast"),
--	MIB_DESC(1, 0x6c, "RxMulticast"),
--	MIB_DESC(1, 0x70, "RxBroadcast"),
--	MIB_DESC(1, 0x74, "RxAlignErr"),
--	MIB_DESC(1, 0x78, "RxCrcErr"),
--	MIB_DESC(1, 0x7c, "RxUnderSizeErr"),
--	MIB_DESC(1, 0x80, "RxFragErr"),
--	MIB_DESC(1, 0x84, "RxOverSzErr"),
--	MIB_DESC(1, 0x88, "RxJabberErr"),
--	MIB_DESC(1, 0x8c, "RxPause"),
--	MIB_DESC(1, 0x90, "RxPktSz64"),
--	MIB_DESC(1, 0x94, "RxPktSz65To127"),
--	MIB_DESC(1, 0x98, "RxPktSz128To255"),
--	MIB_DESC(1, 0x9c, "RxPktSz256To511"),
--	MIB_DESC(1, 0xa0, "RxPktSz512To1023"),
--	MIB_DESC(1, 0xa4, "RxPktSz1024ToMax"),
--	MIB_DESC(2, 0xa8, "RxBytes"),
--	MIB_DESC(1, 0xb0, "RxCtrlDrop"),
--	MIB_DESC(1, 0xb4, "RxIngressDrop"),
--	MIB_DESC(1, 0xb8, "RxArlDrop"),
-+	MIB_DESC(1, 0x00, mt7530_update_tx_dropped, "TxDrop"),
-+	MIB_DESC(1, 0x04, mt7530_update_tx_errors, "TxCrcErr"),
-+	MIB_DESC(1, 0x08, mt7530_update_tx_packets, "TxUnicast"),
-+	MIB_DESC(1, 0x0c, mt7530_update_tx_multicast, "TxMulticast"),
-+	MIB_DESC(1, 0x10, mt7530_update_tx_packets, "TxBroadcast"),
-+	MIB_DESC(1, 0x14, mt7530_update_collisions, "TxCollision"),
-+	MIB_DESC(1, 0x18, mt7530_update_collisions, "TxSingleCollision"),
-+	MIB_DESC(1, 0x1c, mt7530_update_collisions, "TxMultipleCollision"),
-+	MIB_DESC(1, 0x20, NULL, "TxDeferred"),
-+	MIB_DESC(1, 0x24, mt7530_update_collisions, "TxLateCollision"),
-+	MIB_DESC(1, 0x28, mt7530_update_collisions, "TxExcessiveCollistion"),
-+	MIB_DESC(1, 0x2c, NULL, "TxPause"),
-+	MIB_DESC(1, 0x30, NULL, "TxPktSz64"),
-+	MIB_DESC(1, 0x34, NULL, "TxPktSz65To127"),
-+	MIB_DESC(1, 0x38, NULL, "TxPktSz128To255"),
-+	MIB_DESC(1, 0x3c, NULL, "TxPktSz256To511"),
-+	MIB_DESC(1, 0x40, NULL, "TxPktSz512To1023"),
-+	MIB_DESC(1, 0x44, NULL, "Tx1024ToMax"),
-+	MIB_DESC(2, 0x48, mt7530_update_tx_bytes, "TxBytes"),
-+	MIB_DESC(1, 0x60, mt7530_update_rx_dropped, "RxDrop"),
-+	MIB_DESC(1, 0x64, mt7530_update_rx_dropped, "RxFiltering"),
-+	MIB_DESC(1, 0x68, mt7530_update_rx_packets, "RxUnicast"),
-+	MIB_DESC(1, 0x6c, mt7530_update_rx_multicast, "RxMulticast"),
-+	MIB_DESC(1, 0x70, mt7530_update_rx_packets, "RxBroadcast"),
-+	MIB_DESC(1, 0x74, mt7530_update_rx_errors, "RxAlignErr"),
-+	MIB_DESC(1, 0x78, mt7530_update_rx_crc_errors, "RxCrcErr"),
-+	MIB_DESC(1, 0x7c, mt7530_update_rx_length_errors, "RxUnderSizeErr"),
-+	MIB_DESC(1, 0x80, mt7530_update_rx_errors, "RxFragErr"),
-+	MIB_DESC(1, 0x84, mt7530_update_rx_errors, "RxOverSzErr"),
-+	MIB_DESC(1, 0x88, mt7530_update_rx_errors, "RxJabberErr"),
-+	MIB_DESC(1, 0x8c, NULL, "RxPause"),
-+	MIB_DESC(1, 0x90, NULL, "RxPktSz64"),
-+	MIB_DESC(1, 0x94, NULL, "RxPktSz65To127"),
-+	MIB_DESC(1, 0x98, NULL, "RxPktSz128To255"),
-+	MIB_DESC(1, 0x9c, NULL, "RxPktSz256To511"),
-+	MIB_DESC(1, 0xa0, NULL, "RxPktSz512To1023"),
-+	MIB_DESC(1, 0xa4, NULL, "RxPktSz1024ToMax"),
-+	MIB_DESC(2, 0xa8, mt7530_update_rx_bytes, "RxBytes"),
-+	MIB_DESC(1, 0xb0, mt7530_update_rx_dropped, "RxCtrlDrop"),
-+	MIB_DESC(1, 0xb4, mt7530_update_rx_dropped, "RxIngressDrop"),
-+	MIB_DESC(1, 0xb8, mt7530_update_rx_dropped, "RxArlDrop"),
+-	MIB_DESC(1, MT7530_PORT_MIB_TX_DROP, "TxDrop"),
+-	MIB_DESC(1, MT7530_PORT_MIB_TX_CRC_ERR, "TxCrcErr"),
+-	MIB_DESC(1, MT7530_PORT_MIB_TX_COLLISION, "TxCollision"),
+-	MIB_DESC(1, MT7530_PORT_MIB_RX_DROP, "RxDrop"),
+-	MIB_DESC(1, MT7530_PORT_MIB_RX_FILTERING, "RxFiltering"),
+-	MIB_DESC(1, MT7530_PORT_MIB_RX_CRC_ERR, "RxCrcErr"),
+-	MIB_DESC(1, MT7530_PORT_MIB_RX_CTRL_DROP, "RxCtrlDrop"),
+-	MIB_DESC(1, MT7530_PORT_MIB_RX_INGRESS_DROP, "RxIngressDrop"),
+-	MIB_DESC(1, MT7530_PORT_MIB_RX_ARL_DROP, "RxArlDrop"),
++	MIB_DESC(1, MT7530_PORT_MIB_TX_DROP, mt7530_update_tx_dropped, "TxDrop"),
++	MIB_DESC(1, MT7530_PORT_MIB_TX_CRC_ERR, mt7530_update_tx_errors, "TxCrcErr"),
++	MIB_DESC(1, MT7530_PORT_MIB_TX_UNICAST, mt7530_update_tx_packets, "TxUnicast"),
++	MIB_DESC(1, MT7530_PORT_MIB_TX_MULTICAST, mt7530_update_tx_multicast, "TxMulticast"),
++	MIB_DESC(1, MT7530_PORT_MIB_TX_BROADCAST, mt7530_update_tx_packets, "TxBroadcast"),
++	MIB_DESC(1, MT7530_PORT_MIB_TX_COLLISION, mt7530_update_collisions, "TxCollision"),
++	MIB_DESC(1, MT7530_PORT_MIB_TX_SINGLE_COLLISION, mt7530_update_collisions, "TxSingleCollision"),
++	MIB_DESC(1, MT7530_PORT_MIB_TX_MULTIPLE_COLLISION, mt7530_update_collisions, "TxMultipleCollision"),
++	MIB_DESC(1, MT7530_PORT_MIB_TX_DEFERRED, NULL, "TxDeferred"),
++	MIB_DESC(1, MT7530_PORT_MIB_TX_LATE_COLLISION, mt7530_update_collisions, "TxLateCollision"),
++	MIB_DESC(1, MT7530_PORT_MIB_TX_EXCESSIVE_COLLISION, mt7530_update_collisions, "TxExcessiveCollistion"),
++	MIB_DESC(1, MT7530_PORT_MIB_TX_PAUSE, NULL, "TxPause"),
++	MIB_DESC(1, MT7530_PORT_MIB_TX_PKT_SZ_64, NULL, "TxPktSz64"),
++	MIB_DESC(1, MT7530_PORT_MIB_TX_PKT_SZ_65_TO_127, NULL, "TxPktSz65To127"),
++	MIB_DESC(1, MT7530_PORT_MIB_TX_PKT_SZ_128_TO_255, NULL, "TxPktSz128To255"),
++	MIB_DESC(1, MT7530_PORT_MIB_TX_PKT_SZ_256_TO_511, NULL, "TxPktSz256To511"),
++	MIB_DESC(1, MT7530_PORT_MIB_TX_PKT_SZ_512_TO_1023, NULL, "TxPktSz512To1023"),
++	MIB_DESC(1, MT7530_PORT_MIB_TX_PKT_SZ_1024_TO_MAX, NULL, "Tx1024ToMax"),
++	MIB_DESC(2, MT7530_PORT_MIB_TX_BYTES, mt7530_update_tx_bytes, "TxBytes"),
++	MIB_DESC(1, MT7530_PORT_MIB_RX_DROP, mt7530_update_rx_dropped, "RxDrop"),
++	MIB_DESC(1, MT7530_PORT_MIB_RX_FILTERING, mt7530_update_rx_dropped, "RxFiltering"),
++	MIB_DESC(1, MT7530_PORT_MIB_RX_UNICAST, mt7530_update_rx_packets, "RxUnicast"),
++	MIB_DESC(1, MT7530_PORT_MIB_RX_MULTICAST, mt7530_update_rx_multicast, "RxMulticast"),
++	MIB_DESC(1, MT7530_PORT_MIB_RX_BROADCAST, mt7530_update_rx_packets, "RxBroadcast"),
++	MIB_DESC(1, MT7530_PORT_MIB_RX_ALIGN_ERR, mt7530_update_rx_errors, "RxAlignErr"),
++	MIB_DESC(1, MT7530_PORT_MIB_RX_CRC_ERR, mt7530_update_rx_crc_errors, "RxCrcErr"),
++	MIB_DESC(1, MT7530_PORT_MIB_RX_UNDER_SIZE_ERR, mt7530_update_rx_length_errors, "RxUnderSizeErr"),
++	MIB_DESC(1, MT7530_PORT_MIB_RX_FRAG_ERR, mt7530_update_rx_errors, "RxFragErr"),
++	MIB_DESC(1, MT7530_PORT_MIB_RX_OVER_SZ_ERR, mt7530_update_rx_errors, "RxOverSzErr"),
++	MIB_DESC(1, MT7530_PORT_MIB_RX_JABBER_ERR, mt7530_update_rx_errors, "RxJabberErr"),
++	MIB_DESC(1, MT7530_PORT_MIB_RX_PAUSE, NULL, "RxPause"),
++	MIB_DESC(1, MT7530_PORT_MIB_RX_PKT_SZ_64, NULL, "RxPktSz64"),
++	MIB_DESC(1, MT7530_PORT_MIB_RX_PKT_SZ_65_TO_127, NULL, "RxPktSz65To127"),
++	MIB_DESC(1, MT7530_PORT_MIB_RX_PKT_SZ_128_TO_255, NULL, "RxPktSz128To255"),
++	MIB_DESC(1, MT7530_PORT_MIB_RX_PKT_SZ_256_TO_511, NULL, "RxPktSz256To511"),
++	MIB_DESC(1, MT7530_PORT_MIB_RX_PKT_SZ_512_TO_1023, NULL, "RxPktSz512To1023"),
++	MIB_DESC(1, MT7530_PORT_MIB_RX_PKT_SZ_1024_TO_MAX, NULL, "RxPktSz1024ToMax"),
++	MIB_DESC(2, MT7530_PORT_MIB_RX_BYTES, mt7530_update_rx_bytes, "RxBytes"),
++	MIB_DESC(1, MT7530_PORT_MIB_RX_CTRL_DROP, mt7530_update_rx_dropped, "RxCtrlDrop"),
++	MIB_DESC(1, MT7530_PORT_MIB_RX_INGRESS_DROP, mt7530_update_rx_dropped, "RxIngressDrop"),
++	MIB_DESC(1, MT7530_PORT_MIB_RX_ARL_DROP, mt7530_update_rx_dropped, "RxArlDrop"),
  };
  
  static void
-@@ -809,6 +853,72 @@ mt7530_get_ethtool_stats(struct dsa_swit
+@@ -788,6 +866,72 @@ mt7530_get_ethtool_stats(struct dsa_swit
  	}
  }
  
@@ -222,15 +191,72 @@ Signed-off-by: Tim Hayes <tim.hayes@smartrg.com>
  static int
  mt7530_get_sset_count(struct dsa_switch *ds, int port, int sset)
  {
-@@ -3164,6 +3274,7 @@ const struct dsa_switch_ops mt7530_switc
+@@ -906,51 +1050,6 @@ static void mt7530_get_rmon_stats(struct
+ 	*ranges = mt7530_rmon_ranges;
+ }
+ 
+-static void mt7530_get_stats64(struct dsa_switch *ds, int port,
+-			       struct rtnl_link_stats64 *storage)
+-{
+-	struct mt7530_priv *priv = ds->priv;
+-	uint64_t data;
+-
+-	/* MIB counter doesn't provide a FramesTransmittedOK but instead
+-	 * provide stats for Unicast, Broadcast and Multicast frames separately.
+-	 * To simulate a global frame counter, read Unicast and addition Multicast
+-	 * and Broadcast later
+-	 */
+-	mt7530_read_port_stats(priv, port, MT7530_PORT_MIB_RX_UNICAST, 1,
+-			       &storage->rx_packets);
+-	mt7530_read_port_stats(priv, port, MT7530_PORT_MIB_RX_MULTICAST, 1,
+-			       &storage->multicast);
+-	storage->rx_packets += storage->multicast;
+-	mt7530_read_port_stats(priv, port, MT7530_PORT_MIB_RX_BROADCAST, 1,
+-			       &data);
+-	storage->rx_packets += data;
+-
+-	mt7530_read_port_stats(priv, port, MT7530_PORT_MIB_TX_UNICAST, 1,
+-			       &storage->tx_packets);
+-	mt7530_read_port_stats(priv, port, MT7530_PORT_MIB_TX_MULTICAST, 1,
+-			       &data);
+-	storage->tx_packets += data;
+-	mt7530_read_port_stats(priv, port, MT7530_PORT_MIB_TX_BROADCAST, 1,
+-			       &data);
+-	storage->tx_packets += data;
+-
+-	mt7530_read_port_stats(priv, port, MT7530_PORT_MIB_RX_BYTES, 2,
+-			       &storage->rx_bytes);
+-
+-	mt7530_read_port_stats(priv, port, MT7530_PORT_MIB_TX_BYTES, 2,
+-			       &storage->tx_bytes);
+-
+-	mt7530_read_port_stats(priv, port, MT7530_PORT_MIB_RX_DROP, 1,
+-			       &storage->rx_dropped);
+-
+-	mt7530_read_port_stats(priv, port, MT7530_PORT_MIB_TX_DROP, 1,
+-			       &storage->tx_dropped);
+-
+-	mt7530_read_port_stats(priv, port, MT7530_PORT_MIB_RX_CRC_ERR, 1,
+-			       &storage->rx_crc_errors);
+-}
+-
+ static void mt7530_get_eth_ctrl_stats(struct dsa_switch *ds, int port,
+ 				      struct ethtool_eth_ctrl_stats *ctrl_stats)
+ {
+@@ -3260,11 +3359,11 @@ const struct dsa_switch_ops mt7530_switc
  	.preferred_default_local_cpu_port = mt753x_preferred_default_local_cpu_port,
  	.get_strings		= mt7530_get_strings,
  	.get_ethtool_stats	= mt7530_get_ethtool_stats,
 +	.get_stats64		= mt7530_get_stats64,
  	.get_sset_count		= mt7530_get_sset_count,
+ 	.get_eth_mac_stats	= mt7530_get_eth_mac_stats,
+ 	.get_rmon_stats		= mt7530_get_rmon_stats,
+ 	.get_eth_ctrl_stats	= mt7530_get_eth_ctrl_stats,
+-	.get_stats64		= mt7530_get_stats64,
  	.set_ageing_time	= mt7530_set_ageing_time,
  	.port_enable		= mt7530_port_enable,
-@@ -3283,6 +3394,11 @@ mt7530_probe_common(struct mt7530_priv *
+ 	.port_disable		= mt7530_port_disable,
+@@ -3396,6 +3495,11 @@ mt7530_probe_common(struct mt7530_priv *
  	mutex_init(&priv->reg_mutex);
  	dev_set_drvdata(dev, priv);
  
@@ -242,18 +268,18 @@ Signed-off-by: Tim Hayes <tim.hayes@smartrg.com>
  	return 0;
  }
  EXPORT_SYMBOL_GPL(mt7530_probe_common);
-@@ -3290,6 +3406,8 @@ EXPORT_SYMBOL_GPL(mt7530_probe_common);
+@@ -3403,6 +3507,8 @@ EXPORT_SYMBOL_GPL(mt7530_probe_common);
  void
  mt7530_remove_common(struct mt7530_priv *priv)
  {
 +	cancel_delayed_work_sync(&priv->mib_work);
 +
- 	if (priv->irq)
- 		mt7530_free_irq(priv);
+ 	if (priv->irq_domain)
+ 		mt7530_free_mdio_irq(priv);
  
 --- a/drivers/net/dsa/mt7530.h
 +++ b/drivers/net/dsa/mt7530.h
-@@ -700,18 +700,7 @@ enum mt7531_xtal_fsel {
+@@ -768,18 +768,7 @@ enum mt7531_xtal_fsel {
  #define  REG_GSWCK_EN			BIT(0)
  #define  REG_TRGMIICK_EN		BIT(1)
  
@@ -273,7 +299,7 @@ Signed-off-by: Tim Hayes <tim.hayes@smartrg.com>
  
  struct mt7530_fdb {
  	u16 vid;
-@@ -836,6 +825,10 @@ struct mt7530_priv {
+@@ -900,6 +889,10 @@ struct mt7530_priv {
  	int (*create_sgmii)(struct mt7530_priv *priv);
  	u8 active_cpu_ports;
  	struct mdio_device *mdiodev;

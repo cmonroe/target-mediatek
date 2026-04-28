@@ -1,0 +1,31 @@
+From: Chad Monroe <chad@monroe.io>
+Date: Wed, 22 Apr 2026 10:06:49 -0700
+Subject: [PATCH] pcie: mediatek-gen3: disable async probe
+
+The 6.18 driver sets PROBE_PREFER_ASYNCHRONOUS (absent in 6.12).
+With the Mediatek wifi-reset flow, the driver sleeps a long time 
+inside probe (100ms reset pulse + 500ms deassert settle).
+Running that asynchronously lets other drivers init in parallel,
+and on MT7988A + MT7996 the resulting ordering leaves the RC's
+LTSSM wedged at detect.quiet. Link training never starts even
+though MAC/PERST# sequencing is correct.
+
+Dropping the async hint restores the synchronous probe ordering
+used by 6.12 and recovers link training on boards that pulse the
+WiFi chip reset GPIO during probe.
+
+Signed-off-by: Chad Monroe <chad@monroe.io>
+---
+ drivers/pci/controller/pcie-mediatek-gen3.c |    1 -
+ 1 file changed, 1 deletion(-)
+
+--- a/drivers/pci/controller/pcie-mediatek-gen3.c
++++ b/drivers/pci/controller/pcie-mediatek-gen3.c
+@@ -1413,7 +1413,6 @@ static struct platform_driver mtk_pcie_d
+ 		.name = "mtk-pcie-gen3",
+ 		.of_match_table = mtk_pcie_of_match,
+ 		.pm = &mtk_pcie_pm_ops,
+-		.probe_type = PROBE_PREFER_ASYNCHRONOUS,
+ 	},
+ };
+ 

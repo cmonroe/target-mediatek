@@ -14,15 +14,15 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 
 --- a/drivers/pci/controller/pcie-mediatek-gen3.c
 +++ b/drivers/pci/controller/pcie-mediatek-gen3.c
-@@ -165,6 +165,7 @@ struct mtk_msi_set {
-  * @num_clks: PCIe clocks count for this port
+@@ -192,6 +192,7 @@ struct mtk_msi_set {
+  * @num_lanes: Number of PCIe lanes for this port
   * @wifi_reset: reset pin for WIFI chip
   * @wifi_reset_delay_ms: delay time for WIFI chip reset
 + * @wifi_deassert_delay_ms: delay time after WIFI chip reset
   * @irq: PCIe controller interrupt number
   * @saved_irq_state: IRQ enable state saved at suspend time
   * @irq_lock: lock protecting IRQ register access
-@@ -188,6 +189,7 @@ struct mtk_gen3_pcie {
+@@ -216,6 +217,7 @@ struct mtk_gen3_pcie {
  
  	struct gpio_desc *wifi_reset;
  	u32 wifi_reset_delay_ms;
@@ -30,20 +30,23 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  
  	int irq;
  	u32 saved_irq_state;
-@@ -410,10 +412,11 @@ static int mtk_pcie_startup_port(struct
+@@ -470,10 +472,14 @@ static int mtk_pcie_startup_port(struct
  	val |= PCIE_DISABLE_DVFSRC_VLT_REQ;
  	writel_relaxed(val, pcie->base + PCIE_MISC_CTRL_REG);
  
 -	if (pcie->wifi_reset) {
 +	if (!IS_ERR_OR_NULL(pcie->wifi_reset)) {
++		dev_info(pcie->dev, "assert WiFi reset pin\n");
  		gpiod_set_value_cansleep(pcie->wifi_reset, 1);
  		msleep(pcie->wifi_reset_delay_ms);
++		dev_info(pcie->dev, "deassert WiFi reset pin\n");
  		gpiod_set_value_cansleep(pcie->wifi_reset, 0);
 +		msleep(pcie->wifi_deassert_delay_ms);
++		dev_info(pcie->dev, "WiFi reset pin done\n");
  	}
  
- 	/* Assert all reset signals */
-@@ -892,6 +895,12 @@ static int mtk_pcie_parse_port(struct mt
+ 	/*
+@@ -963,6 +969,12 @@ static int mtk_pcie_parse_port(struct mt
  		}
  	}
  

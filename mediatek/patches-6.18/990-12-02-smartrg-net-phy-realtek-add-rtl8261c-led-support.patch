@@ -251,7 +251,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  static int rtl8211e_config_init(struct phy_device *phydev)
  {
  	u16 val;
-@@ -3380,6 +3603,11 @@ static struct phy_driver realtek_drvs[]
+@@ -3375,6 +3598,11 @@ static struct phy_driver realtek_drvs[]
  		.get_wol        = rtl826x_get_wol,
  		.get_tunable    = rtl826x_get_tunable,
  		.set_tunable    = rtl826x_set_tunable,

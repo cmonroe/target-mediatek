@@ -11,10 +11,10 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add register definitions for rss
 
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
-@@ -63,13 +63,18 @@ static const struct mtk_reg_map mtk_reg_
+@@ -62,13 +62,18 @@ static const struct mtk_reg_map mtk_reg_
+ 		.rx_ptr		= 0x0900,
  		.rx_cnt_cfg	= 0x0904,
  		.pcrx_ptr	= 0x0908,
- 		.pdrx_ptr	= 0x090c,
 +		.lro_ctrl_dw0   = 0x0980,
  		.glo_cfg	= 0x0a04,
  		.rst_idx	= 0x0a08,
@@ -22,15 +22,16 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add register definitions for rss
  		.irq_status	= 0x0a20,
  		.irq_mask	= 0x0a28,
  		.adma_rx_dbg0	= 0x0a38,
+-		.int_grp	= 0x0a50,
 +		.lro_alt_score_delta	= 0x0a4c,
- 		.int_grp	= 0x0a50,
++ 		.int_grp	= 0x0a50,
 +		.lro_rx1_dly_int	= 0x0a70,
 +		.lro_ring_dip_dw0	= 0x0b04,
 +		.lro_ring_ctrl_dw1	= 0x0b28,
  	},
  	.qdma = {
  		.qtx_cfg	= 0x1800,
-@@ -130,6 +135,7 @@ static const struct mtk_reg_map mt7986_r
+@@ -126,6 +131,7 @@ static const struct mtk_reg_map mt7986_r
  	.tx_irq_mask		= 0x461c,
  	.tx_irq_status		= 0x4618,
  	.pdma = {
@@ -38,7 +39,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add register definitions for rss
  		.rx_ptr		= 0x4100,
  		.rx_cnt_cfg	= 0x4104,
  		.pcrx_ptr	= 0x4108,
-@@ -141,6 +147,12 @@ static const struct mtk_reg_map mt7986_r
+@@ -136,6 +142,12 @@ static const struct mtk_reg_map mt7986_r
  		.irq_mask	= 0x4228,
  		.adma_rx_dbg0	= 0x4238,
  		.int_grp	= 0x4250,
@@ -51,7 +52,7 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add register definitions for rss
  	},
  	.qdma = {
  		.qtx_cfg	= 0x4400,
-@@ -193,10 +205,21 @@ static const struct mtk_reg_map mt7988_r
+@@ -184,10 +196,21 @@ static const struct mtk_reg_map mt7988_r
  		.glo_cfg	= 0x6a04,
  		.rst_idx	= 0x6a08,
  		.delay_irq	= 0x6a0c,
@@ -75,14 +76,13 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add register definitions for rss
  		.qtx_cfg	= 0x4400,
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.h
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.h
-@@ -1268,17 +1268,29 @@ struct mtk_reg_map {
+@@ -1226,16 +1226,28 @@ struct mtk_reg_map {
  	u32	tx_irq_mask;
  	u32	tx_irq_status;
  	struct {
 -		u32	rx_ptr;		/* rx base pointer */
 -		u32	rx_cnt_cfg;	/* rx max count configuration */
 -		u32	pcrx_ptr;	/* rx cpu pointer */
--		u32	pdrx_ptr;	/* rx dma pointer */
 -		u32	glo_cfg;	/* global configuration */
 -		u32	rst_idx;	/* reset index */
 -		u32	delay_irq;	/* delay interrupt */
@@ -91,7 +91,6 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: add register definitions for rss
 +		u32	rx_ptr;			/* rx base pointer */
 +		u32	rx_cnt_cfg;		/* rx max count configuration */
 +		u32	pcrx_ptr;		/* rx cpu pointer */
-+		u32	pdrx_ptr;		/* rx dma pointer */
 +		u32	glo_cfg;		/* global configuration */
 +		u32	rst_idx;		/* reset index */
 +		u32	rx_cfg;			/* rx dma configuration */

@@ -19,7 +19,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
-@@ -5109,6 +5109,54 @@ static int mtk_siocdevprivate(struct net
+@@ -5247,6 +5247,54 @@ static int mtk_siocdevprivate(struct net
  	return mtk_do_priv_ioctl(dev, ifr, cmd);
  }
  
@@ -29,7 +29,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 +	struct mtk_qdma_params *params = &eth->qdma_params;
 +	int i;
 +
-+	for (i = 0; i < MTK_QDMA_NUM_QUEUES; i++) {
++	for (i = 0; i < eth->soc->num_tx_queues; i++) {
 +		mtk_w32(eth, (i / MTK_QTX_PER_PAGE), reg_map->qdma.page);
 +
 +		params->qtx_cfg[i] =
@@ -53,7 +53,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 +	struct mtk_qdma_params *params = &eth->qdma_params;
 +	int i;
 +
-+	for (i = 0; i < MTK_QDMA_NUM_QUEUES; i++) {
++	for (i = 0; i < eth->soc->num_tx_queues; i++) {
 +		mtk_w32(eth, (i / MTK_QTX_PER_PAGE), reg_map->qdma.page);
 +
 +		mtk_w32(eth, params->qtx_cfg[i],
@@ -74,7 +74,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  static void mtk_prepare_for_reset(struct mtk_eth *eth)
  {
  	u32 val;
-@@ -5152,6 +5200,7 @@ static void mtk_pending_work(struct work
+@@ -5290,6 +5338,7 @@ static void mtk_pending_work(struct work
  
  	mtk_hw_dump(eth);
  
@@ -82,7 +82,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	mtk_prepare_for_reset(eth);
  	mtk_wed_fe_reset();
  	/* Run again reset preliminary configuration in order to avoid any
-@@ -5203,6 +5252,7 @@ static void mtk_pending_work(struct work
+@@ -5341,6 +5390,7 @@ static void mtk_pending_work(struct work
  	clear_bit(MTK_RESETTING, &eth->state);
  
  	mtk_wed_fe_reset_complete();
@@ -92,7 +92,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  }
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.h
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.h
-@@ -1127,6 +1127,21 @@ struct mtk_napi {
+@@ -1137,6 +1137,21 @@ struct mtk_napi {
  	struct mtk_rx_ring	*rx_ring;
  };
  
@@ -106,15 +106,15 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 +				rate control for the Tx Scheduler
 + */
 +struct mtk_qdma_params {
-+	u32	qtx_cfg[MTK_QDMA_NUM_QUEUES];
-+	u32	qtx_sch[MTK_QDMA_NUM_QUEUES];
++	u32	qtx_cfg[MTK_DSA_USER_PORT_MAX];
++	u32	qtx_sch[MTK_DSA_USER_PORT_MAX];
 +	u32	tx_sch[2];
 +};
 +
  enum mkt_eth_capabilities {
  	MTK_RGMII_BIT = 0,
  	MTK_TRGMII_BIT,
-@@ -1533,6 +1548,7 @@ struct mtk_eth {
+@@ -1545,6 +1560,7 @@ struct mtk_eth {
  	struct napi_struct		tx_napi;
  	struct mtk_napi			rx_napi[MTK_RX_NAPI_NUM];
  	struct mtk_rss_params		rss_params;

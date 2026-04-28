@@ -1,0 +1,35 @@
+From: Chad Monroe <chad@monroe.io>
+Date: Wed, 22 Apr 2026 11:28:37 -0700
+Subject: [PATCH] pcie: mediatek-gen3: add link-up settle delay
+
+On MT7988A the LTSSM occasionally fails to progress out of
+detect.quiet within the PCI_PM_D3COLD_WAIT (100ms) poll window
+after the final PCIE_PE_RSTB deassert, and probe fails with
+-ETIMEDOUT. A short settling delay between the last
+writel_relaxed() and the link poll is enough to let the RC start
+receiver detection reliably. Symptom was discovered on
+SDG-8713v (MT7988A + MT7992/MT7996) with the wifi-reset GPIO
+flow active. Adding a ~1ms settle window fixes the race.
+
+Signed-off-by: Chad Monroe <chad@monroe.io>
+---
+ drivers/pci/controller/pcie-mediatek-gen3.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+--- a/drivers/pci/controller/pcie-mediatek-gen3.c
++++ b/drivers/pci/controller/pcie-mediatek-gen3.c
+@@ -510,6 +510,14 @@ static int mtk_pcie_startup_port(struct
+ 		writel_relaxed(val, pcie->base + PCIE_RST_CTRL_REG);
+ 	}
+ 
++	/*
++	 * Let the RC settle after the final reset-register write before
++	 * polling the link. Without this short delay the LTSSM occasionally
++	 * stays wedged at detect.quiet for longer than PCI_PM_D3COLD_WAIT on
++	 * MT7988A, and probe times out with -ETIMEDOUT.
++	 */
++	usleep_range(1000, 2000);
++
+ 	/* Check if the link is up or not */
+ 	err = readl_poll_timeout(pcie->base + PCIE_LINK_STATUS_REG, val,
+ 				 !!(val & PCIE_PORT_LINKUP), 20,

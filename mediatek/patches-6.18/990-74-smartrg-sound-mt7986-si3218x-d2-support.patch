@@ -17,16 +17,15 @@
  static int mt7986_si3218x_init(struct snd_soc_pcm_runtime *rtd)
  {
  	struct snd_soc_component *component =
-@@ -70,6 +73,8 @@ static int mt7986_si3218x_init(struct sn
+@@ -70,6 +73,7 @@ static int mt7986_si3218x_init(struct sn
  	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(component);
  	struct mt7986_afe_private *afe_priv = afe->platform_priv;
  	int ret;
 +	void __iomem *virt_reg;
-+	u32 val;
  
  	/* enable clk */
  	ret = clk_bulk_prepare_enable(afe_priv->num_clks, afe_priv->clks);
-@@ -103,7 +108,7 @@ static int mt7986_si3218x_init(struct sn
+@@ -103,7 +107,7 @@ static int mt7986_si3218x_init(struct sn
  	/* set ETDM_IN5_CON2 */
  	regmap_update_bits(afe->regmap, ETDM_IN5_CON2, IN_CLK_SRC_MASK,
  			   IN_CLK_SRC(APLL_CLK));
@@ -35,7 +34,7 @@
  	/* set ETDM_IN5_CON3 */
  	regmap_update_bits(afe->regmap, ETDM_IN5_CON3, IN_SEL_FS_MASK,
  			   IN_SEL_FS(ETDM_FS_16K));
-@@ -113,7 +118,17 @@ static int mt7986_si3218x_init(struct sn
+@@ -113,7 +117,17 @@ static int mt7986_si3218x_init(struct sn
  			   IN_CLK_INV);
  	regmap_update_bits(afe->regmap, ETDM_IN5_CON4, IN_RELATCH_MASK,
  			   IN_RELATCH(AFE_FS_16K));
@@ -53,7 +52,7 @@
  	/* set ETDM_OUT5_CON0 */
  	regmap_update_bits(afe->regmap, ETDM_OUT5_CON0, ETDM_FMT_MASK,
  			   FIELD_PREP(ETDM_FMT_MASK, PCMA));
-@@ -125,7 +140,7 @@ static int mt7986_si3218x_init(struct sn
+@@ -125,7 +139,7 @@ static int mt7986_si3218x_init(struct sn
  			   FIELD_PREP(ETDM_CH_NUM_MASK, 4 - 1));
  	regmap_update_bits(afe->regmap, ETDM_OUT5_CON0, RELATCH_SRC_MASK,
  			   FIELD_PREP(RELATCH_SRC_MASK, APLL_CLK));
@@ -62,7 +61,7 @@
  	/* set ETDM_OUT5_CON4 */
  	regmap_update_bits(afe->regmap, ETDM_OUT5_CON4, OUT_SEL_FS_MASK,
  			   OUT_SEL_FS(ETDM_FS_16K));
-@@ -133,23 +148,35 @@ static int mt7986_si3218x_init(struct sn
+@@ -133,23 +147,35 @@ static int mt7986_si3218x_init(struct sn
  			   OUT_CLK_SRC(APLL_CLK));
  	regmap_update_bits(afe->regmap, ETDM_OUT5_CON4, OUT_RELATCH_MASK,
  			   OUT_RELATCH(AFE_FS_16K));
@@ -100,7 +99,7 @@
  	return 0;
  }
  
-@@ -165,7 +192,7 @@ SND_SOC_DAILINK_DEFS(capture,
+@@ -165,7 +191,7 @@ SND_SOC_DAILINK_DEFS(capture,
  
  SND_SOC_DAILINK_DEFS(codec,
  	DAILINK_COMP_ARRAY(COMP_CPU("ETDM")),
@@ -109,3 +108,33 @@
  	DAILINK_COMP_ARRAY(COMP_EMPTY()));
  
  static struct snd_soc_dai_link mt7986_si3218x_dai_links[] = {
+@@ -176,7 +202,7 @@ static struct snd_soc_dai_link mt7986_si
+ 		.trigger = {SND_SOC_DPCM_TRIGGER_POST,
+ 			    SND_SOC_DPCM_TRIGGER_POST},
+ 		.dynamic = 1,
+-		.dpcm_playback = 1,
++		.playback_only = 1,
+ 		SND_SOC_DAILINK_REG(playback),
+ 	},
+ 	{
+@@ -185,7 +211,7 @@ static struct snd_soc_dai_link mt7986_si
+ 		.trigger = {SND_SOC_DPCM_TRIGGER_POST,
+ 			    SND_SOC_DPCM_TRIGGER_POST},
+ 		.dynamic = 1,
+-		.dpcm_capture = 1,
++		.capture_only = 1,
+ 		SND_SOC_DAILINK_REG(capture),
+ 	},
+ 	/* BE */
+@@ -194,10 +220,8 @@ static struct snd_soc_dai_link mt7986_si
+ 		.no_pcm = 1,
+ 		.dai_fmt = SND_SOC_DAIFMT_DSP_A |
+ 			SND_SOC_DAIFMT_IB_NF |
+-			SND_SOC_DAIFMT_CBS_CFS,
++			SND_SOC_DAIFMT_CBC_CFC,
+ 		.init = mt7986_si3218x_init,
+-		.dpcm_playback = 1,
+-		.dpcm_capture = 1,
+ 		SND_SOC_DAILINK_REG(codec),
+ 	},
+ };

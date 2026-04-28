@@ -26,7 +26,7 @@ Signed-off-by: Cezary Wilmanski <cezary.wilmanski@adtran.com>
  #include <linux/icmpv6.h>
  #include <linux/if_bridge.h>
  #include <linux/if_vlan.h>
-@@ -4396,6 +4397,11 @@ static int mxl862xx_probe(struct mdio_de
+@@ -4443,6 +4444,11 @@ static int mxl862xx_probe(struct mdio_de
  
  	dev_set_drvdata(dev, ds);
  

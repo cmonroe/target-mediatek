@@ -1,0 +1,45 @@
+From: Chad Monroe <chad@monroe.io>
+Date: Tue, 21 Apr 2026 15:29:08 -0700
+Subject: [PATCH] pinctrl: mediatek: mt7987: add pcm0_1_4w group
+
+The existing pcm0_1 group muxes pin 12 (PCM_MCK_I2S_MCLK) along with
+BCLK/FSYNC/DIN/DOUT. Boards wiring a 4-wire PCM SLIC need pin 12 kept
+free for use as a GPIO interrupt line.
+
+Add a pcm0_1_4w group covering only pins 8-11 and register it under the
+existing pcm function.
+
+Signed-off-by: Chad Monroe <chad@monroe.io>
+---
+ drivers/pinctrl/mediatek/pinctrl-mt7987.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+--- a/drivers/pinctrl/mediatek/pinctrl-mt7987.c
++++ b/drivers/pinctrl/mediatek/pinctrl-mt7987.c
+@@ -453,6 +453,9 @@ static int mt7987_pcm0_0_pins[] = {3, 4,
+ static int mt7987_pcm0_0_funcs[] = {2, 2, 2, 2, 2};
+ static int mt7987_pcm0_1_pins[] = {8, 9, 10, 11, 12};
+ static int mt7987_pcm0_1_funcs[] = {1, 1, 1, 1, 1};
++/* 4-wire PCM: same base as pcm0_1 but no MCLK, leaves pin 12 free for GPIO */
++static int mt7987_pcm0_1_4w_pins[] = {8, 9, 10, 11};
++static int mt7987_pcm0_1_4w_funcs[] = {1, 1, 1, 1};
+ /* uart */
+ static int mt7987_uart0_pins[] = {31, 32};
+ static int mt7987_uart0_funcs[] = {1, 1};
+@@ -542,6 +545,7 @@ static const struct group_desc mt7987_gr
+ 	PINCTRL_PIN_GROUP("jtag", mt7987_jtag),
+ 	PINCTRL_PIN_GROUP("pcm0_0", mt7987_pcm0_0),
+ 	PINCTRL_PIN_GROUP("pcm0_1", mt7987_pcm0_1),
++	PINCTRL_PIN_GROUP("pcm0_1_4w", mt7987_pcm0_1_4w),
+ 	PINCTRL_PIN_GROUP("uart0", mt7987_uart0),
+ 	PINCTRL_PIN_GROUP("uart1_0", mt7987_uart1_0),
+ 	PINCTRL_PIN_GROUP("uart1_0_lite", mt7987_uart1_0_lite),
+@@ -582,7 +586,7 @@ static const struct group_desc mt7987_gr
+ };
+ static const char *const mt7987_wdt_groups[] = {"watchdog",};
+ static const char *const mt7987_jtag_groups[] = {"jtag",};
+-static const char *const mt7987_pcm_groups[] = {"pcm0_0", "pcm0_1"};
++static const char *const mt7987_pcm_groups[] = {"pcm0_0", "pcm0_1", "pcm0_1_4w"};
+ static const char *const mt7987_uart_groups[] = {"uart0", "uart1_0",
+ 						 "uart1_0_lite", "uart1_1",
+ 						 "uart1_2", "uart2_0",

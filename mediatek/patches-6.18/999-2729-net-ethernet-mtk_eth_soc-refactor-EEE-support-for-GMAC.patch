@@ -22,7 +22,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
-@@ -1002,6 +1002,40 @@ out:
+@@ -963,6 +963,40 @@ static void mtk_set_queue_speed(struct m
  	mtk_w32(eth, val, soc->reg_map->qdma.qtx_sch + ofs);
  }
  
@@ -63,19 +63,8 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  static void mtk_gdm_mac_link_up(struct mtk_mac *mac,
  				struct phy_device *phy,
  				unsigned int mode, phy_interface_t interface,
-@@ -1037,17 +1071,12 @@ static void mtk_gdm_mac_link_up(struct m
- 	if (rx_pause)
- 		mcr |= MAC_MCR_FORCE_RX_FC;
+@@ -1000,6 +1034,10 @@ static void mtk_gdm_mac_link_up(struct m
  
--	if (mode == MLO_AN_PHY && phy && mac->tx_lpi_enabled && phy_init_eee(phy, false) >= 0) {
--		mcr |= MAC_MCR_EEE100M | MAC_MCR_EEE1G;
--		mtk_w32(mac->hw,
--			FIELD_PREP(MAC_EEE_WAKEUP_TIME_1000, 17) |
--			FIELD_PREP(MAC_EEE_WAKEUP_TIME_100, 36) |
--			FIELD_PREP(MAC_EEE_LPI_TXIDLE_THD, mac->txidle_thd_ms),
--			MTK_MAC_EEECR(mac->id));
--	}
--
  	mcr |= MAC_MCR_TX_EN | MAC_MCR_RX_EN | MAC_MCR_FORCE_LINK;
  	mtk_w32(mac->hw, mcr, MTK_MAC_MCR(mac->id));
 +
@@ -85,57 +74,38 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  }
  
  static void mtk_xgdm_mac_link_up(struct mtk_mac *mac,
-@@ -5569,9 +5598,11 @@ static int mtk_get_eee(struct net_device
- 	if (ret)
- 		return ret;
+@@ -5677,15 +5715,41 @@ static int mtk_set_pauseparam(struct net
+ static int mtk_get_eee(struct net_device *dev, struct ethtool_keee *eee)
+ {
+ 	struct mtk_mac *mac = netdev_priv(dev);
++	u32 reg;
++	int ret;
  
--	reg = mtk_r32(mac->hw, MTK_MAC_EEECR(mac->id));
--	eee->tx_lpi_enabled = mac->tx_lpi_enabled;
--	eee->tx_lpi_timer = FIELD_GET(MAC_EEE_LPI_TXIDLE_THD, reg) * 1000;
-+	if (!mtk_interface_mode_is_xgmii(mac->interface)) {
+-	return phylink_ethtool_get_eee(mac->phylink, eee);
++	ret = phylink_ethtool_get_eee(mac->phylink, eee);
++	if (ret)
++		return ret;
++
++	if (!mtk_interface_mode_is_xgmii(mac->hw, mac->interface)) {
 +		reg = mtk_r32(mac->hw, MTK_MAC_EEECR(mac->id));
 +		eee->tx_lpi_enabled = mac->tx_lpi_enabled;
 +		eee->tx_lpi_timer = FIELD_GET(MAC_EEE_LPI_TXIDLE_THD, reg);
 +	}
- 
- 	return 0;
++
++	return 0;
  }
-@@ -5579,37 +5610,20 @@ static int mtk_get_eee(struct net_device
+ 
  static int mtk_set_eee(struct net_device *dev, struct ethtool_keee *eee)
  {
  	struct mtk_mac *mac = netdev_priv(dev);
--	u32 txidle_thd_ms, reg;
- 	int ret;
++	int ret;
  
--	/* Tx idle timer in ms */
--	txidle_thd_ms = DIV_ROUND_UP(eee->tx_lpi_timer, 1000);
--	if (!FIELD_FIT(MAC_EEE_LPI_TXIDLE_THD, txidle_thd_ms))
--		return -EINVAL;
--
--	reg = FIELD_PREP(MAC_EEE_LPI_TXIDLE_THD, txidle_thd_ms);
--
--	/* PHY Wake-up time, this field does not have a reset value, so use the
--	 * reset value from MT7531 (36us for 100BaseT and 17us for 1000BaseT).
--	 */
--	reg |= FIELD_PREP(MAC_EEE_WAKEUP_TIME_1000, 17) |
--	       FIELD_PREP(MAC_EEE_WAKEUP_TIME_100, 36);
--
--	if (!txidle_thd_ms)
--		/* Force LPI Mode without a delay */
--		reg |= MAC_EEE_LPI_MODE;
--
- 	ret = phylink_ethtool_set_eee(mac->phylink, eee);
- 	if (ret)
- 		return ret;
- 
--	mac->tx_lpi_enabled = eee->tx_lpi_enabled;
--	mac->txidle_thd_ms = txidle_thd_ms;
--	mtk_w32(mac->hw, reg, MTK_MAC_EEECR(mac->id));
--	if (eee->eee_enabled && eee->eee_active && eee->tx_lpi_enabled)
--		mtk_m32(mac->hw, 0, MAC_MCR_EEE100M | MAC_MCR_EEE1G, MTK_MAC_MCR(mac->id));
--	else
--		mtk_m32(mac->hw, MAC_MCR_EEE100M | MAC_MCR_EEE1G, 0, MTK_MAC_MCR(mac->id));
-+	if (!mtk_interface_mode_is_xgmii(mac->interface)) {
+-	return phylink_ethtool_set_eee(mac->phylink, eee);
++	ret = phylink_ethtool_set_eee(mac->phylink, eee);
++	if (ret)
++		return ret;
++
++	if (!mtk_interface_mode_is_xgmii(mac->hw, mac->interface)) {
 +		if (eee->tx_lpi_timer > 255)
 +			return -EINVAL;
 +
@@ -143,12 +113,14 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 +		mtk_gdm_mac_setup_eee(mac, eee->eee_enabled && eee->eee_active &&
 +					   eee->tx_lpi_enabled && eee->tx_lpi_timer);
 +	}
- 
- 	return 0;
++
++	return 0;
  }
+ 
+ static u32 mtk_get_rxfh_key_size(struct net_device *dev)
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.h
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.h
-@@ -573,6 +573,7 @@
+@@ -581,6 +581,7 @@
  #define MAC_EEE_WAKEUP_TIME_1000	GENMASK(31, 24)
  #define MAC_EEE_WAKEUP_TIME_100		GENMASK(23, 16)
  #define MAC_EEE_LPI_TXIDLE_THD		GENMASK(15, 8)
@@ -156,3 +128,12 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  #define MAC_EEE_CKG_TXIDLE		BIT(3)
  #define MAC_EEE_CKG_RXLPI		BIT(2)
  #define MAC_EEE_LPI_MODE		BIT(0)
+@@ -1648,6 +1649,8 @@ struct mtk_mac {
+ 	struct notifier_block		device_notifier;
+ 	u8				dsa_queue_base;
+ 	u8				dsa_port_rank[MTK_DSA_USER_PORT_MAX];
++	bool				tx_lpi_enabled;
++	u8				txidle_thd_ms;
+ };
+ 
+ #define MTK_MUX_CHANNELS_MAX	2
