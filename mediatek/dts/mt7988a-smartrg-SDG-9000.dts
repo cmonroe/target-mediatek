@@ -911,7 +911,7 @@
 };
 
 &mdio_bus {
-	/* clock-frequency = <12500000>; */
+	clock-frequency = <12500000>;
 
 	phy0: ethernet-phy@0 {
 		/* CUX3410 - LAN */
@@ -1091,6 +1091,7 @@
 				label = "lan9";
 				phy-handle = <&phy0>;
 				phy-mode = "usxgmii";
+				managed = "in-band-status";
 				status = "okay";
 			};
 		};
