@@ -7,7 +7,7 @@
 &radio0 {
 	power-limits {
 		r5 {
-			country = "US";
+			regdomain = "FCC";
 
 			txpower-5g {
 				r0 {
@@ -262,7 +262,7 @@
 &wifi {
 	power-limits {
 		r5 {
-			country = "US";
+			regdomain = "FCC";
 
 			txpower-2g {
 				r0 {
