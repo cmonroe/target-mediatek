@@ -163,6 +163,12 @@
 	};
 };
 
+#include "mt7988a-smartrg-SDG-8713-power-limits-r1-RCM-AU-NZ.dtsi"
+#include "mt7988a-smartrg-SDG-8713-power-limits-r2-IC-CA.dtsi"
+#include "mt7988a-smartrg-SDG-8713-power-limits-r3-ETSI-GB.dtsi"
+#include "mt7988a-smartrg-SDG-8713-power-limits-r4-ETSI.dtsi"
+#include "mt7988a-smartrg-SDG-8713-power-limits-r5-FCC-US.dtsi"
+
 &ssusb1 {
 	status = "disabled";
 };

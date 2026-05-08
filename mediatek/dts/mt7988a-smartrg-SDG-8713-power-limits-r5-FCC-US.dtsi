@@ -1,0 +1,19 @@
+// SPDX-License-Identifier: (GPL-2.0 OR MIT)
+/*
+ * Copyright (C) 2026 SmartRG Inc.
+ * Author: Chad Monroe <chad.monroe@smartrg.com>
+ */
+
+&radio0 {
+	power-limits {
+		r5 {
+			regdomain = "FCC";
+
+			txpower-2g {
+			};
+
+			txpower-5g {
+			};
+		};
+	};
+};
