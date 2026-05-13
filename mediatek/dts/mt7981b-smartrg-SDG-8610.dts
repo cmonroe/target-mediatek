@@ -1,0 +1,358 @@
+// SPDX-License-Identifier: (GPL-2.0 OR MIT)
+/*
+ * Copyright (C) 2022 MediaTek Inc.
+ * Author: Sam.Shih <sam.shih@mediatek.com>
+ */
+
+/dts-v1/;
+#include "mt7981b.dtsi"
+
+/ {
+	model = "SmartRG SDG-8610";
+	compatible = "smartrg,sdg-8610", "mediatek,mt7981";
+
+	aliases {
+		serial0 = &uart0;
+		label-mac-device = &gmac0;
+		led-boot = &led_sys_green;
+		led-failsafe = &led_sys_blue;
+		led-running = &led_sys_white;
+		led-upgrade = &led_sys_red;
+	};
+
+	chosen {
+		stdout-path = "serial0:115200n8";
+	};
+
+	memory@40000000 {
+		reg = <0 0x40000000 0 0x20000000>;
+		device_type = "memory";
+	};
+
+	reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+
+		/delete-node/ramoops@42ff0000;
+
+		bootdata_reserved: bootdata@45000000 {
+			no-map;
+			reg = <0x0 0x45000000 0x0 0x00001000>;
+		};
+
+		ramoops_reserved: ramoops@45001000 {
+			no-map;
+			compatible = "ramoops";
+			reg = <0x0 0x45001000 0x0 0x00140000>;
+			ftrace-size = <0x20000>;
+			record-size = <0x20000>;
+			console-size = <0x20000>;
+			pmsg-size = <0x80000>;
+		};
+	};
+
+	bootdata {
+		compatible = "bootdata";
+		memory-region = <&bootdata_reserved>;
+	};
+
+	reg_3p3v: regulator-3p3v {
+		compatible = "regulator-fixed";
+		regulator-name = "fixed-3.3V";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	reg_5v: regulator-5v {
+		compatible = "regulator-fixed";
+		regulator-name = "fixed-5V";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	gpio-keys {
+		compatible = "gpio-keys";
+		pinctrl-names = "default";
+		pinctrl-0 = <&button_pins>;
+
+		reset {
+			label = "reset";
+			linux,code = <KEY_RESTART>;
+			gpios = <&pio 1 GPIO_ACTIVE_LOW>;
+		};
+	};
+
+	leds: gpio-leds {
+		compatible = "gpio-leds";
+
+		sfp_red {
+			color = <LED_COLOR_ID_RED>;
+			function = "sfp";
+			gpios = <&pio 5 GPIO_ACTIVE_LOW>;
+		};
+
+		sfp_green {
+			color = <LED_COLOR_ID_GREEN>;
+			function = "sfp";
+			gpios = <&pio 4 GPIO_ACTIVE_LOW>;
+		};
+
+		lan_green {
+			color = <LED_COLOR_ID_GREEN>;
+			function = "lan";
+			gpios = <&pio 8 GPIO_ACTIVE_LOW>;
+			linux,default-trigger = "mdio-bus:00:1Gbps";
+		};
+
+		lan_amber {
+			color = <LED_COLOR_ID_AMBER>;
+			function = "lan";
+			gpios = <&pio 13 GPIO_ACTIVE_LOW>;
+			linux,default-trigger = "mdio-bus:00:100Mbps";
+		};
+	};
+
+	sfp1: sfp1 {
+		compatible = "sff,sfp";
+		i2c-bus = <&i2c0>;
+		los-gpios = <&pio 11 GPIO_ACTIVE_HIGH>;
+		mod-def0-gpios = <&pio 0 GPIO_ACTIVE_LOW>;
+		rate-select0-gpios = <&pio 12 GPIO_ACTIVE_HIGH>;
+		tx-disable-gpios = <&pio 9 GPIO_ACTIVE_HIGH>;
+		tx-fault-gpios = <&pio 10 GPIO_ACTIVE_HIGH>;
+		maximum-power-milliwatt = <3000>;
+	};
+};
+
+&eth {
+	pinctrl-names = "default";
+	pinctrl-0 = <&mdio_pins>;
+	status = "okay";
+
+	gmac0: mac@0 {
+		nvmem-cells = <&macaddr 0x0>;
+		nvmem-cell-names = "mac-address";
+		label = "wan";
+		compatible = "mediatek,eth-mac";
+		reg = <0>;
+
+		phy-mode = "sgmii";
+		phy-handle = <&phy24>;
+		managed = "in-band-status";
+	};
+
+	gmac1: mac@1 {
+		nvmem-cells = <&macaddr 0x1>;
+		nvmem-cell-names = "mac-address";
+        label = "lan";
+		compatible = "mediatek,eth-mac";
+		reg = <1>;
+
+		phy-mode = "gmii";
+		phy-handle = <&int_gbe_phy>;
+	};
+
+	mux: mux-bus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		mux0: ethernet-mux@0 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			compatible = "mediatek,eth-mux";
+			reg = <0>;
+			label = "wan";
+
+			chan-sel-gpios = <&pio 6 GPIO_ACTIVE_LOW>;
+			mod-def0-gpios = <&pio 0 GPIO_ACTIVE_LOW>;
+
+			channel0: channel@0 {
+				reg = <0>;
+				phy-mode = "sgmii";
+				phy-handle = <&phy24>;
+				managed = "in-band-status";
+			};
+
+			channel1: channel@1 {
+				reg = <1>;
+				phy-mode = "2500base-x";
+				sfp = <&sfp1>;
+				managed = "in-band-status";
+			};
+		};
+	};
+};
+
+&mdio_bus {
+	phy24: ethernet-phy@24 {
+		/* PEF7071 */
+		compatible = "intel,phy11g", "ethernet-phy-ieee802.3-c22";
+		reg = <0x18>;
+
+		reset-gpios = <&pio 39 GPIO_ACTIVE_LOW>;
+		reset-assert-us = <200000>;
+		reset-deassert-us = <300000>;
+	};
+};
+
+&crypto {
+	status = "okay";
+};
+
+&pio {
+	button_pins: button-pins {
+		pins = "GPIO_RESET";
+		bias-disable;
+	};
+
+	i2c0_pins: i2c0-pins {
+		mux {
+			function = "i2c";
+			groups =  "i2c0_1";
+		};
+	};
+
+	mmc0_pins_default: mmc0-pins-default {
+		mux {
+			function = "flash";
+			groups = "emmc_45";
+		};
+	};
+
+	mmc0_pins_uhs: mmc0-pins-uhs {
+		mux {
+			function = "flash";
+			groups = "emmc_45";
+		};
+	};
+
+	mux_oe: mux-oe-hog {
+		gpio-hog;
+		gpios = <7 GPIO_ACTIVE_LOW>;
+		line-name = "mux-oe";
+		output-high;
+	};
+};
+
+&mmc0 {
+	pinctrl-names = "default", "state_uhs";
+	pinctrl-0 = <&mmc0_pins_default>;
+	pinctrl-1 = <&mmc0_pins_uhs>;
+	bus-width = <8>;
+	max-frequency = <52000000>;
+	cap-mmc-highspeed;
+	vmmc-supply = <&reg_3p3v>;
+	non-removable;
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	card@0 {
+		#address-cells = <0>;
+		#size-cells = <0>;
+		compatible = "mmc-card";
+		reg = <0>;
+
+		block {
+			compatible = "block-device";
+
+			partitions {
+				block-partition-factory {
+					partname = "factory";
+
+					nvmem-layout {
+						compatible = "fixed-layout";
+						#address-cells = <1>;
+						#size-cells = <1>;
+
+						eeprom_factory_0: eeprom@0 {
+							reg = <0x0 0x1000>;
+						};
+					};
+				};
+
+				block-partition-mfginfo {
+					partname = "mfginfo";
+
+					nvmem-layout {
+						compatible = "adtran,mfginfo";
+
+						macaddr: mfg-mac {
+							#nvmem-cell-cells = <1>;
+						};
+					};
+				};
+			};
+		};
+	};
+};
+
+&uart0 {
+	status = "okay";
+};
+
+&i2c0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c0_pins>;
+	status = "okay";
+
+	system-leds@30 {
+		compatible = "srg,sysled";
+		reg = <0x30>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		led_sys_red: system_red {
+			label = "red";
+			reg = <1>;
+		};
+
+		led_sys_green: system_green {
+			label = "green";
+			reg = <2>;
+		};
+
+		led_sys_blue: system_blue {
+			label = "blue";
+			reg = <3>;
+		};
+
+		led_sys_white: system_white {
+			label = "white";
+			reg = <4>;
+		};
+	};
+};
+
+&watchdog {
+	status = "okay";
+};
+
+&wifi {
+	nvmem-cells = <&eeprom_factory_0>;
+	nvmem-cell-names = "eeprom";
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	ieee80211-freq-limit = <2400000 2500000>, <5170000 5835000>;
+
+	band@0 {
+		/* 2.4 GHz */
+		reg = <0>;
+		nvmem-cells = <&macaddr 0x4>;
+		nvmem-cell-names = "mac-address";
+	};
+
+	band@1 {
+		/* 5 GHz */
+		reg = <1>;
+		nvmem-cells = <&macaddr 0xa>;
+		nvmem-cell-names = "mac-address";
+	};
+};
