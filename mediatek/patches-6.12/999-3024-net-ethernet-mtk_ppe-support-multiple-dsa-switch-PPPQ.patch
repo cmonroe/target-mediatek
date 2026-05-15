@@ -16,7 +16,7 @@ Command to dump PPPQ TXQ mapping
 
 --- a/drivers/net/ethernet/mediatek/mtk_ppe_offload.c
 +++ b/drivers/net/ethernet/mediatek/mtk_ppe_offload.c
-@@ -245,7 +245,7 @@ mtk_flow_set_output_device(struct mtk_et
+@@ -328,7 +328,7 @@ mtk_flow_set_output_device(struct mtk_et
  
  	if (dsa_port >= 0) {
  		mtk_foe_entry_set_dsa(eth, foe, dsa_proto, dsa_port);
@@ -25,12 +25,12 @@ Command to dump PPPQ TXQ mapping
  	} else {
  		queue = (pse_port == PSE_GDM3_PORT) ? 2 : pse_port - 1;
  	}
-@@ -256,7 +256,7 @@ mtk_flow_set_output_device(struct mtk_et
- 	}
- 
- 	if (eth->qos_toggle == 2 && mtk_ppe_check_pppq_path(mac, idev, dsa_port))
+@@ -346,7 +346,7 @@ mtk_flow_set_output_device(struct mtk_et
+ 			if (mtk_flow_is_tcp_ack(eth, foe, ct))
+ 				queue += 6;
+ 		}
 -		mtk_foe_entry_set_queue(eth, foe, queue);
 +		mtk_foe_entry_set_queue(eth, foe, queue & MTK_QDMA_QUEUE_MASK);
- 	else if (eth->qos_toggle == 1 || (ct_mark & MTK_QDMA_QUEUE_MASK) >= 9) {
+ 	} else if (eth->qos_toggle == 1 || (ct_mark & MTK_QDMA_QUEUE_MASK) >= 15) {
  		u8 qos_ul_toggle;
  
