@@ -2,66 +2,133 @@ From: Chad Monroe <chad@monroe.io>
 Date: Tue, 09 Dec 2025 15:01:26 -0800
 Subject: [PATCH] net: ethernet: mediatek: improve qdma_pppq debugfs
 
-Enable qdma_pppq debugfs for all netsys versions, not just v3+. Read
-scheduler and weight registers on netsys v1 using the correct field
-mask. Add packet/drop counters (v2+ only), identify ACK queues in
-interface column.
+Enable the qdma_pppq debugfs node for all netsys versions, not just
+v3+. Read scheduler and weight registers on netsys v1 using the
+correct field mask. Add packet/drop counters (v2+ only). Walk the
+PPE FOE tables to report a live offloaded-flow count per queue, with
+a TCP-ACK breakdown, replacing the legacy qdma_shaper.refcnt[] view.
+Tag interfaces in the ACK range with "(ack)" in the interface column.
+
+Also declare mtk_foe_entry_get_queue() in mtk_ppe.h so the debugfs
+walker can consume it.
 
 Signed-off-by: Chad Monroe <chad@monroe.io>
 ---
- drivers/net/ethernet/mediatek/mtk_eth_dbg.c |   60 +++++++++++++++---
- 1 file changed, 51 insertions(+), 9 deletions(-)
+ drivers/net/ethernet/mediatek/mtk_eth_dbg.c |  108 ++++++++++++++++++++++-----
+ drivers/net/ethernet/mediatek/mtk_ppe.h     |    2 +
+ 2 files changed, 92 insertions(+), 18 deletions(-)
 
 --- a/drivers/net/ethernet/mediatek/mtk_eth_dbg.c
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_dbg.c
-@@ -71,10 +71,14 @@ struct mtk_eth_debug eth_debug;
+@@ -29,6 +29,7 @@
+ 
+ #include "mtk_eth_soc.h"
+ #include "mtk_eth_dbg.h"
++#include "mtk_ppe.h"
+ #include "mtk_wed_regs.h"
+ 
+ #define RX_DESC_OFS(eth, i) \
+@@ -71,14 +72,24 @@ struct mtk_eth_debug eth_debug;
  static int mtk_qdma_pppq_show(struct seq_file *m, void *v)
  {
  	struct mtk_eth *eth = m->private;
 +	const struct mtk_soc_data *soc = eth->soc;
  	struct net_device *pppq_map[MTK_QDMA_NUM_QUEUES] = { NULL };
 +	bool is_ack_queue[MTK_QDMA_NUM_QUEUES] = { false };
++	u32 flow_cnt[MTK_QDMA_NUM_QUEUES] = { 0 };
++	u32 ack_flow_cnt[MTK_QDMA_NUM_QUEUES] = { 0 };
  	struct net_device *ndev;
  	struct mtk_mac *mac;
 -	int i;
 +	char iface_name[32];
-+	u32 pkt_cnt, drop_cnt, qtx_sch, max_rate, max_rate_exp;
-+	int i, scheduler, weight;
++	u32 pkt_cnt, drop_cnt, qtx_sch, max_rate, max_rate_exp, ack_ofs;
++	int i, pi, h, scheduler, weight;
  
  	mtk_eth_set_dsa_pppq_offset(eth);
++	ack_ofs = mtk_pppq_ack_queue_offset(eth);
  
-@@ -114,56 +118,73 @@ static int mtk_qdma_pppq_show(struct seq
- 				/* TCP ACK use high priority queue in HNAT */
- 				qid += eth->pppq_ofs[MTK_MAX_DEVS];
+-	/* Find the netdevices for the corresponding QDMA queues */
++	/* Find the netdevices for the corresponding QDMA queues. ACK queue
++	 * for every data qid q lives at (q + ack_ofs) regardless of whether
++	 * the egress is DSA or a direct GMAC.
++	 */
+ 	for (i = 0; i < MTK_MAX_DEVS; i++) {
+ 		ndev = eth->netdev[i];
+ 		if (!ndev)
+@@ -88,12 +99,11 @@ static int mtk_qdma_pppq_show(struct seq
+ 		if (i < MTK_QDMA_NUM_QUEUES)
+ 			pppq_map[i] = ndev;
+ 
+-		/* Populate per-port queue owners for DSA-user ports */
+ 		if (netdev_uses_dsa(ndev)) {
+ 			const struct dsa_port *dp;
+ 			struct dsa_switch *ds;
+ 			u32 pppq_ofs = eth->pppq_ofs[i];
+-			u32 qid, p;
++			u32 qid, ack_qid, p;
+ 
+ 			mac = netdev_priv(ndev);
+ 			ds = ndev->dsa_ptr->ds;
+@@ -111,59 +121,112 @@ static int mtk_qdma_pppq_show(struct seq
+ 
+ 				qid = MTK_MAX_DEVS + pppq_ofs + mac->dsa_user_idx[dp->index];
  				pppq_map[qid % MTK_QDMA_NUM_QUEUES] = dp->user;
-+				is_ack_queue[qid % MTK_QDMA_NUM_QUEUES] = true;
+-				/* TCP ACK use high priority queue in HNAT */
+-				qid += eth->pppq_ofs[MTK_MAX_DEVS];
+-				pppq_map[qid % MTK_QDMA_NUM_QUEUES] = dp->user;
++				ack_qid = (qid + ack_ofs) % MTK_QDMA_NUM_QUEUES;
++				pppq_map[ack_qid] = dp->user;
++				is_ack_queue[ack_qid] = true;
  			}
++		} else {
++			/* Non-DSA direct GMAC: ACK queue lives at i + ack_ofs */
++			u32 ack_qid = (i + ack_ofs) % MTK_QDMA_NUM_QUEUES;
++
++			pppq_map[ack_qid] = ndev;
++			is_ack_queue[ack_qid] = true;
  		}
  	}
  
 -	seq_puts(m, "Usage of the QDMA PPPQ for the HW path:\n");
-+	seq_puts(m, "TXQ    Interface        Scheduler  Weight  Speed (Mbps)  Packets       Drops\n");
- 	for (i = 0; i < MTK_QDMA_NUM_QUEUES; i++) {
+-	for (i = 0; i < MTK_QDMA_NUM_QUEUES; i++) {
 -		if (pppq_map[i])
 -			seq_printf(m, "qdma_txq%d:	%8s	%5d Mbps %8d refcnt\n",
 -				   i, pppq_map[i]->name, eth->qdma_shaper.speed[i],
 -				   atomic_read(&eth->qdma_shaper.refcnt[i]));
--	}
-+		if (!pppq_map[i])
++	for (pi = 0; pi < ARRAY_SIZE(eth->ppe); pi++) {
++		struct mtk_ppe *ppe = eth->ppe[pi];
++
++		if (!ppe || !ppe->foe_table)
 +			continue;
++
++		for (h = 0; h < MTK_PPE_ENTRIES; h++) {
++			struct mtk_foe_entry *foe = mtk_foe_get_entry(ppe, h);
++			u32 ib1 = READ_ONCE(foe->ib1);
++			unsigned int q;
++
++			if (FIELD_GET(MTK_FOE_IB1_STATE, ib1) != MTK_FOE_STATE_BIND)
++				continue;
++
++			q = mtk_foe_entry_get_queue(eth, foe) % MTK_QDMA_NUM_QUEUES;
++			flow_cnt[q]++;
++			if (is_ack_queue[q])
++				ack_flow_cnt[q]++;
++		}
+ 	}
  
 -	return 0;
 -}
-+		pkt_cnt = 0;
-+		drop_cnt = 0;
++	seq_puts(m, "TXQ    Interface        Scheduler  Weight  Speed (Mbps)  Packets       Drops         Flows\n");
++	for (i = 0; i < MTK_QDMA_NUM_QUEUES; i++) {
++		if (!pppq_map[i])
++			continue;
  
 -static int mtk_qdma_pppq_open(struct inode *inode, struct file *file)
 -{
 -	return single_open(file, mtk_qdma_pppq_show, inode->i_private);
 -}
-+		mtk_w32(eth, i / MTK_QTX_PER_PAGE, soc->reg_map->qdma.page);
-+		qtx_sch = mtk_r32(eth, soc->reg_map->qdma.qtx_sch +
-+				  (i % MTK_QTX_PER_PAGE) * MTK_QTX_OFFSET);
++		pkt_cnt = 0;
++		drop_cnt = 0;
  
 -static ssize_t mtk_qdma_pppq_write(struct file *file, const char __user *buffer,
 -				   size_t count, loff_t *data)
@@ -71,19 +138,35 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 -	char buf[8] = {0};
 -	u32 threshold;
 -	int len = count;
++		mtk_w32(eth, i / MTK_QTX_PER_PAGE, soc->reg_map->qdma.page);
++		qtx_sch = mtk_r32(eth, soc->reg_map->qdma.qtx_sch +
++				  (i % MTK_QTX_PER_PAGE) * MTK_QTX_OFFSET);
+ 
+-	if ((len > 8) || copy_from_user(buf, buffer, len))
+-		return -EFAULT;
 +		if (mtk_is_netsys_v2_or_greater(eth))
 +			scheduler = FIELD_GET(MTK_QTX_SCH_TX_SEL_V2, qtx_sch);
 +		else
 +			scheduler = FIELD_GET(MTK_QTX_SCH_TX_SEL, qtx_sch);
  
--	if ((len > 8) || copy_from_user(buf, buffer, len))
+-	if (sscanf(buf, "%6d", &threshold) != 1)
 -		return -EFAULT;
-+		weight = FIELD_GET(MTK_QTX_SCH_MAX_RATE_WEIGHT, qtx_sch);
-+		max_rate = FIELD_GET(MTK_QTX_SCH_MAX_RATE_MAN, qtx_sch);
-+		max_rate_exp = FIELD_GET(MTK_QTX_SCH_MAX_RATE_EXP, qtx_sch);
++		if (mtk_is_netsys_v3_or_greater(eth) &&
++		    eth->soc->caps != MT7988_CAPS) {
++			weight = FIELD_GET(MTK_QTX_SCH_MAX_RATE_WEIGHT_V3, qtx_sch);
++			max_rate = FIELD_GET(MTK_QTX_SCH_MAX_RATE_MAN_V3, qtx_sch);
++			max_rate_exp = FIELD_GET(MTK_QTX_SCH_MAX_RATE_EXP_V3, qtx_sch);
++		} else {
++			weight = FIELD_GET(MTK_QTX_SCH_MAX_RATE_WEIGHT, qtx_sch);
++			max_rate = FIELD_GET(MTK_QTX_SCH_MAX_RATE_MAN, qtx_sch);
++			max_rate_exp = FIELD_GET(MTK_QTX_SCH_MAX_RATE_EXP, qtx_sch);
++		}
 +		while (max_rate_exp--)
 +			max_rate *= 10;
-+
+ 
+-	if (threshold > 10000 || threshold < 0) {
+-		pr_warn("Threshold must be between 0 and 10000 Mbps\n");
+-		return -EINVAL;
 +		if (mtk_is_netsys_v2_or_greater(eth)) {
 +			mtk_m32(eth, MTK_MIB_ON_QTX_CFG, MTK_MIB_ON_QTX_CFG,
 +				soc->reg_map->qdma.qtx_mib_if);
@@ -98,22 +181,20 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 +			mtk_m32(eth, MTK_VQTX_MIB_EN, 0,
 +				soc->reg_map->qdma.qtx_mib_if);
 +		}
- 
--	if (sscanf(buf, "%6d", &threshold) != 1)
--		return -EFAULT;
++
 +		if (is_ack_queue[i])
 +			snprintf(iface_name, sizeof(iface_name), "%s (ack)",
 +				 pppq_map[i]->name);
 +		else
 +			snprintf(iface_name, sizeof(iface_name), "%s",
 +				 pppq_map[i]->name);
- 
--	if (threshold > 10000 || threshold < 0) {
--		pr_warn("Threshold must be between 0 and 10000 Mbps\n");
--		return -EINVAL;
-+		seq_printf(m, "%-5d  %-15s  %-9d  %-6d  %-12u  %-12u  %u\n",
++
++		seq_printf(m, "%-5d  %-15s  %-9d  %-6d  %-12u  %-12u  %-12u  %u",
 +			   i, iface_name, scheduler, weight,
-+			   max_rate / 1000, pkt_cnt, drop_cnt);
++			   max_rate / 1000, pkt_cnt, drop_cnt, flow_cnt[i]);
++		if (ack_flow_cnt[i])
++			seq_printf(m, " (%u ack)", ack_flow_cnt[i]);
++		seq_puts(m, "\n");
  	}
  
 -	eth->qdma_shaper.threshold = threshold;
@@ -134,7 +215,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	.llseek = seq_lseek,
  	.release = single_release,
  };
-@@ -898,9 +919,8 @@ int mtketh_debugfs_init(struct mtk_eth *
+@@ -898,9 +961,8 @@ int mtketh_debugfs_init(struct mtk_eth *
  				    &fops_mt7530sw_reg_w);
  	}
  
@@ -146,3 +227,14 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  
  	for (i = 0; i < (mtk_is_netsys_v2_or_greater(eth) ? 4 : 2); i++) {
  		ret = snprintf(name, sizeof(name), "qdma_sch%d", i);
+--- a/drivers/net/ethernet/mediatek/mtk_ppe.h
++++ b/drivers/net/ethernet/mediatek/mtk_ppe.h
+@@ -406,6 +406,8 @@ int mtk_foe_entry_set_wdma(struct mtk_et
+ 			   bool amsdu_en);
+ int mtk_foe_entry_set_queue(struct mtk_eth *eth, struct mtk_foe_entry *entry,
+ 			    unsigned int queue);
++unsigned int mtk_foe_entry_get_queue(struct mtk_eth *eth,
++				     struct mtk_foe_entry *entry);
+ int mtk_foe_entry_commit(struct mtk_ppe *ppe, struct mtk_flow_entry *entry);
+ void mtk_foe_entry_clear(struct mtk_ppe *ppe, struct mtk_flow_entry *entry);
+ int mtk_ppe_debugfs_init(struct mtk_eth *eth);
