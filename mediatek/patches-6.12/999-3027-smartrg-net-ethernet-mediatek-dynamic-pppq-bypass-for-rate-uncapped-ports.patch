@@ -1,0 +1,98 @@
+From: Chad Monroe <chad@monroe.io>
+Date: Fri, 15 May 2026 04:58:42 -0700
+Subject: [PATCH] net: ethernet: mediatek: bypass HQoS for rate-uncapped PPPQ flows on netsys v3
+
+The MT7988 HQoS engine has a ~10 Gbps end-to-end throughput cap. With
+qos_toggle=2 (the PPPQ default after 999-3025), every offloaded flow is
+stamped with an IB2 QID by mtk_foe_entry_set_queue(), which on netsys v3
+also sets MTK_FOE_TPORT_IDX=1 and routes the packet through the QDMA
+scheduler. Two 10 G GMACs (SDG-8732v, 9000) therefore cannot reach
+bidirectional line rate while traffic transits HQoS.
+
+The vendor patch 999-3021 commit log states: "Without this patch, the
+ETH/WiFi to ETH traffic may not enter the QDMA, even if IB2_PSE_QOS is
+set on the MT7988." Leaving TPORT_IDX at 0 therefore keeps the flow out
+of the HQoS engine.
+
+When the egress data queue has MTK_QTX_SCH_MAX_RATE_EN_V3 clear there is
+no shaping work to do, so skip mtk_foe_entry_set_queue() entirely. The
+FOE entry keeps IB2.QID / PSE_QOS / TPORT_IDX at zero, the flow bypasses
+HQoS, and line-rate forwarding is restored. As soon as a port negotiates
+a sub-10 G speed and mtk_set_queue_speed() programs MAX_RATE_EN on its
+PPPQ queue, subsequent offload binds for that egress get HQoS-stamped
+again. No active FOE flush is required: the only path that toggles
+MAX_RATE_EN runs from the NETDEV_CHANGE notifier, which implies a
+momentary link drop that already invalidates any in-flight flows.
+
+Gate restricted to netsys v3, where TPORT_IDX exists. Behaviour on
+netsys v1/v2 is unchanged.
+
+Signed-off-by: Chad Monroe <chad@monroe.io>
+---
+ drivers/net/ethernet/mediatek/mtk_eth_soc.c     |   17 ++++++++++++++
+ drivers/net/ethernet/mediatek/mtk_eth_soc.h     |    1 
+ drivers/net/ethernet/mediatek/mtk_ppe_offload.c |   10 +++++++-
+ 3 files changed, 27 insertions(+), 1 deletion(-)
+
+--- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
++++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
+@@ -1022,6 +1022,31 @@ void mtk_set_queue_sched(struct mtk_eth
+ 	mtk_w32(eth, val, soc->reg_map->qdma.qtx_sch + ofs);
+ }
+ 
++bool mtk_queue_has_rate_cap(struct mtk_eth *eth, unsigned int idx)
++{
++	const struct mtk_soc_data *soc = eth->soc;
++	u32 ofs, val, mask;
++
++	if (!MTK_HAS_CAPS(soc->caps, MTK_QDMA))
++		return false;
++
++	mtk_w32(eth, (idx / MTK_QTX_PER_PAGE), soc->reg_map->qdma.page);
++	ofs = MTK_QTX_OFFSET * (idx % MTK_QTX_PER_PAGE);
++	val = mtk_r32(eth, soc->reg_map->qdma.qtx_sch + ofs);
++
++	/* Match the register-layout switch in mtk_set_queue_speed(): netsys
++	 * v3 silicon other than MT7988 uses the wider _V3 fields; MT7988
++	 * (despite being v3) keeps the V1/V2 layout, so MAX_RATE_EN lives
++	 * at bit 11 there.
++	 */
++	if (mtk_is_netsys_v3_or_greater(eth) && soc->caps != MT7988_CAPS)
++		mask = MTK_QTX_SCH_MAX_RATE_EN_V3;
++	else
++		mask = MTK_QTX_SCH_MAX_RATE_EN;
++
++	return !!(val & mask);
++}
++
+ static void mtk_gdm_mac_setup_eee(struct mtk_mac *mac, bool enable)
+ {
+ 	struct mtk_eth *eth = mac->hw;
+--- a/drivers/net/ethernet/mediatek/mtk_eth_soc.h
++++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.h
+@@ -1863,5 +1863,6 @@ void mtk_eth_set_dma_device(struct mtk_e
+ void mtk_eth_set_dsa_pppq_offset(struct mtk_eth *eth);
+ void mtk_eth_set_dsa_user_idx(struct mtk_eth *eth, struct net_device *dev);
+ void mtk_set_queue_sched(struct mtk_eth *eth, unsigned int idx, u32 sch_id);
++bool mtk_queue_has_rate_cap(struct mtk_eth *eth, unsigned int idx);
+ 
+ #endif /* MTK_ETH_H */
+--- a/drivers/net/ethernet/mediatek/mtk_ppe_offload.c
++++ b/drivers/net/ethernet/mediatek/mtk_ppe_offload.c
+@@ -338,7 +338,15 @@ mtk_flow_set_output_device(struct mtk_et
+ 		ct_mark = ct->mark;
+ 	}
+ 
+-	if (eth->qos_toggle == 2 && mtk_ppe_check_pppq_path(mac, idev, dsa_port)) {
++	if (eth->qos_toggle == 2 && mtk_ppe_check_pppq_path(mac, idev, dsa_port) &&
++	    (!mtk_is_netsys_v3_or_greater(eth) ||
++	     mtk_queue_has_rate_cap(eth, queue))) {
++		/* On netsys v3, skipping mtk_foe_entry_set_queue() leaves
++		 * IB2.PSE_QOS and the v3 TPORT_IDX field at zero so the flow
++		 * bypasses the HQoS engine (subject to its ~10 Gbps cap).
++		 * Only stamp the PPPQ qid when the egress data queue has a
++		 * max-rate cap programmed and therefore actually needs shaping.
++		 */
+ 		if (ct && nf_ct_protonum(ct) == IPPROTO_TCP) {
+ 			/* Dispatch IPv4/IPv6 TCP ACKs (<= 64 bytes) into the
+ 			 * high-priority half of the PPPQ range.
