@@ -15,7 +15,7 @@ Signed-off-by: Piotr Kubik <piotr.kubik@adtran.com>
 
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
-@@ -5459,6 +5459,16 @@ static int mtk_add_mac(struct mtk_eth *e
+@@ -5640,6 +5640,16 @@ static int mtk_add_mac(struct mtk_eth *e
  	eth->netdev[id]->features |= eth->soc->hw_features;
  	eth->netdev[id]->ethtool_ops = &mtk_ethtool_ops;
  

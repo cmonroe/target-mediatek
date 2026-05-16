@@ -1,0 +1,47 @@
+From: Chad Monroe <chad@monroe.io>
+Date: Sat, 16 May 2026 12:05:07 -0700
+Subject: [PATCH] net: ethernet: mediatek: add qdma paging and layout helpers
+
+The per-queue qtx_* registers live in two 16-queue pages, and the v3
+silicon (with the MT7988 exception) uses different rate / weight field
+widths than v1/v2. Both invariants are open-coded all over the driver.
+
+Introduce inline helpers in mtk_eth_soc.h for patches in this series:
+  - mtk_qdma_select_page()   - select the page containing qid @idx
+  - MTK_QTX_REG_OFS()        - per-page byte offset for qid @idx
+  - mtk_qtx_sch_is_v3_layout() - true on v3 silicon except MT7988
+
+Signed-off-by: Chad Monroe <chad@monroe.io>
+---
+ drivers/net/ethernet/mediatek/mtk_eth_soc.h |   21 ++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+--- a/drivers/net/ethernet/mediatek/mtk_eth_soc.h
++++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.h
+@@ -1683,5 +1683,26 @@ int mtk_flow_offload_cmd(struct mtk_eth
+ void mtk_flow_offload_cleanup(struct mtk_eth *eth, struct list_head *list);
+ void mtk_eth_set_dma_device(struct mtk_eth *eth, struct device *dma_dev);
+ 
++/* QDMA per-queue registers are paged: queues 0..15 live on page 0,
++ * 16..31 on page 1. Every access to qtx_cfg / qtx_sch / qtx_mib must
++ * be preceded by writing the page index to qdma.page; the offset
++ * within the page is (idx % MTK_QTX_PER_PAGE) * MTK_QTX_OFFSET.
++ */
++static inline void mtk_qdma_select_page(struct mtk_eth *eth, unsigned int idx)
++{
++	mtk_w32(eth, idx / MTK_QTX_PER_PAGE, eth->soc->reg_map->qdma.page);
++}
++
++#define MTK_QTX_REG_OFS(idx)	(MTK_QTX_OFFSET * ((idx) % MTK_QTX_PER_PAGE))
++
++/* Netsys v3 silicon (other than MT7988) uses the wider _V3 variants of
++ * the qtx_sch rate / weight fields. MT7988, despite being v3-class,
++ * keeps the v1/v2 layout for these fields.
++ */
++static inline bool mtk_qtx_sch_is_v3_layout(struct mtk_eth *eth)
++{
++	return mtk_is_netsys_v3_or_greater(eth) &&
++	       eth->soc->caps != MT7988_CAPS;
++}
+ 
+ #endif /* MTK_ETH_H */

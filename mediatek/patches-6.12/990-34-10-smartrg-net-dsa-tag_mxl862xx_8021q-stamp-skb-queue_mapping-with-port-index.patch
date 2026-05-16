@@ -1,10 +1,12 @@
 From: Chad Monroe <chad@monroe.io>
-Date: Tue, 09 Dec 2025 16:27:14 -0800
-Subject: [PATCH] net: dsa: tag_mxl862xx_8021q: set skb queue mapping to port index
+Date: Fri, 15 May 2026 13:45:29 -0700
+Subject: [PATCH] net: dsa: tag_mxl862xx_8021q: stamp skb queue_mapping with port index
 
-mtk_eth_soc uses the skb queue mapping to select a per-port QDMA TX queue
-when DSA is enabled. Setting it to the DSA port index ensures each switch
-port uses a dedicated TX queue.
+MediaTek QDMA's ndo_select_queue derives the PPPQ qid from
+skb->queue_mapping. Generic 8021Q taggers leave it untouched, so every
+MXL862 user-port flow lands on the conduit base queue and per-port rate
+caps have no effect. Set queue_mapping = dp->index in
+mxl862_8021q_xmit() before dsa_8021q_xmit().
 
 Signed-off-by: Chad Monroe <chad@monroe.io>
 ---

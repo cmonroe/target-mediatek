@@ -9,9 +9,9 @@ behavior happen in system.
 
 Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 ---
- drivers/net/ethernet/mediatek/mtk_ppe.c      | 165 ++++++++++++++++++-
- drivers/net/ethernet/mediatek/mtk_ppe.h      |   3 +-
- drivers/net/ethernet/mediatek/mtk_ppe_regs.h |  14 ++
+ drivers/net/ethernet/mediatek/mtk_ppe.c      |  165 +++++++++++++++++++++++++--
+ drivers/net/ethernet/mediatek/mtk_ppe.h      |    3 
+ drivers/net/ethernet/mediatek/mtk_ppe_regs.h |   14 ++
  3 files changed, 174 insertions(+), 8 deletions(-)
 
 --- a/drivers/net/ethernet/mediatek/mtk_ppe.c
@@ -188,7 +188,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  
  	ppe_m32(ppe, MTK_PPE_CACHE_CTL, MTK_PPE_CACHE_CTL_EN,
  		enable * MTK_PPE_CACHE_CTL_EN);
-@@ -516,6 +663,7 @@ __mtk_foe_entry_clear(struct mtk_ppe *pp
+@@ -549,6 +696,7 @@ __mtk_foe_entry_clear(struct mtk_ppe *pp
  		      bool set_state)
  {
  	struct hlist_node *tmp;
@@ -196,7 +196,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  
  	if (entry->type == MTK_FLOW_TYPE_L2) {
  		rhashtable_remove_fast(&ppe->l2_flows, &entry->l2_node,
-@@ -529,10 +677,13 @@ __mtk_foe_entry_clear(struct mtk_ppe *pp
+@@ -562,10 +710,13 @@ __mtk_foe_entry_clear(struct mtk_ppe *pp
  	if (entry->hash != 0xffff && set_state) {
  		struct mtk_foe_entry *hwe = mtk_foe_get_entry(ppe, entry->hash);
  
@@ -211,7 +211,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	}
  	entry->hash = 0xffff;
  
-@@ -691,8 +842,6 @@ __mtk_foe_entry_commit(struct mtk_ppe *p
+@@ -724,8 +875,6 @@ __mtk_foe_entry_commit(struct mtk_ppe *p
  		acct->packets = 0;
  		acct->bytes = 0;
  	}
@@ -220,7 +220,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  }
  
  void mtk_foe_entry_clear(struct mtk_ppe *ppe, struct mtk_flow_entry *entry)
-@@ -943,6 +1092,8 @@ struct mtk_ppe *mtk_ppe_init(struct mtk_
+@@ -976,6 +1125,8 @@ struct mtk_ppe *mtk_ppe_init(struct mtk_
  		ppe->acct_table = acct;
  	}
  
@@ -229,7 +229,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	return ppe;
  
  err_free_l2_flows:
-@@ -1016,8 +1167,6 @@ void mtk_ppe_start(struct mtk_ppe *ppe)
+@@ -1079,8 +1230,6 @@ void mtk_ppe_start(struct mtk_ppe *ppe)
  	ppe_w32(ppe, MTK_PPE_IP_PROTO_CHK,
  		MTK_PPE_IP_PROTO_CHK_IPV4 | MTK_PPE_IP_PROTO_CHK_IPV6);
  
@@ -238,7 +238,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	val = MTK_PPE_FLOW_CFG_IP6_3T_ROUTE |
  	      MTK_PPE_FLOW_CFG_IP6_5T_ROUTE |
  	      MTK_PPE_FLOW_CFG_IP6_6RD |
-@@ -1069,6 +1218,8 @@ void mtk_ppe_start(struct mtk_ppe *ppe)
+@@ -1132,6 +1281,8 @@ void mtk_ppe_start(struct mtk_ppe *ppe)
  	}
  	ppe_w32(ppe, MTK_PPE_GLO_CFG, val);
  
@@ -249,7 +249,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	if (mtk_is_netsys_v2_or_greater(ppe->eth)) {
 --- a/drivers/net/ethernet/mediatek/mtk_ppe.h
 +++ b/drivers/net/ethernet/mediatek/mtk_ppe.h
-@@ -344,6 +344,8 @@ struct mtk_ppe {
+@@ -348,6 +348,8 @@ struct mtk_ppe {
  	struct rhashtable l2_flows;
  
  	void *acct_table;
@@ -258,7 +258,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  };
  
  struct mtk_ppe *mtk_ppe_init(struct mtk_eth *eth, void __iomem *base, int index);
-@@ -355,7 +357,6 @@ int mtk_ppe_prepare_reset(struct mtk_ppe
+@@ -360,7 +362,6 @@ int mtk_ppe_prepare_reset(struct mtk_ppe
  struct mtk_foe_accounting *mtk_ppe_mib_entry_read(struct mtk_ppe *ppe, u16 index);
  
  void __mtk_ppe_check_skb(struct mtk_ppe *ppe, struct sk_buff *skb, u16 hash);

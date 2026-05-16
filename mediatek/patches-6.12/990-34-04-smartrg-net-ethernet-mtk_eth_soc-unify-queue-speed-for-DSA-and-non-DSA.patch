@@ -1,20 +1,22 @@
-From a82800442e5cff0acbadf0231deff53ccded5454 Mon Sep 17 00:00:00 2001
-From: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
-Date: Tue, 10 Jun 2025 19:46:52 +0800
-Subject: [PATCH] net: ethernet: mtk_eth_soc: add non-DSA devices handling to
- mtk_device_event
+From: Chad Monroe <chad@monroe.io>
+Date: Fri, 15 May 2026 13:42:05 -0700
+Subject: [PATCH] net: ethernet: mtk_eth_soc: unify queue speed for DSA and non-DSA
 
-Without this patch, ETH is unable to set the QDMA maximum rate limit
-for non-DSA devices.
+The NETDEV_CHANGE notifier bailed on non-DSA netdevs, leaving direct-GMAC
+queues uncapped on mixed-fabric SKUs. Route both DSA user ports
+(queue = dp->index + 3) and direct GMACs (queue = mac->id) through
+mtk_set_queue_speed(), and filter bridge events via IFF_EBRIDGE.
 
-Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
+Based-on-patch-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
+Signed-off-by: Piotr Kubik <piotr.kubik@adtran.com>
+Signed-off-by: Chad Monroe <chad@monroe.io>
 ---
- drivers/net/ethernet/mediatek/mtk_eth_soc.c | 25 ++++++++++++---------
+ drivers/net/ethernet/mediatek/mtk_eth_soc.c |   25 ++++++++++--------
  1 file changed, 15 insertions(+), 10 deletions(-)
 
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
-@@ -4040,35 +4040,40 @@ static int mtk_device_event(struct notif
+@@ -3757,35 +3757,47 @@ static int mtk_device_event(struct notif
  	struct net_device *ldev;
  	struct list_head *iter;
  	struct dsa_port *dp;
@@ -52,6 +54,13 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 +	if (dsa_user_dev_check(dev)) {
 +		dp = dsa_port_from_netdev(dev);
 +		queue = dp->index + 3;
++
++		/* If the conduit GMAC link is the bottleneck, the per-port
++		 * PPPQ cap is redundant - skip it to leave the queue
++		 * unshaped on the QDMA side.
++		 */
++		if (mac->speed > 0 && mac->speed <= s.base.speed)
++			s.base.speed = 0;
 +	} else
 +		queue = mac->id;
  

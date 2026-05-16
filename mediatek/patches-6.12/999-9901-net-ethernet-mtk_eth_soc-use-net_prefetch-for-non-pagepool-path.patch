@@ -14,12 +14,12 @@ after disabling pp i got ~5gbit/s
 17:38:50       2    0.00    0.00    0.50    0.50    0.50   29.00    0.00    0.00    0.00   69.50
 17:38:50       3    1.01    0.00   87.94    0.00    0.50   10.55    0.00    0.00    0.00    0.00
 ---
- drivers/net/ethernet/mediatek/mtk_eth_soc.c | 1 +
+ drivers/net/ethernet/mediatek/mtk_eth_soc.c |    1 +
  1 file changed, 1 insertion(+)
 
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
-@@ -2650,6 +2650,7 @@ static int mtk_poll_rx(struct napi_struc
+@@ -2652,6 +2652,7 @@ static int mtk_poll_rx(struct napi_struc
  			dma_unmap_single(eth->dma_dev, ((u64)trxd.rxd1 | addr64),
  					 ring->buf_size, DMA_FROM_DEVICE);
  

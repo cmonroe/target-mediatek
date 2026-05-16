@@ -8,7 +8,7 @@ with a multicast packet, resulting in abnormal operation of the CDMA.
 
 Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 ---
- drivers/net/ethernet/mediatek/mtk_ppe.c | 3 ---
+ drivers/net/ethernet/mediatek/mtk_ppe.c |    3 ---
  1 file changed, 3 deletions(-)
 
 --- a/drivers/net/ethernet/mediatek/mtk_ppe.c

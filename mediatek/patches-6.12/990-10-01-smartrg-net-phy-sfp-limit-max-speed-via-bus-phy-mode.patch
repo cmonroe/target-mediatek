@@ -99,7 +99,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  				      struct sfp_module_caps *caps)
  {
  	/* Ubiquiti U-Fiber Instant module claims that support all transceiver
-@@ -487,6 +494,80 @@ static void sfp_quirk_ubnt_uf_instant(co
+@@ -492,6 +499,80 @@ static void sfp_quirk_ubnt_uf_instant(co
  #define SFP_QUIRK_S(_v, _p, _s) SFP_QUIRK(_v, _p, _s, NULL)
  #define SFP_QUIRK_F(_v, _p, _f) SFP_QUIRK(_v, _p, NULL, _f)
  
@@ -180,7 +180,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  static const struct sfp_quirk sfp_quirks[] = {
  	// Alcatel Lucent G-010S-P can operate at 2500base-X, but incorrectly
  	// report 2500MBd NRZ in their EEPROM
-@@ -2405,6 +2486,24 @@ static int sfp_sm_mod_probe(struct sfp *
+@@ -2426,6 +2507,24 @@ static int sfp_sm_mod_probe(struct sfp *
  		sfp->mdio_protocol = MDIO_I2C_NONE;
  
  	sfp->quirk = sfp_lookup_quirk(&id);

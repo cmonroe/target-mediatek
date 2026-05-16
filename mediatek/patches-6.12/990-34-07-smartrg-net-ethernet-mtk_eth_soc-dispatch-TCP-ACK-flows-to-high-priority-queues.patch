@@ -1,0 +1,290 @@
+From: Chad Monroe <chad@monroe.io>
+Date: Fri, 15 May 2026 13:44:00 -0700
+Subject: [PATCH] net: ethernet: mtk_eth_soc: dispatch TCP ACK flows to high-priority queues
+
+Bulk data queueing behind ACKs starves the return path on asymmetric
+links. Partition the 32-queue space into data (lower half) and ACK (upper
+half) with offset 6 on netsys v1 (4-bit MTK_FOE_IB2_QID caps qid at 15)
+and 16 on v2+. Classify ACK-dominant flows via conntrack accounting (mean
+packet size <= 64 B and fewer packets than peer) and bump the qid by
+mtk_pppq_ack_queue_offset(eth). Thread struct flow_offload through
+flow_cls_offload so the offloader can reach the conntrack entry.
+
+Based-on-patch-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
+Signed-off-by: Chad Monroe <chad@monroe.io>
+---
+ drivers/net/ethernet/mediatek/mtk_eth_soc.h     |   22 ++++
+ drivers/net/ethernet/mediatek/mtk_ppe.c         |   18 ++-
+ drivers/net/ethernet/mediatek/mtk_ppe.h         |    4 
+ drivers/net/ethernet/mediatek/mtk_ppe_offload.c |  113 ++++++++++++++++++++++--
+ include/net/flow_offload.h                      |    1 
+ net/netfilter/nf_flow_table_offload.c           |    4 
+ 6 files changed, 151 insertions(+), 11 deletions(-)
+
+--- a/drivers/net/ethernet/mediatek/mtk_eth_soc.h
++++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.h
+@@ -28,6 +28,22 @@
+ 
+ #define MTK_QDMA_NUM_QUEUES	32
+ #define MTK_PPPQ_DSA_USER_PORTS	16
++
++/* PPPQ TCP-ACK queue offset from the matching data queue.
++ *
++ * Netsys v1 FOE QID field is 4-bit (MTK_FOE_IB2_QID = GENMASK(3, 0)), so
++ * the ACK qid must fit in 0..15. Six matches the upstream MTK layout for
++ * mt7530-class 5-port fabrics.
++ *
++ * Netsys v2+ FOE QID field is 7-bit (MTK_FOE_IB2_QID_V2 = GENMASK(6, 0)),
++ * so there is room for any qid up to 127. Splitting MTK_QDMA_NUM_QUEUES
++ * in half gives a uniform data/ACK partition across DSA, non-DSA, and
++ * hybrid topologies with no collision as long as the data range stays
++ * below MTK_QDMA_NUM_QUEUES / 2.
++ */
++#define MTK_PPPQ_ACK_QUEUE_OFFSET_V1	6
++#define MTK_PPPQ_ACK_QUEUE_OFFSET_V2	(MTK_QDMA_NUM_QUEUES / 2)
++
+ #define MTK_QDMA_PAGE_SIZE	2048
+ #define MTK_MAX_RX_LENGTH	1536
+ #define MTK_MAX_RX_LENGTH_2K	2048
+@@ -1670,6 +1686,12 @@ static inline u32 mtk_get_ib2_multicast_
+ 	return MTK_FOE_IB2_MULTICAST;
+ }
+ 
++static inline u32 mtk_pppq_ack_queue_offset(struct mtk_eth *eth)
++{
++	return mtk_is_netsys_v1(eth) ? MTK_PPPQ_ACK_QUEUE_OFFSET_V1
++				     : MTK_PPPQ_ACK_QUEUE_OFFSET_V2;
++}
++
+ /* mtk_ppe_check_pppq_path() -	gate the PPPQ stamping path
+  *
+  * Admit any DSA user port whose index fits in mac->dsa_user_idx[]
+--- a/drivers/net/ethernet/mediatek/mtk_ppe.c
++++ b/drivers/net/ethernet/mediatek/mtk_ppe.c
+@@ -504,8 +504,17 @@ int mtk_foe_entry_set_queue(struct mtk_e
+ 	return 0;
+ }
+ 
+-static int
+-mtk_flow_entry_match_len(struct mtk_eth *eth, struct mtk_foe_entry *entry)
++unsigned int mtk_foe_entry_get_queue(struct mtk_eth *eth, struct mtk_foe_entry *entry)
++{
++	u32 *ib2 = mtk_foe_entry_ib2(eth, entry);
++
++	if (mtk_is_netsys_v2_or_greater(eth))
++		return FIELD_GET(MTK_FOE_IB2_QID_V2, *ib2);
++
++	return FIELD_GET(MTK_FOE_IB2_QID, *ib2);
++}
++
++int mtk_flow_entry_match_len(struct mtk_eth *eth, struct mtk_foe_entry *entry)
+ {
+ 	int type = mtk_get_ib1_pkt_type(eth, entry->ib1);
+ 
+@@ -515,9 +524,8 @@ mtk_flow_entry_match_len(struct mtk_eth
+ 		return offsetof(struct mtk_foe_entry, ipv4.ib2);
+ }
+ 
+-static bool
+-mtk_flow_entry_match(struct mtk_eth *eth, struct mtk_flow_entry *entry,
+-		     struct mtk_foe_entry *data, int len)
++bool mtk_flow_entry_match(struct mtk_eth *eth, struct mtk_flow_entry *entry,
++			  struct mtk_foe_entry *data, int len)
+ {
+ 	if ((data->ib1 ^ entry->data.ib1) & MTK_FOE_IB1_UDP)
+ 		return false;
+--- a/drivers/net/ethernet/mediatek/mtk_ppe.h
++++ b/drivers/net/ethernet/mediatek/mtk_ppe.h
+@@ -403,10 +403,14 @@ int mtk_foe_entry_set_wdma(struct mtk_et
+ 			   bool amsdu_en);
+ int mtk_foe_entry_set_queue(struct mtk_eth *eth, struct mtk_foe_entry *entry,
+ 			    unsigned int queue);
++unsigned int mtk_foe_entry_get_queue(struct mtk_eth *eth, struct mtk_foe_entry *entry);
+ int mtk_foe_entry_commit(struct mtk_ppe *ppe, struct mtk_flow_entry *entry);
+ void mtk_foe_entry_clear(struct mtk_ppe *ppe, struct mtk_flow_entry *entry);
+ int mtk_ppe_debugfs_init(struct mtk_ppe *ppe, int index);
+ void mtk_foe_entry_get_stats(struct mtk_ppe *ppe, struct mtk_flow_entry *entry,
+ 			     int *idle);
++int mtk_flow_entry_match_len(struct mtk_eth *eth, struct mtk_foe_entry *entry);
++bool mtk_flow_entry_match(struct mtk_eth *eth, struct mtk_flow_entry *entry,
++			  struct mtk_foe_entry *data, int len);
+ 
+ #endif
+--- a/drivers/net/ethernet/mediatek/mtk_ppe_offload.c
++++ b/drivers/net/ethernet/mediatek/mtk_ppe_offload.c
+@@ -9,6 +9,8 @@
+ #include <linux/ipv6.h>
+ #include <net/flow_offload.h>
+ #include <net/pkt_cls.h>
++#include <net/netfilter/nf_conntrack_acct.h>
++#include <net/netfilter/nf_flow_table.h>
+ #include <net/dsa.h>
+ #include "mtk_eth_soc.h"
+ #include "mtk_wed.h"
+@@ -187,10 +189,98 @@ mtk_flow_get_dsa_port(struct net_device
+ #endif
+ }
+ 
++/* Determine which conntrack direction (ORIGINAL / REPLY) the FOE entry
++ * represents, so the TCP ACK heuristic can compare upstream vs downstream
++ * accounting on the same flow.
++ */
++static int
++mtk_flow_get_ct_dir(struct mtk_eth *eth, struct mtk_foe_entry *foe,
++		    struct nf_conn *ct)
++{
++	const struct nf_conntrack_tuple *tuple;
++	struct mtk_flow_entry ct_entry;
++	struct mtk_foe_entry *ct_foe;
++	int i, j, len;
++
++	len = mtk_flow_entry_match_len(eth, foe);
++	ct_foe = &ct_entry.data;
++	ct_foe->ib1 = foe->ib1;
++
++	for (i = 0; i < IP_CT_DIR_MAX; i++) {
++		tuple = &ct->tuplehash[i].tuple;
++
++		if (mtk_get_ib1_pkt_type(eth, foe->ib1) > MTK_PPE_PKT_TYPE_IPV4_DSLITE) {
++			if (nf_ct_l3num(ct) != AF_INET6)
++				return -EINVAL;
++
++			for (j = 0; j < 4; j++) {
++				ct_foe->ipv6.src_ip[j] = ntohl(tuple->src.u3.in6.s6_addr32[j]);
++				ct_foe->ipv6.dest_ip[j] = ntohl(tuple->dst.u3.in6.s6_addr32[j]);
++			}
++			ct_foe->ipv6.src_port = ntohs(tuple->src.u.tcp.port);
++			ct_foe->ipv6.dest_port = ntohs(tuple->dst.u.tcp.port);
++		} else {
++			if (nf_ct_l3num(ct) != AF_INET)
++				return -EINVAL;
++
++			ct_foe->ipv4.orig.src_ip = ntohl(tuple->src.u3.ip);
++			ct_foe->ipv4.orig.dest_ip = ntohl(tuple->dst.u3.ip);
++			ct_foe->ipv4.orig.src_port = ntohs(tuple->src.u.tcp.port);
++			ct_foe->ipv4.orig.dest_port = ntohs(tuple->dst.u.tcp.port);
++		}
++
++		if (mtk_flow_entry_match(eth, &ct_entry, foe, len))
++			return i;
++	}
++
++	return -EINVAL;
++}
++
++/* Heuristic: a TCP ACK-mostly direction has small average packets
++ * (<= 64 B) and fewer of them than its data-mostly partner. When that
++ * matches, route the offloaded flow onto the high-priority ACK half
++ * of the PPPQ range so ACK feedback is not stuck behind bulk data on
++ * an unbalanced PHY pair (e.g. 2.5 G WAN, 1 G LAN).
++ */
++static bool
++mtk_flow_is_tcp_ack(struct mtk_eth *eth, struct mtk_foe_entry *foe,
++		    struct nf_conn *ct)
++{
++	const struct nf_conn_counter *counters;
++	struct nf_conn_acct *acct;
++	u64 packets[IP_CT_DIR_MAX], bytes[IP_CT_DIR_MAX], avg[IP_CT_DIR_MAX];
++	int dir;
++
++	if (!ct)
++		return false;
++
++	dir = mtk_flow_get_ct_dir(eth, foe, ct);
++	if (dir < 0 || dir >= IP_CT_DIR_MAX)
++		return false;
++
++	acct = nf_conn_acct_find(ct);
++	if (!acct)
++		return false;
++
++	counters = acct->counter;
++	packets[dir] = atomic64_read(&counters[dir].packets);
++	bytes[dir] = atomic64_read(&counters[dir].bytes);
++	packets[!dir] = atomic64_read(&counters[!dir].packets);
++	bytes[!dir] = atomic64_read(&counters[!dir].bytes);
++
++	if (!packets[dir] || !packets[!dir])
++		return false;
++
++	avg[dir] = bytes[dir] / packets[dir];
++	avg[!dir] = bytes[!dir] / packets[!dir];
++
++	return (avg[dir] <= 64 && avg[dir] < avg[!dir]);
++}
++
+ static int
+ mtk_flow_set_output_device(struct mtk_eth *eth, struct mtk_foe_entry *foe,
+-			   struct net_device *dev, const u8 *dest_mac,
+-			   int *wed_index)
++			   struct net_device *dev, struct nf_conn *ct,
++			   const u8 *dest_mac, int *wed_index)
+ {
+ 	struct mtk_wdma_info info = {};
+ 	struct mtk_mac *mac;
+@@ -243,8 +333,17 @@ mtk_flow_set_output_device(struct mtk_et
+ 		queue = (pse_port == PSE_GDM3_PORT) ? 2 : pse_port - 1;
+ 	}
+ 
+-	if (mtk_ppe_check_pppq_path(dsa_port))
++	if (mtk_ppe_check_pppq_path(dsa_port)) {
++		/* TCP ACK flows go onto the high-priority half of the
++		 * PPPQ range so they are not queued behind bulk data on
++		 * the same egress port.
++		 */
++		if (ct && nf_ct_protonum(ct) == IPPROTO_TCP &&
++		    mtk_flow_is_tcp_ack(eth, foe, ct))
++			queue += mtk_pppq_ack_queue_offset(eth);
++
+ 		mtk_foe_entry_set_queue(eth, foe, queue);
++	}
+ 
+ out:
+ 	mtk_foe_entry_set_pse_port(eth, foe, pse_port);
+@@ -488,8 +587,9 @@ mtk_flow_offload_replace(struct mtk_eth
+ 	if (data.pppoe.num == 1)
+ 		mtk_foe_entry_set_pppoe(eth, &foe, data.pppoe.sid);
+ 
+-	err = mtk_flow_set_output_device(eth, &foe, odev, data.eth.h_dest,
+-					 &wed_index);
++	err = mtk_flow_set_output_device(eth, &foe, odev,
++					 f->flow ? f->flow->ct : NULL,
++					 data.eth.h_dest, &wed_index);
+ 	if (err)
+ 		return err;
+ 
+--- a/include/net/flow_offload.h
++++ b/include/net/flow_offload.h
+@@ -693,6 +693,7 @@ struct flow_cls_offload {
+ 	enum flow_cls_command command;
+ 	bool use_act_stats;
+ 	unsigned long cookie;
++	struct flow_offload *flow;
+ 	struct flow_rule *rule;
+ 	struct flow_stats stats;
+ 	u32 classid;
+--- a/net/netfilter/nf_flow_table_offload.c
++++ b/net/netfilter/nf_flow_table_offload.c
+@@ -884,11 +884,13 @@ static int nf_flow_offload_alloc(const s
+ }
+ 
+ static void nf_flow_offload_init(struct flow_cls_offload *cls_flow,
++				 struct flow_offload *flow,
+ 				 __be16 proto, int priority,
+ 				 enum flow_cls_command cmd,
+ 				 const struct flow_offload_tuple *tuple,
+ 				 struct netlink_ext_ack *extack)
+ {
++	cls_flow->flow = flow;
+ 	cls_flow->common.protocol = proto;
+ 	cls_flow->common.prio = priority;
+ 	cls_flow->common.extack = extack;
+@@ -910,7 +912,7 @@ static int nf_flow_offload_tuple(struct
+ 	__be16 proto = ETH_P_ALL;
+ 	int err, i = 0;
+ 
+-	nf_flow_offload_init(&cls_flow, proto, priority, cmd,
++	nf_flow_offload_init(&cls_flow, flow, proto, priority, cmd,
+ 			     &flow->tuplehash[dir].tuple, &extack);
+ 	if (cmd == FLOW_CLS_REPLACE)
+ 		cls_flow.rule = flow_rule->rule;
