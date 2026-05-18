@@ -1,0 +1,35 @@
+From: Chad Monroe <chad@monroe.io>
+Date: Tue, 05 May 2026 15:22:20 -0700
+Subject: [PATCH] netfilter: nft_flow_offload: add DEV_PATH_MTK_WDMA direct xmit path
+
+Without a DEV_PATH_MTK_WDMA case, the default switch arm NULLs
+info->indev and SW flow offload silently fails for eth-to-wifi bridged
+flows. Handle the path type by populating indev/outdev, recording the
+source MAC, and selecting FLOW_OFFLOAD_XMIT_DIRECT so packets bypass
+bridge and route lookups once conntrack establishes the flow.
+
+Pairs with the mt76 patch that fills DEV_PATH_MTK_WDMA when WED is
+disabled.
+
+Signed-off-by: Chad Monroe <chad@monroe.io>
+---
+ net/netfilter/nft_flow_offload.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+--- a/net/netfilter/nft_flow_offload.c
++++ b/net/netfilter/nft_flow_offload.c
+@@ -160,6 +160,14 @@ static void nft_dev_path_info(const stru
+ 			}
+ 			info->xmit_type = FLOW_OFFLOAD_XMIT_DIRECT;
+ 			break;
++		case DEV_PATH_MTK_WDMA:
++			info->indev = path->dev;
++			if (!info->outdev)
++				info->outdev = path->dev;
++			if (is_zero_ether_addr(info->h_source))
++				memcpy(info->h_source, path->dev->dev_addr, ETH_ALEN);
++			info->xmit_type = FLOW_OFFLOAD_XMIT_DIRECT;
++			break;
+ 		default:
+ 			info->indev = NULL;
+ 			break;
