@@ -1,26 +1,23 @@
-From 022475f0e85a0c4968a539f6fe0b55eabd0c2c24 Mon Sep 17 00:00:00 2001
-From: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
-Date: Wed, 7 May 2025 15:55:07 +0800
-Subject: [PATCH] net: ethernet: mtk_eth_soc: add HQoS configuration restore
- flow to SER
+From: Chad Monroe <chad@monroe.io>
+Date: Fri, 15 May 2026 13:41:30 -0700
+Subject: [PATCH] net: ethernet: mtk_eth_soc: preserve QDMA scheduler config across SER
 
-Since SER will reset QDMA, it means that the HQoS configurations will
-be cleared. The driver needs to save the HQoS configuration before the
-SER and then restore the HQoS configuration afterward.
+mtk_wed_fe_reset() re-initialises QDMA and clears per-queue programming,
+leaving PPPQ rate caps gone after recovery. Snapshot qtx_cfg, qtx_sch,
+and tx_sch_rate (one word on netsys v1, two on v2+) in mtk_pending_work()
+before mtk_prepare_for_reset() and replay after mtk_wed_fe_reset_complete().
 
-Without this patch, the HQoS is not functioning properly following the
-SER.
-
-Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
+Based-on-patch-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
+Signed-off-by: Chad Monroe <chad@monroe.io>
 ---
- drivers/net/ethernet/mediatek/mtk_eth_soc.c | 50 +++++++++++++++++++++
- drivers/net/ethernet/mediatek/mtk_eth_soc.h | 16 +++++++
- 2 files changed, 66 insertions(+)
+ drivers/net/ethernet/mediatek/mtk_eth_soc.c |   50 ++++++++++++++++++
+ drivers/net/ethernet/mediatek/mtk_eth_soc.h |   14 +++++
+ 2 files changed, 64 insertions(+)
 
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
-@@ -5247,6 +5247,54 @@ static int mtk_siocdevprivate(struct net
- 	return mtk_do_priv_ioctl(dev, ifr, cmd);
+@@ -4784,6 +4784,50 @@ static int mtk_do_ioctl(struct net_devic
+ 	return -EOPNOTSUPP;
  }
  
 +static void mtk_save_qdma_cfg(struct mtk_eth *eth)
@@ -30,14 +27,12 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 +	int i;
 +
 +	for (i = 0; i < eth->soc->num_tx_queues; i++) {
-+		mtk_w32(eth, (i / MTK_QTX_PER_PAGE), reg_map->qdma.page);
++		mtk_qdma_select_page(eth, i);
 +
 +		params->qtx_cfg[i] =
-+			mtk_r32(eth, reg_map->qdma.qtx_cfg +
-+				(i % MTK_QTX_PER_PAGE) * MTK_QTX_OFFSET);
++			mtk_r32(eth, reg_map->qdma.qtx_cfg + MTK_QTX_REG_OFS(i));
 +		params->qtx_sch[i] =
-+			mtk_r32(eth, reg_map->qdma.qtx_sch +
-+				(i % MTK_QTX_PER_PAGE) * MTK_QTX_OFFSET);
++			mtk_r32(eth, reg_map->qdma.qtx_sch + MTK_QTX_REG_OFS(i));
 +	}
 +	mtk_w32(eth, 0, reg_map->qdma.page);
 +
@@ -54,14 +49,12 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 +	int i;
 +
 +	for (i = 0; i < eth->soc->num_tx_queues; i++) {
-+		mtk_w32(eth, (i / MTK_QTX_PER_PAGE), reg_map->qdma.page);
++		mtk_qdma_select_page(eth, i);
 +
 +		mtk_w32(eth, params->qtx_cfg[i],
-+			reg_map->qdma.qtx_cfg +
-+			(i % MTK_QTX_PER_PAGE) * MTK_QTX_OFFSET);
++			reg_map->qdma.qtx_cfg + MTK_QTX_REG_OFS(i));
 +		mtk_w32(eth, params->qtx_sch[i],
-+			reg_map->qdma.qtx_sch +
-+			(i % MTK_QTX_PER_PAGE) * MTK_QTX_OFFSET);
++			reg_map->qdma.qtx_sch + MTK_QTX_REG_OFS(i));
 +	}
 +	mtk_w32(eth, 0, reg_map->qdma.page);
 +
@@ -74,7 +67,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  static void mtk_prepare_for_reset(struct mtk_eth *eth)
  {
  	u32 val;
-@@ -5290,6 +5338,7 @@ static void mtk_pending_work(struct work
+@@ -4827,6 +4871,7 @@ static void mtk_pending_work(struct work
  
  	mtk_hw_dump(eth);
  
@@ -82,7 +75,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	mtk_prepare_for_reset(eth);
  	mtk_wed_fe_reset();
  	/* Run again reset preliminary configuration in order to avoid any
-@@ -5341,6 +5390,7 @@ static void mtk_pending_work(struct work
+@@ -4878,6 +4923,7 @@ static void mtk_pending_work(struct work
  	clear_bit(MTK_RESETTING, &eth->state);
  
  	mtk_wed_fe_reset_complete();
@@ -92,18 +85,20 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  }
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.h
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.h
-@@ -1137,6 +1137,21 @@ struct mtk_napi {
- 	struct mtk_rx_ring	*rx_ring;
+@@ -1018,6 +1018,23 @@ struct mtk_rx_ring {
+ 	struct xdp_rxq_info xdp_q;
  };
  
-+/* struct mtk_qdma_params -	This is the structure holding parameters
-+				for the HQoS
-+ * @qtx_cfg:			The elements are used to record the
-+				reserved buffer for the Tx Queue
-+ * @qtx_sch:			The elements are used to record the
-+				rate control for the Tx Queue
-+ * @tx_sch:			The elements are used to record the
-+				rate control for the Tx Scheduler
++/* struct mtk_qdma_params -	Snapshot of QDMA scheduler state taken
++ *				before SER and reapplied after, so per-queue
++ *				PPPQ programming survives the reset.
++ * @qtx_cfg:			Reserved-buffer settings for each TX queue.
++ *				mtk_tx_alloc() re-applies the default value
++ *				post-SER, so the round-trip is a no-op today;
++ *				keep the snapshot so any future per-queue resv
++ *				override (debugfs writer, etc.) survives SER.
++ * @qtx_sch:			Scheduler / rate-cap settings for each TX queue.
++ * @tx_sch:			Top-level TX scheduler rate registers.
 + */
 +struct mtk_qdma_params {
 +	u32	qtx_cfg[MTK_DSA_USER_PORT_MAX];
@@ -114,10 +109,10 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  enum mkt_eth_capabilities {
  	MTK_RGMII_BIT = 0,
  	MTK_TRGMII_BIT,
-@@ -1545,6 +1560,7 @@ struct mtk_eth {
+@@ -1402,6 +1419,7 @@ struct mtk_eth {
+ 	struct mtk_rx_ring		rx_ring_qdma;
  	struct napi_struct		tx_napi;
- 	struct mtk_napi			rx_napi[MTK_RX_NAPI_NUM];
- 	struct mtk_rss_params		rss_params;
+ 	struct napi_struct		rx_napi;
 +	struct mtk_qdma_params		qdma_params;
  	void				*scratch_ring;
  	dma_addr_t			phy_scratch_ring;

@@ -1,0 +1,153 @@
+From: Chad Monroe <chad@monroe.io>
+Date: Wed, 20 May 2026 03:42:20 -0700
+Subject: [PATCH] net: ethernet: mediatek: add tx_ring, hwtx_ring, rx_ring dumps
+
+Add three read-only seq_file nodes that dump every descriptor in the
+live DMA rings, for stuck-traffic
+
+  tx_ring    - software TX ring (eth->tx_ring), free count, cpu next /
+               last free indices, and per-slot txd1..4 (or txd1..8 on
+               v2+).
+  hwtx_ring  - the hardware-managed scratch ring (eth->scratch_ring /
+               eth->phy_scratch_ring), same descriptor format as
+               tx_ring.
+  rx_ring    - every populated RX ring in eth->rx_ring[], with the
+               "next to read" index and per-slot rxd1..4 (or rxd1..8
+               on v3+).
+
+Snapshots are not synchronised against ongoing DMA, but for a hung
+ring the values are stable. 
+
+Signed-off-by: Chad Monroe <chad@monroe.io>
+---
+ drivers/net/ethernet/mediatek/mtk_ppe_debugfs.c |  112 ++++++++++++++
+ 1 file changed, 112 insertions(+)
+
+--- a/drivers/net/ethernet/mediatek/mtk_ppe_debugfs.c
++++ b/drivers/net/ethernet/mediatek/mtk_ppe_debugfs.c
+@@ -867,6 +867,112 @@ static int mtk_tx_full_cnt_show(struct s
+ }
+ DEFINE_SHOW_ATTRIBUTE(mtk_tx_full_cnt);
+ 
++static int mtk_tx_ring_show(struct seq_file *m, void *v)
++{
++	struct mtk_eth *eth = m->private;
++	struct mtk_tx_ring *ring = &eth->tx_ring;
++	bool v2 = mtk_is_netsys_v2_or_greater(eth);
++	struct mtk_tx_dma_v2 *desc;
++	int i;
++
++	if (!ring->dma)
++		return 0;
++
++	seq_printf(m, "free count = %d\n", atomic_read(&ring->free_count));
++	seq_printf(m, "cpu next free: %lu\n",
++		   ((uintptr_t)ring->next_free - (uintptr_t)ring->dma) >>
++		   eth->soc->tx.desc_shift);
++	seq_printf(m, "cpu last free: %lu\n",
++		   ((uintptr_t)ring->last_free - (uintptr_t)ring->dma) >>
++		   eth->soc->tx.desc_shift);
++
++	for (i = 0; i < eth->soc->tx.dma_size; i++) {
++		dma_addr_t addr = ring->phys + (i << eth->soc->tx.desc_shift);
++
++		desc = ring->dma + (i << eth->soc->tx.desc_shift);
++
++		seq_printf(m, "%04d (0x%llx): %08x %08x %08x %08x", i,
++			   (unsigned long long)addr,
++			   desc->txd1, desc->txd2, desc->txd3, desc->txd4);
++		if (v2)
++			seq_printf(m, " %08x %08x %08x %08x",
++				   desc->txd5, desc->txd6,
++				   desc->txd7, desc->txd8);
++		seq_puts(m, "\n");
++	}
++
++	return 0;
++}
++DEFINE_SHOW_ATTRIBUTE(mtk_tx_ring);
++
++static int mtk_hwtx_ring_show(struct seq_file *m, void *v)
++{
++	struct mtk_eth *eth = m->private;
++	bool v2 = mtk_is_netsys_v2_or_greater(eth);
++	struct mtk_tx_dma_v2 *desc;
++	int i;
++
++	if (!eth->scratch_ring)
++		return 0;
++
++	for (i = 0; i < eth->soc->tx.fq_dma_size; i++) {
++		dma_addr_t addr = eth->phy_scratch_ring +
++				  (i << eth->soc->tx.desc_shift);
++
++		desc = eth->scratch_ring + (i << eth->soc->tx.desc_shift);
++
++		seq_printf(m, "%04d (0x%llx): %08x %08x %08x %08x", i,
++			   (unsigned long long)addr,
++			   desc->txd1, desc->txd2, desc->txd3, desc->txd4);
++		if (v2)
++			seq_printf(m, " %08x %08x %08x %08x",
++				   desc->txd5, desc->txd6,
++				   desc->txd7, desc->txd8);
++		seq_puts(m, "\n");
++	}
++
++	return 0;
++}
++DEFINE_SHOW_ATTRIBUTE(mtk_hwtx_ring);
++
++static int mtk_rx_ring_show(struct seq_file *m, void *v)
++{
++	struct mtk_eth *eth = m->private;
++	bool v3 = mtk_is_netsys_v3_or_greater(eth);
++	struct mtk_rx_ring *ring;
++	struct mtk_rx_dma_v2 *desc;
++	int i, j;
++
++	for (j = 0; j < MTK_MAX_RX_RING_NUM; j++) {
++		ring = &eth->rx_ring[j];
++		if (!ring->dma)
++			continue;
++
++		seq_printf(m, "[Ring%d] next to read: %d\n", j,
++			   NEXT_DESP_IDX(ring->calc_idx, eth->soc->rx.dma_size));
++
++		for (i = 0; i < ring->dma_size; i++) {
++			dma_addr_t addr = ring->phys +
++					  (i << eth->soc->rx.desc_shift);
++
++			desc = ring->dma + (i << eth->soc->rx.desc_shift);
++
++			seq_printf(m, "%04d (0x%llx): %08x %08x %08x %08x", i,
++				   (unsigned long long)addr,
++				   desc->rxd1, desc->rxd2,
++				   desc->rxd3, desc->rxd4);
++			if (v3)
++				seq_printf(m, " %08x %08x %08x %08x",
++					   desc->rxd5, desc->rxd6,
++					   desc->rxd7, desc->rxd8);
++			seq_puts(m, "\n");
++		}
++	}
++
++	return 0;
++}
++DEFINE_SHOW_ATTRIBUTE(mtk_rx_ring);
++
+ void mtk_eth_dbg_init(struct mtk_eth *eth)
+ {
+ 	eth->mtk_dbg_root = debugfs_create_dir("mtk_eth", NULL);
+@@ -883,6 +989,12 @@ void mtk_eth_dbg_init(struct mtk_eth *et
+ 			    &mtk_dbg_regs_fops);
+ 	debugfs_create_file("tx_full_cnt", 0444, eth->mtk_dbg_root, eth,
+ 			    &mtk_tx_full_cnt_fops);
++	debugfs_create_file("tx_ring", 0444, eth->mtk_dbg_root, eth,
++			    &mtk_tx_ring_fops);
++	debugfs_create_file("hwtx_ring", 0444, eth->mtk_dbg_root, eth,
++			    &mtk_hwtx_ring_fops);
++	debugfs_create_file("rx_ring", 0444, eth->mtk_dbg_root, eth,
++			    &mtk_rx_ring_fops);
+ 
+ 	mtk_qdma_sch_txq_init(eth);
+ }

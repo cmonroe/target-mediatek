@@ -32,7 +32,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  			       unsigned long flags,
 --- a/net/dsa/user.c
 +++ b/net/dsa/user.c
-@@ -3076,12 +3076,15 @@ dsa_prevent_bridging_8021q_upper(struct
+@@ -3138,12 +3138,15 @@ dsa_prevent_bridging_8021q_upper(struct
  		return NOTIFY_DONE;
  
  	/* Deny enslaving a VLAN device into a VLAN-aware bridge */

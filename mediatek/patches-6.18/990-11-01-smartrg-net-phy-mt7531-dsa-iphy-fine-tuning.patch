@@ -11,7 +11,7 @@ Subject: [PATCH] 999-2746-mt7531-dsa-iphy-fine-tuning
 
 --- a/drivers/net/phy/mediatek/mtk-ge-soc.c
 +++ b/drivers/net/phy/mediatek/mtk-ge-soc.c
-@@ -137,6 +137,8 @@
+@@ -140,6 +140,8 @@
  #define   MTK_PHY_TCLKOFFSET_MASK		GENMASK(12, 8)
  
  /* Registers on MDIO_MMD_VEND1 */
@@ -20,7 +20,7 @@ Subject: [PATCH] 999-2746-mt7531-dsa-iphy-fine-tuning
  #define MTK_PHY_TXVLD_DA_RG			0x12
  #define   MTK_PHY_DA_TX_I2MPB_A_GBE_MASK	GENMASK(15, 10)
  #define   MTK_PHY_DA_TX_I2MPB_A_TBT_MASK	GENMASK(5, 0)
-@@ -203,6 +205,8 @@
+@@ -206,6 +208,8 @@
  #define MTK_PHY_RG_LPI_PCS_DSP_CTRL_REG122	0x122
  #define   MTK_PHY_LPI_NORM_MSE_HI_THRESH1000_MASK	GENMASK(7, 0)
  
@@ -29,7 +29,7 @@ Subject: [PATCH] 999-2746-mt7531-dsa-iphy-fine-tuning
  #define MTK_PHY_RG_TESTMUX_ADC_CTRL		0x144
  #define   MTK_PHY_RG_TXEN_DIG_MASK		GENMASK(5, 5)
  
-@@ -247,6 +251,8 @@
+@@ -250,6 +254,8 @@
  #define MTK_PHY_RG_DASN_DAC_IN1_D		0x184
  #define   MTK_PHY_DASN_DAC_IN1_D_MASK		GENMASK(9, 0)
  
@@ -38,7 +38,7 @@ Subject: [PATCH] 999-2746-mt7531-dsa-iphy-fine-tuning
  #define MTK_PHY_RG_DEV1E_REG19b			0x19b
  #define   MTK_PHY_BYPASS_DSP_LPI_READY		BIT(8)
  
-@@ -926,6 +932,11 @@ static void mt7988_phy_finetune(struct p
+@@ -929,6 +935,11 @@ static void mt7988_phy_finetune(struct p
  	for (i = 0; i < 12; i++)
  		phy_write_mmd(phydev, MDIO_MMD_VEND1, i, val[i]);
  
@@ -50,7 +50,7 @@ Subject: [PATCH] 999-2746-mt7531-dsa-iphy-fine-tuning
  	/* TCT finetune */
  	phy_write_mmd(phydev, MDIO_MMD_VEND1, MTK_PHY_RG_TX_FILTER, 0x5);
  
-@@ -934,21 +945,15 @@ static void mt7988_phy_finetune(struct p
+@@ -937,21 +948,15 @@ static void mt7988_phy_finetune(struct p
  			RESET_SYNC_OFFSET_MASK,
  			FIELD_PREP(RESET_SYNC_OFFSET_MASK, 0x5));
  
@@ -76,7 +76,7 @@ Subject: [PATCH] 999-2746-mt7531-dsa-iphy-fine-tuning
  	/* TR_OPEN_LOOP_EN = 1, lpf_x_average = 10 */
  	phy_modify_mmd(phydev, MDIO_MMD_VEND1, MTK_PHY_RG_DEV1E_REG234,
  		       MTK_PHY_TR_OPEN_LOOP_EN_MASK |
-@@ -957,6 +962,63 @@ static void mt7988_phy_finetune(struct p
+@@ -960,6 +965,63 @@ static void mt7988_phy_finetune(struct p
  
  	/* rg_tr_lpf_cnt_val = 1023 */
  	phy_write_mmd(phydev, MDIO_MMD_VEND1, MTK_PHY_RG_LPF_CNT_VAL, 0x3ff);
@@ -140,7 +140,7 @@ Subject: [PATCH] 999-2746-mt7531-dsa-iphy-fine-tuning
  }
  
  static void mt798x_phy_eee(struct phy_device *phydev)
-@@ -1203,6 +1265,7 @@ static int mt798x_phy_config_init(struct
+@@ -1206,6 +1268,7 @@ static int mt798x_phy_config_init(struct
  		break;
  	case MTK_GPHY_ID_MT7988:
  		mt7988_phy_finetune(phydev);
@@ -148,7 +148,7 @@ Subject: [PATCH] 999-2746-mt7531-dsa-iphy-fine-tuning
  		break;
  	}
  
-@@ -1386,6 +1449,7 @@ static int mt7988_phy_probe(struct phy_d
+@@ -1396,6 +1459,7 @@ static int mt7988_phy_probe(struct phy_d
  	 * 1. Meet common mode compliance test criteria
  	 * 2. Make sure that TX-VCM calibration works fine
  	 */

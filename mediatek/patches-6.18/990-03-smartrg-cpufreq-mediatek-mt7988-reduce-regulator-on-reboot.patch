@@ -20,8 +20,8 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  #include <linux/regulator/consumer.h>
  #include <linux/nvmem-consumer.h>
  
-@@ -691,6 +692,14 @@ static struct cpufreq_driver mtk_cpufreq
- 	.attr = cpufreq_generic_attr,
+@@ -697,6 +698,14 @@ static struct cpufreq_driver mtk_cpufreq
+ 	.name = "mtk-cpufreq",
  };
  
 +static int mtk_cpufreq_reboot_notifier(struct notifier_block *nb,
@@ -35,7 +35,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  static int mtk_cpufreq_probe(struct platform_device *pdev)
  {
  	const struct mtk_cpufreq_platform_data *data;
-@@ -728,6 +737,13 @@ static int mtk_cpufreq_probe(struct plat
+@@ -734,6 +743,13 @@ static int mtk_cpufreq_probe(struct plat
  		goto release_dvfs_info_list;
  	}
  
@@ -49,7 +49,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	return 0;
  
  release_dvfs_info_list:
-@@ -739,11 +755,18 @@ release_dvfs_info_list:
+@@ -745,11 +761,18 @@ release_dvfs_info_list:
  	return ret;
  }
  
@@ -68,7 +68,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  };
  
  struct mtk_cpufreq_corr_data mt7988_volt_corr_data[] = {
-@@ -846,6 +869,41 @@ static const struct of_device_id mtk_cpu
+@@ -852,6 +875,41 @@ static const struct of_device_id mtk_cpu
  };
  MODULE_DEVICE_TABLE(of, mtk_cpufreq_machines);
  
@@ -110,7 +110,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  static int __init mtk_cpufreq_driver_init(void)
  {
  	struct device_node *np;
-@@ -889,6 +947,7 @@ module_init(mtk_cpufreq_driver_init)
+@@ -895,6 +953,7 @@ module_init(mtk_cpufreq_driver_init)
  
  static void __exit mtk_cpufreq_driver_exit(void)
  {

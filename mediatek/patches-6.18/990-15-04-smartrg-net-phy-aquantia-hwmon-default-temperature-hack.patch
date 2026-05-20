@@ -22,7 +22,7 @@ Signed-off-by: Cezary Wilmanski <cezary.wilmanski@adtran.com>
 
 --- a/drivers/net/phy/aquantia/aquantia.h
 +++ b/drivers/net/phy/aquantia/aquantia.h
-@@ -194,11 +194,17 @@ struct aqr107_priv {
+@@ -246,11 +246,17 @@ struct aqr107_priv {
  	struct aqr107_mib_stat mib;
  	struct task_struct *mib_thread;
  	struct dentry *mib_dentry;
@@ -50,7 +50,7 @@ Signed-off-by: Cezary Wilmanski <cezary.wilmanski@adtran.com>
  
  #include "aquantia.h"
  
-@@ -207,12 +208,95 @@ static const struct hwmon_chip_info aqr_
+@@ -187,12 +188,95 @@ static const struct hwmon_chip_info aqr_
  	.info = aqr_hwmon_info,
  };
  
@@ -148,7 +148,7 @@ Signed-off-by: Cezary Wilmanski <cezary.wilmanski@adtran.com>
  
  	hwmon_name = devm_kstrdup(dev, dev_name(dev), GFP_KERNEL);
  	if (!hwmon_name)
-@@ -227,10 +311,18 @@ int aqr_hwmon_probe(struct phy_device *p
+@@ -207,10 +291,18 @@ int aqr_hwmon_probe(struct phy_device *p
  	}
  	hwmon_name[j] = '\0';
  
@@ -171,7 +171,7 @@ Signed-off-by: Cezary Wilmanski <cezary.wilmanski@adtran.com>
  #endif
 --- a/drivers/net/phy/aquantia/aquantia_main.c
 +++ b/drivers/net/phy/aquantia/aquantia_main.c
-@@ -662,6 +662,8 @@ static int aqr107_config_init(struct phy
+@@ -943,6 +943,8 @@ static int aqr_gen1_config_init(struct p
  			return ret;
  	}
  
@@ -180,7 +180,7 @@ Signed-off-by: Cezary Wilmanski <cezary.wilmanski@adtran.com>
  	return 0;
  }
  
-@@ -932,6 +934,7 @@ static int aqr107_probe(struct phy_devic
+@@ -1302,6 +1304,7 @@ static int aqr107_probe(struct phy_devic
  static void aqr107_remove(struct phy_device *phydev)
  {
  	aqr_mib_remove(phydev);

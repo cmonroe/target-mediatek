@@ -1,0 +1,65 @@
+From: Chad Monroe <chad@monroe.io>
+Date: Wed, 20 May 2026 03:36:37 -0700
+Subject: [PATCH] net: ethernet: mtk_eth_soc: add 2500 Mbps queue rate cap
+
+Netsys v3 widened MTK_QTX_SCH_MAX_RATE_{MAN,EXP}_V3 to encode rates above
+1 Gbps. Add a SPEED_2500 case for v3 (and the MT7988 v1/v2-layout
+exception) and short-circuit speed > SPEED_1000 on pre-v3 silicon so the
+unsupported encoding never reaches the register.
+
+Based-on-patch-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
+Signed-off-by: Piotr Kubik <piotr.kubik@adtran.com>
+Signed-off-by: Chad Monroe <chad@monroe.io>
+---
+ drivers/net/ethernet/mediatek/mtk_eth_soc.c |   21 ++++++++++++++++--
+ 1 file changed, 19 insertions(+), 2 deletions(-)
+
+--- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
++++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
+@@ -808,6 +808,9 @@ static void mtk_set_queue_speed(struct m
+ 	if (mtk_is_netsys_v1(eth))
+ 		val |= MTK_QTX_SCH_LEAKY_BUCKET_EN;
+ 
++	if (!mtk_is_netsys_v3_or_greater(eth) && speed > SPEED_1000)
++		goto out;
++
+ 	if (IS_ENABLED(CONFIG_SOC_MT7621)) {
+ 		switch (speed) {
+ 		case SPEED_10:
+@@ -831,8 +834,15 @@ static void mtk_set_queue_speed(struct m
+ 		default:
+ 			break;
+ 		}
+-	} else if (mtk_is_netsys_v3_or_greater(eth) &&
+-		   (eth->soc->caps != MT7988_CAPS)) {
++	} else if (mtk_qtx_sch_is_v3_layout(eth)) {
++		/* Only MT7987 hits this branch today, and its line-side
++		 * GMACs top out at 2.5G (no USXGMII in MT7987_CAPS).
++		 * SPEED_2500 deliberately falls through to default: with
++		 * MAX_RATE_EN_V3 clear the queue runs at line rate, which
++		 * is what we want when link rate == SoC max. Add a
++		 * SPEED_2500 case here if a future v3-layout SoC needs to
++		 * shape below its line rate.
++		 */
+ 		switch (speed) {
+ 		case SPEED_10:
+ 			val |= MTK_QTX_SCH_MAX_RATE_EN_V3 |
+@@ -875,11 +885,18 @@ static void mtk_set_queue_speed(struct m
+ 			       FIELD_PREP(MTK_QTX_SCH_MAX_RATE_EXP, 6) |
+ 			       FIELD_PREP(MTK_QTX_SCH_MAX_RATE_WEIGHT, 10);
+ 			break;
++		case SPEED_2500:
++			val |= MTK_QTX_SCH_MAX_RATE_EN |
++			       FIELD_PREP(MTK_QTX_SCH_MAX_RATE_MAN, 25) |
++			       FIELD_PREP(MTK_QTX_SCH_MAX_RATE_EXP, 5) |
++			       FIELD_PREP(MTK_QTX_SCH_MAX_RATE_WEIGHT, 10);
++			break;
+ 		default:
+ 			break;
+ 		}
+ 	}
+ 
++out:
+ 	mtk_w32(eth, idx / MTK_QTX_PER_PAGE, soc->reg_map->qdma.page);
+ 	ofs = MTK_QTX_OFFSET * (idx % MTK_QTX_PER_PAGE);
+ 	mtk_w32(eth, val, soc->reg_map->qdma.qtx_sch + ofs);

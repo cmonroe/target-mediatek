@@ -1,0 +1,237 @@
+From: Chad Monroe <chad@monroe.io>
+Date: Wed, 20 May 2026 03:41:06 -0700
+Subject: [PATCH] net: ethernet: mediatek: add dbg_regs debugfs node
+
+Expose a read-only /sys/kernel/debug/mtk_eth/dbg_regs node that snaps
+the registers most commonly inspected when QDMA / PSE / GDMA traffic
+stops moving: FE interrupt status, PSE flow-control config + per-port
+ingress / egress queue status, PDMA RX index, QDMA CTX/DTX/FQ/FWD/FSM
+state, FE drop counters, GDM forwarding control, MAC and XMAC control
+plus state machines, and the CDM / GDM internal FSMs on v2+ silicon.
+
+Signed-off-by: Chad Monroe <chad@monroe.io>
+---
+ drivers/net/ethernet/mediatek/mtk_eth_soc.c     |    6 
+ drivers/net/ethernet/mediatek/mtk_eth_soc.h     |    4 
+ drivers/net/ethernet/mediatek/mtk_ppe_debugfs.c |  132 ++++++++++++++
+ 3 files changed, 142 insertions(+)
+
+--- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
++++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
+@@ -83,9 +83,11 @@ static const struct mtk_reg_map mtk_reg_
+ 		.fc_th		= 0x1a10,
+ 		.tx_sch_rate	= 0x1a14,
+ 		.int_grp	= 0x1a20,
++		.fsm		= 0x1a34,
+ 		.hred		= 0x1a44,
+ 		.ctx_ptr	= 0x1b00,
+ 		.dtx_ptr	= 0x1b04,
++		.fwd_count	= 0x1b08,
+ 		.crx_ptr	= 0x1b10,
+ 		.drx_ptr	= 0x1b14,
+ 		.fq_head	= 0x1b20,
+@@ -149,10 +151,12 @@ static const struct mtk_reg_map mt7986_r
+ 		.delay_irq	= 0x460c,
+ 		.fc_th		= 0x4610,
+ 		.int_grp	= 0x4620,
++		.fsm		= 0x4634,
+ 		.hred		= 0x4644,
+ 		.qtx_mib_if	= 0x46bc,
+ 		.ctx_ptr	= 0x4700,
+ 		.dtx_ptr	= 0x4704,
++		.fwd_count	= 0x4708,
+ 		.crx_ptr	= 0x4710,
+ 		.drx_ptr	= 0x4714,
+ 		.fq_head	= 0x4720,
+@@ -202,10 +206,12 @@ static const struct mtk_reg_map mt7988_r
+ 		.delay_irq	= 0x460c,
+ 		.fc_th		= 0x4610,
+ 		.int_grp	= 0x4620,
++		.fsm		= 0x4634,
+ 		.hred		= 0x4644,
+ 		.qtx_mib_if	= 0x46bc,
+ 		.ctx_ptr	= 0x4700,
+ 		.dtx_ptr	= 0x4704,
++		.fwd_count	= 0x4708,
+ 		.crx_ptr	= 0x4710,
+ 		.drx_ptr	= 0x4714,
+ 		.fq_head	= 0x4720,
+--- a/drivers/net/ethernet/mediatek/mtk_eth_soc.h
++++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.h
+@@ -100,6 +100,7 @@ struct dentry;
+ 
+ /* Frame Engine Interrupt Status Register */
+ #define MTK_INT_STATUS2		0x08
++#define MTK_FE_INT_STATUS2	0x28
+ #define MTK_FE_INT_ENABLE	0x0c
+ #define MTK_FE_INT_FQ_EMPTY	BIT(8)
+ #define MTK_FE_INT_TSO_FAIL	BIT(12)
+@@ -695,6 +696,7 @@ struct dentry;
+ #define MTK_FE_CDM4_FSM		0x298
+ #define MTK_FE_CDM5_FSM		0x318
+ #define MTK_FE_CDM6_FSM		0x328
++#define MTK_FE_CDM7_FSM		0x338
+ #define MTK_FE_GDM1_FSM		0x228
+ #define MTK_FE_GDM2_FSM		0x22C
+ #define MTK_FE_GDM3_FSM		0x23C
+@@ -1287,10 +1289,12 @@ struct mtk_reg_map {
+ 		u32	delay_irq;	/* delay interrupt */
+ 		u32	fc_th;		/* flow control */
+ 		u32	int_grp;
++		u32	fsm;		/* qdma state machine snapshot */
+ 		u32	hred;		/* interrupt mask */
+ 		u32	qtx_mib_if;	/* tx queue mib interface */
+ 		u32	ctx_ptr;	/* tx acquire cpu pointer */
+ 		u32	dtx_ptr;	/* tx acquire dma pointer */
++		u32	fwd_count;	/* tx forwarded packet count */
+ 		u32	crx_ptr;	/* tx release cpu pointer */
+ 		u32	drx_ptr;	/* tx release dma pointer */
+ 		u32	fq_head;	/* fq head pointer */
+--- a/drivers/net/ethernet/mediatek/mtk_ppe_debugfs.c
++++ b/drivers/net/ethernet/mediatek/mtk_ppe_debugfs.c
+@@ -726,6 +726,136 @@ static void mtk_qdma_sch_txq_init(struct
+ 	}
+ }
+ 
++static int mtk_dbg_regs_show(struct seq_file *m, void *v)
++{
++	struct mtk_eth *eth = m->private;
++	const struct mtk_reg_map *reg_map = eth->soc->reg_map;
++	bool v2 = mtk_is_netsys_v2_or_greater(eth);
++	bool v3 = mtk_is_netsys_v3_or_greater(eth);
++	u32 i;
++
++	seq_puts(m, "   <<DEBUG REG DUMP>>\n");
++
++	seq_printf(m, "| FE_INT_STA	: %08x |\n",
++		   mtk_r32(eth, MTK_INT_STATUS2));
++	if (v2)
++		seq_printf(m, "| FE_INT_STA2	: %08x |\n",
++			   mtk_r32(eth, MTK_FE_INT_STATUS2));
++
++	seq_printf(m, "| PSE_FQFC_CFG	: %08x |\n",
++		   mtk_r32(eth, MTK_PSE_FQFC_CFG));
++	seq_printf(m, "| PSE_IQ_STA1	: %08x |\n",
++		   mtk_r32(eth, reg_map->pse_iq_sta + 0x00));
++	seq_printf(m, "| PSE_IQ_STA2	: %08x |\n",
++		   mtk_r32(eth, reg_map->pse_iq_sta + 0x04));
++	if (v2) {
++		for (i = 2; i < 8; i++)
++			seq_printf(m, "| PSE_IQ_STA%u	: %08x |\n", i + 1,
++				   mtk_r32(eth, reg_map->pse_iq_sta + i * 0x04));
++	}
++
++	seq_printf(m, "| PSE_OQ_STA1	: %08x |\n",
++		   mtk_r32(eth, reg_map->pse_oq_sta + 0x00));
++	seq_printf(m, "| PSE_OQ_STA2	: %08x |\n",
++		   mtk_r32(eth, reg_map->pse_oq_sta + 0x04));
++	if (v2) {
++		for (i = 2; i < 8; i++)
++			seq_printf(m, "| PSE_OQ_STA%u	: %08x |\n", i + 1,
++				   mtk_r32(eth, reg_map->pse_oq_sta + i * 0x04));
++	}
++
++	seq_printf(m, "| PDMA_CRX_IDX	: %08x |\n",
++		   mtk_r32(eth, reg_map->pdma.pcrx_ptr));
++
++	seq_printf(m, "| QDMA_CTX_IDX	: %08x |\n",
++		   mtk_r32(eth, reg_map->qdma.ctx_ptr));
++	seq_printf(m, "| QDMA_DTX_IDX	: %08x |\n",
++		   mtk_r32(eth, reg_map->qdma.dtx_ptr));
++	seq_printf(m, "| QDMA_FQ_CNT	: %08x |\n",
++		   mtk_r32(eth, reg_map->qdma.fq_count));
++	seq_printf(m, "| QDMA_FWD_CNT	: %08x |\n",
++		   mtk_r32(eth, reg_map->qdma.fwd_count));
++	seq_printf(m, "| QDMA_FSM	: %08x |\n",
++		   mtk_r32(eth, reg_map->qdma.fsm));
++
++	seq_printf(m, "| FE_PSE_FREE	: %08x |\n",
++		   mtk_r32(eth, MTK_FE_PSE_FREE));
++	seq_printf(m, "| FE_DROP_FQ	: %08x |\n",
++		   mtk_r32(eth, MTK_FE_DROP_FQ));
++	seq_printf(m, "| FE_DROP_FC	: %08x |\n",
++		   mtk_r32(eth, MTK_FE_DROP_FC));
++	seq_printf(m, "| FE_DROP_PPE	: %08x |\n",
++		   mtk_r32(eth, MTK_FE_DROP_PPE));
++
++	seq_printf(m, "| GDM1_IG_CTRL	: %08x |\n",
++		   mtk_r32(eth, MTK_GDMA_FWD_CFG(0)));
++	seq_printf(m, "| GDM2_IG_CTRL	: %08x |\n",
++		   mtk_r32(eth, MTK_GDMA_FWD_CFG(1)));
++	if (v3)
++		seq_printf(m, "| GDM3_IG_CTRL	: %08x |\n",
++			   mtk_r32(eth, MTK_GDMA_FWD_CFG(2)));
++
++	seq_printf(m, "| MAC_P1_MCR	: %08x |\n",
++		   mtk_r32(eth, MTK_MAC_MCR(0)));
++	seq_printf(m, "| MAC_P2_MCR	: %08x |\n",
++		   mtk_r32(eth, MTK_MAC_MCR(1)));
++	if (v3)
++		seq_printf(m, "| MAC_P3_MCR	: %08x |\n",
++			   mtk_r32(eth, MTK_MAC_MCR(2)));
++
++	seq_printf(m, "| MAC_P1_FSM	: %08x |\n",
++		   mtk_r32(eth, MTK_MAC_FSM(0)));
++	seq_printf(m, "| MAC_P2_FSM	: %08x |\n",
++		   mtk_r32(eth, MTK_MAC_FSM(1)));
++	if (v3)
++		seq_printf(m, "| MAC_P3_FSM	: %08x |\n",
++			   mtk_r32(eth, MTK_MAC_FSM(2)));
++
++	if (v3) {
++		seq_printf(m, "| XMAC_P1_MCR	: %08x |\n",
++			   mtk_r32(eth, MTK_XMAC_MCR(1)));
++		seq_printf(m, "| XMAC_P1_STS	: %08x |\n",
++			   mtk_r32(eth, MTK_HAS_CAPS(eth->soc->caps,
++						     MTK_XGMAC_V2) ?
++					MTK_XMAC_STS(1) : MTK_XGMAC_STS(1)));
++		if (MTK_HAS_CAPS(eth->soc->caps, MTK_GMAC3_USXGMII)) {
++			seq_printf(m, "| XMAC_P2_MCR	: %08x |\n",
++				   mtk_r32(eth, MTK_XMAC_MCR(2)));
++			seq_printf(m, "| XMAC_P2_STS	: %08x |\n",
++				   mtk_r32(eth, MTK_HAS_CAPS(eth->soc->caps,
++							     MTK_XGMAC_V2) ?
++						MTK_XMAC_STS(2) : MTK_XGMAC_STS(2)));
++		}
++	}
++
++	if (v2) {
++		seq_printf(m, "| FE_CDM1_FSM	: %08x |\n",
++			   mtk_r32(eth, MTK_FE_CDM1_FSM));
++		seq_printf(m, "| FE_CDM2_FSM	: %08x |\n",
++			   mtk_r32(eth, MTK_FE_CDM2_FSM));
++		seq_printf(m, "| FE_CDM3_FSM	: %08x |\n",
++			   mtk_r32(eth, MTK_FE_CDM3_FSM));
++		seq_printf(m, "| FE_CDM4_FSM	: %08x |\n",
++			   mtk_r32(eth, MTK_FE_CDM4_FSM));
++		seq_printf(m, "| FE_CDM5_FSM	: %08x |\n",
++			   mtk_r32(eth, MTK_FE_CDM5_FSM));
++		seq_printf(m, "| FE_CDM6_FSM	: %08x |\n",
++			   mtk_r32(eth, MTK_FE_CDM6_FSM));
++		seq_printf(m, "| FE_CDM7_FSM	: %08x |\n",
++			   mtk_r32(eth, MTK_FE_CDM7_FSM));
++		seq_printf(m, "| FE_GDM1_FSM	: %08x |\n",
++			   mtk_r32(eth, MTK_FE_GDM1_FSM));
++		seq_printf(m, "| FE_GDM2_FSM	: %08x |\n",
++			   mtk_r32(eth, MTK_FE_GDM2_FSM));
++		if (v3)
++			seq_printf(m, "| FE_GDM3_FSM	: %08x |\n",
++				   mtk_r32(eth, MTK_FE_GDM3_FSM));
++	}
++
++	return 0;
++}
++DEFINE_SHOW_ATTRIBUTE(mtk_dbg_regs);
++
+ void mtk_eth_dbg_init(struct mtk_eth *eth)
+ {
+ 	eth->mtk_dbg_root = debugfs_create_dir("mtk_eth", NULL);
+@@ -738,6 +868,8 @@ void mtk_eth_dbg_init(struct mtk_eth *et
+ 
+ 	debugfs_create_file("qdma_pppq", 0444, eth->mtk_dbg_root, eth,
+ 			    &mtk_qdma_pppq_fops);
++	debugfs_create_file("dbg_regs", 0444, eth->mtk_dbg_root, eth,
++			    &mtk_dbg_regs_fops);
+ 
+ 	mtk_qdma_sch_txq_init(eth);
+ }

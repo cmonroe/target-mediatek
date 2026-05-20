@@ -38,7 +38,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  struct nf_flow_key {
  	struct flow_dissector_key_meta			meta;
  	struct flow_dissector_key_control		control;
-@@ -191,6 +194,7 @@ struct flow_offload {
+@@ -192,6 +195,7 @@ struct flow_offload {
  	struct flow_offload_tuple_rhash		tuplehash[FLOW_OFFLOAD_DIR_MAX];
  	struct nf_conn				*ct;
  	unsigned long				flags;
@@ -46,7 +46,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	u16					type;
  	u32					timeout;
  	struct rcu_head				rcu_head;
-@@ -201,6 +205,10 @@ struct flow_offload {
+@@ -202,6 +206,10 @@ struct flow_offload {
  
  unsigned long flow_offload_get_timeout(struct flow_offload *flow);
  
@@ -97,7 +97,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  }
  EXPORT_SYMBOL_GPL(flow_offload_route_init);
  
-@@ -285,6 +306,48 @@ unsigned long flow_offload_get_timeout(s
+@@ -329,6 +350,48 @@ unsigned long flow_offload_get_timeout(s
  	return timeout;
  }
  
@@ -146,7 +146,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  int flow_offload_add(struct nf_flowtable *flow_table, struct flow_offload *flow)
  {
  	int err;
-@@ -315,11 +378,6 @@ int flow_offload_add(struct nf_flowtable
+@@ -359,11 +422,6 @@ int flow_offload_add(struct nf_flowtable
  		atomic_inc(&flow_table->direct_xmit_count);
  #endif
  
@@ -158,8 +158,8 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	return 0;
  }
  EXPORT_SYMBOL_GPL(flow_offload_add);
-@@ -338,6 +396,9 @@ void flow_offload_refresh(struct nf_flow
- 	if (likely(!nf_flowtable_hw_offload(flow_table)))
+@@ -383,6 +441,9 @@ void flow_offload_refresh(struct nf_flow
+ 	    test_bit(NF_FLOW_CLOSING, &flow->flags))
  		return;
  
 +	if (!test_bit(NF_FLOW_HW, &flow->flags))
@@ -170,7 +170,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  EXPORT_SYMBOL_GPL(flow_offload_refresh);
 --- a/net/netfilter/nf_flow_table_ip.c
 +++ b/net/netfilter/nf_flow_table_ip.c
-@@ -430,6 +430,12 @@ nf_flow_offload_ip_hook(void *priv, stru
+@@ -434,6 +434,12 @@ nf_flow_offload_ip_hook(void *priv, stru
  	if (!tuplehash)
  		return NF_ACCEPT;
  
@@ -183,7 +183,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	ret = nf_flow_offload_forward(&ctx, flow_table, tuplehash, skb);
  	if (ret < 0)
  		return NF_DROP;
-@@ -444,9 +450,6 @@ nf_flow_offload_ip_hook(void *priv, stru
+@@ -448,9 +454,6 @@ nf_flow_offload_ip_hook(void *priv, stru
  		return nf_flow_xmit_xfrm(skb, state, &rt->dst);
  	}
  
@@ -193,7 +193,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	switch (tuplehash->tuple.xmit_type) {
  	case FLOW_OFFLOAD_XMIT_NEIGH:
  		rt = dst_rtable(tuplehash->tuple.dst_cache);
-@@ -725,6 +728,12 @@ nf_flow_offload_ipv6_hook(void *priv, st
+@@ -729,6 +732,12 @@ nf_flow_offload_ipv6_hook(void *priv, st
  	if (tuplehash == NULL)
  		return NF_ACCEPT;
  
@@ -206,7 +206,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	ret = nf_flow_offload_ipv6_forward(&ctx, flow_table, tuplehash, skb);
  	if (ret < 0)
  		return NF_DROP;
-@@ -739,9 +748,6 @@ nf_flow_offload_ipv6_hook(void *priv, st
+@@ -743,9 +752,6 @@ nf_flow_offload_ipv6_hook(void *priv, st
  		return nf_flow_xmit_xfrm(skb, state, &rt->dst);
  	}
  

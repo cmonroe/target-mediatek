@@ -75,7 +75,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  int aqr_phy_led_blink_set(struct phy_device *phydev, u8 index,
 --- a/drivers/net/phy/aquantia/aquantia_main.c
 +++ b/drivers/net/phy/aquantia/aquantia_main.c
-@@ -1276,9 +1276,15 @@ static int aqr107_probe(struct phy_devic
+@@ -1294,9 +1294,15 @@ static int aqr107_probe(struct phy_devic
  	if (ret)
  		return ret;
  
@@ -91,7 +91,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  
  static struct phy_driver aqr_driver[] = {
  {
-@@ -1322,6 +1328,7 @@ static struct phy_driver aqr_driver[] =
+@@ -1340,6 +1346,7 @@ static struct phy_driver aqr_driver[] =
  	PHY_ID_MATCH_MODEL(PHY_ID_AQR107),
  	.name		= "Aquantia AQR107",
  	.probe		= aqr107_probe,
@@ -99,7 +99,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	.get_rate_matching = aqr_gen2_get_rate_matching,
  	.config_init	= aqr_gen2_config_init,
  	.config_aneg    = aqr_config_aneg,
-@@ -1348,6 +1355,7 @@ static struct phy_driver aqr_driver[] =
+@@ -1366,6 +1373,7 @@ static struct phy_driver aqr_driver[] =
  	PHY_ID_MATCH_MODEL(PHY_ID_AQCS109),
  	.name		= "Aquantia AQCS109",
  	.probe		= aqr107_probe,
@@ -107,7 +107,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	.get_rate_matching = aqr_gen2_get_rate_matching,
  	.config_init	= aqcs109_config_init,
  	.config_aneg    = aqr_config_aneg,
-@@ -1375,6 +1383,7 @@ static struct phy_driver aqr_driver[] =
+@@ -1393,6 +1401,7 @@ static struct phy_driver aqr_driver[] =
  	PHY_ID_MATCH_MODEL(PHY_ID_AQR111),
  	.name		= "Aquantia AQR111",
  	.probe		= aqr107_probe,
@@ -115,7 +115,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	.get_rate_matching = aqr_gen2_get_rate_matching,
  	.config_init	= aqr_gen3_config_init,
  	.config_aneg    = aqr_config_aneg,
-@@ -1402,6 +1411,7 @@ static struct phy_driver aqr_driver[] =
+@@ -1420,6 +1429,7 @@ static struct phy_driver aqr_driver[] =
  	PHY_ID_MATCH_MODEL(PHY_ID_AQR111B0),
  	.name		= "Aquantia AQR111B0",
  	.probe		= aqr107_probe,
@@ -123,7 +123,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	.get_rate_matching = aqr_gen2_get_rate_matching,
  	.config_init	= aqr_gen3_config_init,
  	.config_aneg    = aqr_config_aneg,
-@@ -1439,6 +1449,7 @@ static struct phy_driver aqr_driver[] =
+@@ -1457,6 +1467,7 @@ static struct phy_driver aqr_driver[] =
  	PHY_ID_MATCH_MODEL(PHY_ID_AQR112),
  	.name		= "Aquantia AQR112",
  	.probe		= aqr107_probe,
@@ -131,7 +131,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	.config_init	= aqr_gen3_config_init,
  	.config_aneg    = aqr_config_aneg_set_prot,
  	.config_intr	= aqr_config_intr,
-@@ -1465,6 +1476,7 @@ static struct phy_driver aqr_driver[] =
+@@ -1535,6 +1546,7 @@ static struct phy_driver aqr_driver[] =
  	PHY_ID_MATCH_MODEL(PHY_ID_AQR412),
  	.name		= "Aquantia AQR412",
  	.probe		= aqr107_probe,
@@ -139,7 +139,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	.config_init	= aqr_gen3_config_init,
  	.config_aneg    = aqr_config_aneg_set_prot,
  	.config_intr	= aqr_config_intr,
-@@ -1507,6 +1519,7 @@ static struct phy_driver aqr_driver[] =
+@@ -1577,6 +1589,7 @@ static struct phy_driver aqr_driver[] =
  	PHY_ID_MATCH_MODEL(PHY_ID_AQR113),
  	.name		= "Aquantia AQR113",
  	.probe          = aqr107_probe,
@@ -147,7 +147,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	.get_rate_matching = aqr_gen2_get_rate_matching,
  	.config_init    = aqr_gen4_config_init,
  	.config_aneg    = aqr_config_aneg,
-@@ -1533,6 +1546,7 @@ static struct phy_driver aqr_driver[] =
+@@ -1603,6 +1616,7 @@ static struct phy_driver aqr_driver[] =
  	PHY_ID_MATCH_MODEL(PHY_ID_AQR113C),
  	.name           = "Aquantia AQR113C",
  	.probe          = aqr107_probe,
@@ -155,7 +155,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	.get_rate_matching = aqr_gen2_get_rate_matching,
  	.config_init    = aqr_gen4_config_init,
  	.config_aneg    = aqr_config_aneg,
-@@ -1559,6 +1573,7 @@ static struct phy_driver aqr_driver[] =
+@@ -1629,6 +1643,7 @@ static struct phy_driver aqr_driver[] =
  	PHY_ID_MATCH_MODEL(PHY_ID_AQR114C),
  	.name           = "Aquantia AQR114C",
  	.probe          = aqr107_probe,

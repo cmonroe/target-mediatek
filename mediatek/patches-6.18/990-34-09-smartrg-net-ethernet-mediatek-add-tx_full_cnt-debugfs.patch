@@ -1,0 +1,66 @@
+From: Chad Monroe <chad@monroe.io>
+Date: Wed, 20 May 2026 03:41:35 -0700
+Subject: [PATCH] net: ethernet: mediatek: add tx_full_cnt debugfs node
+
+Add a monotonic counter of TX-ring-full events. Reads return the
+count accumulated since the previous read (atomic_xchg with 0).
+
+Bump it from the existing TX-busy branch in mtk_start_xmit() where the
+queue is stopped and NETDEV_TX_BUSY is returned.
+
+Signed-off-by: Chad Monroe <chad@monroe.io>
+---
+ drivers/net/ethernet/mediatek/mtk_eth_soc.c     |    1 +
+ drivers/net/ethernet/mediatek/mtk_eth_soc.h     |    1 +
+ drivers/net/ethernet/mediatek/mtk_ppe_debugfs.c |   13 +++++++++++++
+ 3 files changed, 15 insertions(+)
+
+--- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
++++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
+@@ -2060,6 +2060,7 @@ static netdev_tx_t mtk_start_xmit(struct
+ 
+ 	tx_num = mtk_cal_txd_req(eth, skb);
+ 	if (unlikely(atomic_read(&ring->free_count) <= tx_num)) {
++		atomic_inc(&ring->full_count);
+ 		netif_tx_stop_all_queues(dev);
+ 		netif_err(eth, tx_queued, dev,
+ 			  "Tx Ring full when queue awake!\n");
+--- a/drivers/net/ethernet/mediatek/mtk_eth_soc.h
++++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.h
+@@ -1004,6 +1004,7 @@ struct mtk_tx_ring {
+ 	u32 last_free_ptr;
+ 	u16 thresh;
+ 	atomic_t free_count;
++	atomic_t full_count;
+ 	int dma_size;
+ 	struct mtk_tx_dma *dma_pdma;	/* For MT7628/88 PDMA handling */
+ 	dma_addr_t phys_pdma;
+--- a/drivers/net/ethernet/mediatek/mtk_ppe_debugfs.c
++++ b/drivers/net/ethernet/mediatek/mtk_ppe_debugfs.c
+@@ -856,6 +856,17 @@ static int mtk_dbg_regs_show(struct seq_
+ }
+ DEFINE_SHOW_ATTRIBUTE(mtk_dbg_regs);
+ 
++static int mtk_tx_full_cnt_show(struct seq_file *m, void *v)
++{
++	struct mtk_eth *eth = m->private;
++
++	seq_printf(m, "tx ring full count: %d\n",
++		   atomic_xchg(&eth->tx_ring.full_count, 0));
++
++	return 0;
++}
++DEFINE_SHOW_ATTRIBUTE(mtk_tx_full_cnt);
++
+ void mtk_eth_dbg_init(struct mtk_eth *eth)
+ {
+ 	eth->mtk_dbg_root = debugfs_create_dir("mtk_eth", NULL);
+@@ -870,6 +881,8 @@ void mtk_eth_dbg_init(struct mtk_eth *et
+ 			    &mtk_qdma_pppq_fops);
+ 	debugfs_create_file("dbg_regs", 0444, eth->mtk_dbg_root, eth,
+ 			    &mtk_dbg_regs_fops);
++	debugfs_create_file("tx_full_cnt", 0444, eth->mtk_dbg_root, eth,
++			    &mtk_tx_full_cnt_fops);
+ 
+ 	mtk_qdma_sch_txq_init(eth);
+ }

@@ -10,7 +10,7 @@ Subject: [PATCH] sound add si3218x spi driver
 
 --- a/sound/soc/codecs/Kconfig
 +++ b/sound/soc/codecs/Kconfig
-@@ -233,6 +233,7 @@ config SND_SOC_ALL_CODECS
+@@ -246,6 +246,7 @@ config SND_SOC_ALL_CODECS
  	imply SND_SOC_RTQ9128
  	imply SND_SOC_SDW_MOCKUP
  	imply SND_SOC_SGTL5000
@@ -18,8 +18,8 @@ Subject: [PATCH] sound add si3218x spi driver
  	imply SND_SOC_SI476X
  	imply SND_SOC_SIMPLE_AMPLIFIER
  	imply SND_SOC_SIMPLE_MUX
-@@ -2570,6 +2571,10 @@ config SND_SOC_NAU8825
- 	tristate
+@@ -2757,6 +2758,10 @@ config SND_SOC_NTP8835
+ 	tristate "NeoFidelity NTP8835 and NTP8835C amplifiers"
  	depends on I2C
  
 +config SND_SOC_SI3218X_SPI
@@ -31,15 +31,15 @@ Subject: [PATCH] sound add si3218x spi driver
  	depends on I2C
 --- a/sound/soc/codecs/Makefile
 +++ b/sound/soc/codecs/Makefile
-@@ -270,6 +270,7 @@ snd-soc-alc5632-y := alc5632.o
+@@ -290,6 +290,7 @@ snd-soc-alc5632-y := alc5632.o
  snd-soc-sigmadsp-y := sigmadsp.o
  snd-soc-sigmadsp-i2c-y := sigmadsp-i2c.o
  snd-soc-sigmadsp-regmap-y := sigmadsp-regmap.o
 +snd-soc-si3218x-spi-objs := si3218x-spi.o
  snd-soc-si476x-y := si476x.o
  snd-soc-sma1303-y := sma1303.o
- snd-soc-spdif-tx-y := spdif_transmitter.o
-@@ -672,6 +673,7 @@ obj-$(CONFIG_SND_SOC_SGTL5000)  += snd-s
+ snd-soc-sma1307-y := sma1307.o
+@@ -720,6 +721,7 @@ obj-$(CONFIG_SND_SOC_SGTL5000)  += snd-s
  obj-$(CONFIG_SND_SOC_SIGMADSP)	+= snd-soc-sigmadsp.o
  obj-$(CONFIG_SND_SOC_SIGMADSP_I2C)	+= snd-soc-sigmadsp-i2c.o
  obj-$(CONFIG_SND_SOC_SIGMADSP_REGMAP)	+= snd-soc-sigmadsp-regmap.o

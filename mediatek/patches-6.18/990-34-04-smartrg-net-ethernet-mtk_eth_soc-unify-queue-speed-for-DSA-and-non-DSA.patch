@@ -1,0 +1,83 @@
+From: Chad Monroe <chad@monroe.io>
+Date: Wed, 20 May 2026 03:38:47 -0700
+Subject: [PATCH] net: ethernet: mtk_eth_soc: unify queue speed for DSA and non-DSA
+
+mtk_device_event() only walked DSA conduit/user pairs and bailed early
+on non-DSA netdev change events, so direct GMACs (e.g. mt7987 GMAC1)
+never had a per-queue rate cap programmed. 
+
+Match the DSA path: when the event is for the mac's own netdev, use
+queue = mac->id. Skip bridge upper events to avoid double-processing.
+
+Signed-off-by: Piotr Kubik <piotr.kubik@adtran.com>
+Signed-off-by: Chad Monroe <chad@monroe.io>
+---
+ drivers/net/ethernet/mediatek/mtk_eth_soc.c |   37 +++++++++++-------
+ 1 file changed, 24 insertions(+), 13 deletions(-)
+
+--- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
++++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
+@@ -3878,39 +3878,50 @@ static int mtk_device_event(struct notif
+ 	struct dsa_port *dp;
+ 	unsigned int queue;
+ 
+-	if (event != NETDEV_CHANGE)
++	if (event != NETDEV_CHANGE || dev->priv_flags & IFF_EBRIDGE)
+ 		return NOTIFY_DONE;
+ 
++	/* DSA conduit event: dev is a DSA user port stacked on this mac. */
+ 	netdev_for_each_lower_dev(dev, ldev, iter) {
+ 		if (netdev_priv(ldev) == mac)
+ 			goto found;
+ 	}
+ 
++	/* Direct GMAC event: dev itself is the mac's netdev. */
++	if (netdev_priv(dev) == mac)
++		goto found;
++
+ 	return NOTIFY_DONE;
+ 
+ found:
+-	if (!dsa_user_dev_check(dev))
+-		return NOTIFY_DONE;
+-
+-	mtk_update_dsa_queue_map(eth);
+-
+ 	if (__ethtool_get_link_ksettings(dev, &s))
+ 		return NOTIFY_DONE;
+ 
+ 	if (s.base.speed == 0 || s.base.speed == ((__u32)-1))
+ 		return NOTIFY_DONE;
+ 
+-	dp = dsa_port_from_netdev(dev);
+-	if (dp->index >= MTK_DSA_USER_PORT_MAX)
+-		return NOTIFY_DONE;
++	if (dsa_user_dev_check(dev)) {
++		mtk_update_dsa_queue_map(eth);
++
++		dp = dsa_port_from_netdev(dev);
++		if (dp->index >= MTK_DSA_USER_PORT_MAX)
++			return NOTIFY_DONE;
++
++		queue = mac->dsa_queue_base + mac->dsa_port_rank[dp->index];
++
++		/* When the conduit GMAC link is the bottleneck the per-port
++		 * PPPQ cap is redundant; skip it so the queue stays
++		 * unshaped on the QDMA side.
++		 */
++		if (mac->speed > 0 && mac->speed <= s.base.speed)
++			s.base.speed = 0;
++	} else {
++		queue = mac->id;
++	}
+ 
+-	queue = mac->dsa_queue_base + mac->dsa_port_rank[dp->index];
+ 	if (queue >= eth->soc->num_tx_queues)
+ 		return NOTIFY_DONE;
+ 
+-	if (mac->speed > 0 && mac->speed <= s.base.speed)
+-		s.base.speed = 0;
+-
+ 	mtk_set_queue_speed(eth, queue, s.base.speed);
+ 
+ 	return NOTIFY_DONE;

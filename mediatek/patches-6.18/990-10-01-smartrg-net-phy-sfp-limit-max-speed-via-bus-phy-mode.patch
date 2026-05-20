@@ -17,7 +17,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 
 --- a/drivers/net/phy/sfp-bus.c
 +++ b/drivers/net/phy/sfp-bus.c
-@@ -374,7 +374,7 @@ static void sfp_init_module(struct sfp_b
+@@ -326,7 +326,7 @@ static void sfp_init_module(struct sfp_b
  	sfp_module_parse_may_have_phy(bus, id);
  
  	if (quirk && quirk->support)
@@ -58,7 +58,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  #include <linux/rtnetlink.h>
  #include <linux/slab.h>
  #include <linux/workqueue.h>
-@@ -444,7 +447,8 @@ static void sfp_fixup_rollball_cc(struct
+@@ -451,7 +454,8 @@ static void sfp_fixup_rollball_cc(struct
  	sfp->id.base.extended_cc = SFF8024_ECC_10GBASE_T_SFI;
  }
  
@@ -68,7 +68,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  				struct sfp_module_caps *caps)
  {
  	linkmode_set_bit(ETHTOOL_LINK_MODE_2500baseX_Full_BIT,
-@@ -452,23 +456,26 @@ static void sfp_quirk_2500basex(const st
+@@ -459,23 +463,26 @@ static void sfp_quirk_2500basex(const st
  	__set_bit(PHY_INTERFACE_MODE_2500BASEX, caps->interfaces);
  }
  
@@ -99,7 +99,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  				      struct sfp_module_caps *caps)
  {
  	/* Ubiquiti U-Fiber Instant module claims that support all transceiver
-@@ -487,6 +494,80 @@ static void sfp_quirk_ubnt_uf_instant(co
+@@ -499,6 +506,80 @@ static void sfp_quirk_ubnt_uf_instant(co
  #define SFP_QUIRK_S(_v, _p, _s) SFP_QUIRK(_v, _p, _s, NULL)
  #define SFP_QUIRK_F(_v, _p, _f) SFP_QUIRK(_v, _p, NULL, _f)
  
@@ -180,7 +180,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  static const struct sfp_quirk sfp_quirks[] = {
  	// Alcatel Lucent G-010S-P can operate at 2500base-X, but incorrectly
  	// report 2500MBd NRZ in their EEPROM
-@@ -2405,6 +2486,24 @@ static int sfp_sm_mod_probe(struct sfp *
+@@ -2491,6 +2572,24 @@ static int sfp_sm_mod_probe(struct sfp *
  		sfp->mdio_protocol = MDIO_I2C_NONE;
  
  	sfp->quirk = sfp_lookup_quirk(&id);

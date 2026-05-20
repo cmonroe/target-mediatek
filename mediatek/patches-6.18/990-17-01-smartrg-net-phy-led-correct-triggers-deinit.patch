@@ -14,7 +14,7 @@ Signed-off-by: Cezary Wilmanski <cezary.wilmanski@adtran.com>
 
 --- a/drivers/net/phy/phy_led_triggers.c
 +++ b/drivers/net/phy/phy_led_triggers.c
-@@ -141,15 +141,19 @@ void phy_led_triggers_unregister(struct
+@@ -143,15 +143,19 @@ void phy_led_triggers_unregister(struct
  {
  	int i;
  

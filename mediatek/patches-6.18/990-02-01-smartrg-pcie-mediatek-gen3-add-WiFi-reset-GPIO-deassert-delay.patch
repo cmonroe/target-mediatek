@@ -46,7 +46,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	}
  
  	/*
-@@ -963,6 +969,12 @@ static int mtk_pcie_parse_port(struct mt
+@@ -952,6 +958,12 @@ static int mtk_pcie_parse_port(struct mt
  		}
  	}
  

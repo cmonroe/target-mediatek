@@ -22,8 +22,8 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
-@@ -963,6 +963,40 @@ static void mtk_set_queue_speed(struct m
- 	mtk_w32(eth, val, soc->reg_map->qdma.qtx_sch + ofs);
+@@ -989,6 +989,40 @@ bool mtk_queue_has_rate_cap(struct mtk_e
+ 	return !!(val & mask);
  }
  
 +static void mtk_gdm_mac_setup_eee(struct mtk_mac *mac, bool enable)
@@ -63,7 +63,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  static void mtk_gdm_mac_link_up(struct mtk_mac *mac,
  				struct phy_device *phy,
  				unsigned int mode, phy_interface_t interface,
-@@ -1000,6 +1034,10 @@ static void mtk_gdm_mac_link_up(struct m
+@@ -1026,6 +1060,10 @@ static void mtk_gdm_mac_link_up(struct m
  
  	mcr |= MAC_MCR_TX_EN | MAC_MCR_RX_EN | MAC_MCR_FORCE_LINK;
  	mtk_w32(mac->hw, mcr, MTK_MAC_MCR(mac->id));
@@ -74,7 +74,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  }
  
  static void mtk_xgdm_mac_link_up(struct mtk_mac *mac,
-@@ -5677,15 +5715,41 @@ static int mtk_set_pauseparam(struct net
+@@ -5569,15 +5607,41 @@ static int mtk_set_pauseparam(struct net
  static int mtk_get_eee(struct net_device *dev, struct ethtool_keee *eee)
  {
  	struct mtk_mac *mac = netdev_priv(dev);
@@ -120,7 +120,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  static u32 mtk_get_rxfh_key_size(struct net_device *dev)
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.h
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.h
-@@ -581,6 +581,7 @@
+@@ -545,6 +545,7 @@ struct dentry;
  #define MAC_EEE_WAKEUP_TIME_1000	GENMASK(31, 24)
  #define MAC_EEE_WAKEUP_TIME_100		GENMASK(23, 16)
  #define MAC_EEE_LPI_TXIDLE_THD		GENMASK(15, 8)
@@ -128,7 +128,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  #define MAC_EEE_CKG_TXIDLE		BIT(3)
  #define MAC_EEE_CKG_RXLPI		BIT(2)
  #define MAC_EEE_LPI_MODE		BIT(0)
-@@ -1648,6 +1649,8 @@ struct mtk_mac {
+@@ -1623,6 +1624,8 @@ struct mtk_mac {
  	struct notifier_block		device_notifier;
  	u8				dsa_queue_base;
  	u8				dsa_port_rank[MTK_DSA_USER_PORT_MAX];

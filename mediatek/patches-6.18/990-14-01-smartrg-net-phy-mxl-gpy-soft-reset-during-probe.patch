@@ -12,7 +12,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 
 --- a/drivers/net/phy/mxl-gpy.c
 +++ b/drivers/net/phy/mxl-gpy.c
-@@ -335,6 +335,21 @@ out:
+@@ -329,6 +329,21 @@ out:
  	return ret;
  }
  
@@ -34,7 +34,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  static int gpy_config_init(struct phy_device *phydev)
  {
  	/* Nothing to configure. Configuration Requirement Placeholder */
-@@ -355,12 +370,19 @@ static int gpy_probe(struct phy_device *
+@@ -349,12 +364,19 @@ static int gpy_probe(struct phy_device *
  	struct gpy_priv *priv;
  	int fw_version;
  	int ret;

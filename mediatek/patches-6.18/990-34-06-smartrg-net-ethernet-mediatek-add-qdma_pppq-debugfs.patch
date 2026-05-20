@@ -1,0 +1,343 @@
+From: Chad Monroe <chad@monroe.io>
+Date: Wed, 20 May 2026 03:40:03 -0700
+Subject: [PATCH] net: ethernet: mediatek: add mtk_eth debugfs root and qdma_pppq
+
+Create /sys/kernel/debug/mtk_eth/ directory and host the existing
+qdma_pppq node under it.
+
+qdma_pppq is a per-egress-queue summary showing for every active
+TX queue the owning interface (with "(ack)" annotation on high 
+priority ACK queues), scheduler / weight / max rate, packet and drop
+counters from the v2+ MIB aperture, and the count of bound FOE
+entries that route through it.
+
+Adds MTK_MIB_ON_QTX_CFG / MTK_VQTX_MIB_EN defines and the qtx_mib_if
+field on the qdma reg_map (value 0x46bc on the mt7986 / mt7988
+layouts) so v2+ SoCs can populate packet / drop counters.
+
+Also introduce mtk_eth.qdma_page_lock, a mutex that serializes access
+to the QDMA paging register. The same register is touched by
+mtk_set_queue_speed() from the netdev change notifier and by every
+paged qtx_cfg / qtx_sch access, and they race today.
+
+Signed-off-by: Piotr Kubik <piotr.kubik@adtran.com>
+Signed-off-by: Chad Monroe <chad@monroe.io>
+---
+ drivers/net/ethernet/mediatek/mtk_eth_soc.c     |    9 
+ drivers/net/ethernet/mediatek/mtk_eth_soc.h     |   21 +
+ drivers/net/ethernet/mediatek/mtk_ppe_debugfs.c |  178 ++++++++++++++
+ 3 files changed, 208 insertions(+)
+
+--- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
++++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
+@@ -150,6 +150,7 @@ static const struct mtk_reg_map mt7986_r
+ 		.fc_th		= 0x4610,
+ 		.int_grp	= 0x4620,
+ 		.hred		= 0x4644,
++		.qtx_mib_if	= 0x46bc,
+ 		.ctx_ptr	= 0x4700,
+ 		.dtx_ptr	= 0x4704,
+ 		.crx_ptr	= 0x4710,
+@@ -202,6 +203,7 @@ static const struct mtk_reg_map mt7988_r
+ 		.fc_th		= 0x4610,
+ 		.int_grp	= 0x4620,
+ 		.hred		= 0x4644,
++		.qtx_mib_if	= 0x46bc,
+ 		.ctx_ptr	= 0x4700,
+ 		.dtx_ptr	= 0x4704,
+ 		.crx_ptr	= 0x4710,
+@@ -897,9 +899,11 @@ static void mtk_set_queue_speed(struct m
+ 	}
+ 
+ out:
++	mutex_lock(&eth->qdma_page_lock);
+ 	mtk_w32(eth, idx / MTK_QTX_PER_PAGE, soc->reg_map->qdma.page);
+ 	ofs = MTK_QTX_OFFSET * (idx % MTK_QTX_PER_PAGE);
+ 	mtk_w32(eth, val, soc->reg_map->qdma.qtx_sch + ofs);
++	mutex_unlock(&eth->qdma_page_lock);
+ }
+ 
+ bool mtk_queue_has_rate_cap(struct mtk_eth *eth, unsigned int idx)
+@@ -910,8 +914,10 @@ bool mtk_queue_has_rate_cap(struct mtk_e
+ 	if (!MTK_HAS_CAPS(soc->caps, MTK_QDMA))
+ 		return false;
+ 
++	mutex_lock(&eth->qdma_page_lock);
+ 	mtk_qdma_select_page(eth, idx);
+ 	val = mtk_r32(eth, soc->reg_map->qdma.qtx_sch + MTK_QTX_REG_OFS(idx));
++	mutex_unlock(&eth->qdma_page_lock);
+ 
+ 	mask = mtk_qtx_sch_is_v3_layout(eth) ? MTK_QTX_SCH_MAX_RATE_EN_V3
+ 					     : MTK_QTX_SCH_MAX_RATE_EN;
+@@ -5897,6 +5903,7 @@ static int mtk_probe(struct platform_dev
+ 	spin_lock_init(&eth->tx_irq_lock);
+ 	spin_lock_init(&eth->rx_irq_lock);
+ 	spin_lock_init(&eth->dim_lock);
++	mutex_init(&eth->qdma_page_lock);
+ 
+ 	eth->rx_dim.mode = DIM_CQ_PERIOD_MODE_START_FROM_EQE;
+ 	INIT_WORK(&eth->rx_dim.work, mtk_dim_rx);
+@@ -6129,6 +6136,8 @@ static int mtk_probe(struct platform_dev
+ 			if (err)
+ 				goto err_deinit_ppe;
+ 		}
++
++		mtk_eth_dbg_init(eth);
+ 	}
+ 
+ 	for (i = 0; i < MTK_MAX_DEVS; i++) {
+--- a/drivers/net/ethernet/mediatek/mtk_eth_soc.h
++++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.h
+@@ -18,10 +18,13 @@
+ #include <linux/rhashtable.h>
+ #include <linux/dim.h>
+ #include <linux/bitfield.h>
++#include <linux/mutex.h>
+ #include <net/page_pool/types.h>
+ #include <linux/bpf_trace.h>
+ #include "mtk_ppe.h"
+ 
++struct dentry;
++
+ #define MTK_MAX_DSA_PORTS	7
+ #define MTK_DSA_PORT_MASK	GENMASK(2, 0)
+ 
+@@ -278,6 +281,14 @@
+ #define MTK_QTX_SCH_MAX_RATE_MAN_V3	GENMASK(9, 3)
+ #define MTK_QTX_SCH_MAX_RATE_EXP_V3	GENMASK(2, 0)
+ 
++/* QDMA TX Queue MIB Interface (per-queue packet / drop counters).
++ * Setting MTK_MIB_ON_QTX_CFG | MTK_VQTX_MIB_EN remaps qtx_cfg / qtx_sch
++ * reads to return packet / drop counters; toggle the bits back to zero
++ * to read scheduler configuration normally.
++ */
++#define MTK_MIB_ON_QTX_CFG		BIT(31)
++#define MTK_VQTX_MIB_EN			BIT(28)
++
+ /* QDMA TX Scheduler Rate Control Register */
+ #define MTK_QDMA_TX_SCH_MAX_WFQ		BIT(15)
+ 
+@@ -1268,6 +1279,7 @@ struct mtk_reg_map {
+ 		u32	fc_th;		/* flow control */
+ 		u32	int_grp;
+ 		u32	hred;		/* interrupt mask */
++		u32	qtx_mib_if;	/* tx queue mib interface */
+ 		u32	ctx_ptr;	/* tx acquire cpu pointer */
+ 		u32	dtx_ptr;	/* tx acquire dma pointer */
+ 		u32	crx_ptr;	/* tx release cpu pointer */
+@@ -1460,6 +1472,14 @@ struct mtk_eth {
+ 		u8 qdma_hang_count;
+ 		u8 adma_hang_count;
+ 	} reset;
++
++	/* Serialize per-eth QDMA paging-register access (qdma.page).
++	 * mtk_set_queue_speed() and the debugfs nodes that walk paged
++	 * qtx_cfg / qtx_sch all race without this.
++	 */
++	struct mutex			qdma_page_lock;
++
++	struct dentry			*mtk_dbg_root;
+ };
+ 
+ /* struct mtk_mac -	the structure that holds the info about the MACs of the
+@@ -1708,5 +1728,6 @@ static inline bool mtk_qtx_sch_is_v3_lay
+ }
+ 
+ bool mtk_queue_has_rate_cap(struct mtk_eth *eth, unsigned int idx);
++void mtk_eth_dbg_init(struct mtk_eth *eth);
+ 
+ #endif /* MTK_ETH_H */
+--- a/drivers/net/ethernet/mediatek/mtk_ppe_debugfs.c
++++ b/drivers/net/ethernet/mediatek/mtk_ppe_debugfs.c
+@@ -4,9 +4,13 @@
+ #include <linux/kernel.h>
+ #include <linux/debugfs.h>
+ 
++#include <net/dsa.h>
+ #include <net/ipv6.h>
+ 
+ #include "mtk_eth_soc.h"
++#include "mtk_ppe.h"
++
++#define MTK_QDMA_MAX_QUEUES	32
+ 
+ struct mtk_flow_addr_info
+ {
+@@ -193,3 +197,177 @@ int mtk_ppe_debugfs_init(struct mtk_ppe
+ 
+ 	return 0;
+ }
++
++static int mtk_qdma_pppq_show(struct seq_file *m, void *v)
++{
++	struct mtk_eth *eth = m->private;
++	const struct mtk_soc_data *soc = eth->soc;
++	struct net_device *pppq_map[MTK_QDMA_MAX_QUEUES] = { NULL };
++	bool is_ack_queue[MTK_QDMA_MAX_QUEUES] = { false };
++	u32 flow_cnt[MTK_QDMA_MAX_QUEUES] = { 0 };
++	u32 ack_flow_cnt[MTK_QDMA_MAX_QUEUES] = { 0 };
++	bool v2_or_greater = mtk_is_netsys_v2_or_greater(eth);
++	bool v3_layout = mtk_qtx_sch_is_v3_layout(eth);
++	u32 num_queues = min_t(u32, soc->num_tx_queues, MTK_QDMA_MAX_QUEUES);
++	u32 ack_ofs = mtk_pppq_ack_queue_offset(eth);
++	struct net_device *ndev;
++	struct mtk_mac *mac;
++	char iface_name[32];
++	u32 pkt_cnt, drop_cnt, qtx_sch, max_rate, max_rate_exp;
++	int i, pi, h, scheduler, weight;
++
++	/* Build queue -> netdev map. ACK queue for every data qid q lives
++	 * at (q + ack_ofs) regardless of whether the egress is DSA or a
++	 * direct GMAC. Reads mac->dsa_queue_base / mac->dsa_port_rank[],
++	 * both populated at probe time by mtk_eth_set_dsa_user_port_map().
++	 */
++	for (i = 0; i < MTK_MAX_DEVS; i++) {
++		ndev = eth->netdev[i];
++		if (!ndev)
++			continue;
++
++		mac = netdev_priv(ndev);
++
++		if (netdev_uses_dsa(ndev)) {
++#if IS_ENABLED(CONFIG_NET_DSA)
++			struct dsa_switch *ds = ndev->dsa_ptr->ds;
++			const struct dsa_port *dp;
++			u32 qid, ack_qid, p;
++
++			for (p = 0; p < ds->num_ports; p++) {
++				if (!dsa_is_user_port(ds, p))
++					continue;
++				dp = dsa_to_port(ds, p);
++				if (dp->index >= MTK_DSA_USER_PORT_MAX)
++					continue;
++				qid = mac->dsa_queue_base + mac->dsa_port_rank[dp->index];
++				if (qid >= num_queues)
++					continue;
++				pppq_map[qid] = dp->user;
++				ack_qid = qid + ack_ofs;
++				if (ack_qid < num_queues) {
++					pppq_map[ack_qid] = dp->user;
++					is_ack_queue[ack_qid] = true;
++				}
++			}
++#endif
++		} else {
++			u32 ack_qid = i + ack_ofs;
++
++			if (i < num_queues)
++				pppq_map[i] = ndev;
++			if (ack_qid < num_queues) {
++				pppq_map[ack_qid] = ndev;
++				is_ack_queue[ack_qid] = true;
++			}
++		}
++	}
++
++	/* Walk every PPE's FOE table and tally bound flows per queue. */
++	for (pi = 0; pi < ARRAY_SIZE(eth->ppe); pi++) {
++		struct mtk_ppe *ppe = eth->ppe[pi];
++
++		if (!ppe || !ppe->foe_table)
++			continue;
++
++		for (h = 0; h < MTK_PPE_ENTRIES; h++) {
++			struct mtk_foe_entry *foe = mtk_foe_get_entry(ppe, h);
++			u32 ib1 = READ_ONCE(foe->ib1);
++			unsigned int q;
++
++			if (FIELD_GET(MTK_FOE_IB1_STATE, ib1) != MTK_FOE_STATE_BIND)
++				continue;
++
++			q = mtk_foe_entry_get_queue(eth, foe);
++			if (q >= num_queues)
++				continue;
++			flow_cnt[q]++;
++			if (is_ack_queue[q])
++				ack_flow_cnt[q]++;
++		}
++	}
++
++	seq_puts(m, "TXQ    Interface        Scheduler  Weight  Speed(Mbps)  Packets       Drops         Flows\n");
++	mutex_lock(&eth->qdma_page_lock);
++	for (i = 0; i < num_queues; i++) {
++		if (!pppq_map[i])
++			continue;
++
++		pkt_cnt = 0;
++		drop_cnt = 0;
++
++		mtk_qdma_select_page(eth, i);
++		qtx_sch = mtk_r32(eth, soc->reg_map->qdma.qtx_sch +
++				       MTK_QTX_REG_OFS(i));
++
++		if (v2_or_greater)
++			scheduler = FIELD_GET(MTK_QTX_SCH_TX_SEL_V2, qtx_sch);
++		else
++			scheduler = FIELD_GET(MTK_QTX_SCH_TX_SEL, qtx_sch);
++
++		if (v3_layout) {
++			weight = FIELD_GET(MTK_QTX_SCH_MAX_RATE_WEIGHT_V3, qtx_sch);
++			max_rate = FIELD_GET(MTK_QTX_SCH_MAX_RATE_MAN_V3, qtx_sch);
++			max_rate_exp = FIELD_GET(MTK_QTX_SCH_MAX_RATE_EXP_V3, qtx_sch);
++		} else {
++			weight = FIELD_GET(MTK_QTX_SCH_MAX_RATE_WEIGHT, qtx_sch);
++			max_rate = FIELD_GET(MTK_QTX_SCH_MAX_RATE_MAN, qtx_sch);
++			max_rate_exp = FIELD_GET(MTK_QTX_SCH_MAX_RATE_EXP, qtx_sch);
++		}
++		while (max_rate_exp--)
++			max_rate *= 10;
++
++		/* MIB aperture: enabling MIB_ON_QTX_CFG/VQTX_MIB_EN remaps the
++		 * qtx_cfg/qtx_sch register reads to return the packet / drop
++		 * counters instead of the scheduler config. Bracket only the
++		 * counter reads with the toggle; reading qtx_sch above for the
++		 * scheduler/rate fields must happen with the aperture off.
++		 */
++		if (v2_or_greater) {
++			mtk_m32(eth, MTK_MIB_ON_QTX_CFG, MTK_MIB_ON_QTX_CFG,
++				soc->reg_map->qdma.qtx_mib_if);
++			mtk_m32(eth, MTK_VQTX_MIB_EN, MTK_VQTX_MIB_EN,
++				soc->reg_map->qdma.qtx_mib_if);
++			pkt_cnt = mtk_r32(eth, soc->reg_map->qdma.qtx_cfg +
++					  MTK_QTX_REG_OFS(i));
++			drop_cnt = mtk_r32(eth, soc->reg_map->qdma.qtx_sch +
++					   MTK_QTX_REG_OFS(i));
++			mtk_m32(eth, MTK_MIB_ON_QTX_CFG, 0,
++				soc->reg_map->qdma.qtx_mib_if);
++			mtk_m32(eth, MTK_VQTX_MIB_EN, 0,
++				soc->reg_map->qdma.qtx_mib_if);
++		}
++
++		if (is_ack_queue[i])
++			snprintf(iface_name, sizeof(iface_name), "%s (ack)",
++				 pppq_map[i]->name);
++		else
++			snprintf(iface_name, sizeof(iface_name), "%s",
++				 pppq_map[i]->name);
++
++		seq_printf(m, "%-5d  %-15s  %-9d  %-6d  %-11u  %-12u  %-12u  %u",
++			   i, iface_name, scheduler, weight,
++			   max_rate / 1000, pkt_cnt, drop_cnt, flow_cnt[i]);
++		if (ack_flow_cnt[i])
++			seq_printf(m, " (%u ack)", ack_flow_cnt[i]);
++		seq_puts(m, "\n");
++	}
++	mutex_unlock(&eth->qdma_page_lock);
++
++	return 0;
++}
++DEFINE_SHOW_ATTRIBUTE(mtk_qdma_pppq);
++
++void mtk_eth_dbg_init(struct mtk_eth *eth)
++{
++	eth->mtk_dbg_root = debugfs_create_dir("mtk_eth", NULL);
++	if (IS_ERR_OR_NULL(eth->mtk_dbg_root)) {
++		netdev_warn(eth->netdev[0],
++			    "failed to create mtk_eth debugfs root, skipping\n");
++		eth->mtk_dbg_root = NULL;
++		return;
++	}
++
++	debugfs_create_file("qdma_pppq", 0444, eth->mtk_dbg_root, eth,
++			    &mtk_qdma_pppq_fops);
++}
