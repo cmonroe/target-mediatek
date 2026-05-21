@@ -224,6 +224,10 @@
 			linux,default-trigger = "gpio";
 			trigger-sources = <&pio 82 GPIO_ACTIVE_LOW>;
 		};
+	};
+
+	lan-leds {
+		compatible = "gpio-leds";
 
 		lan1_white {
 			gpios = <&swled_gpio0 0 GPIO_ACTIVE_LOW>;
