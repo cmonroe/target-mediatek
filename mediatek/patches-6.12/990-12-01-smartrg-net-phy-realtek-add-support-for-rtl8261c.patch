@@ -57,18 +57,18 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  #define RTL8224_SRAM_RTCT_FAULT_OPEN		BIT(3)
  #define RTL8224_SRAM_RTCT_FAULT_SAME_SHORT	BIT(4)
  #define RTL8224_SRAM_RTCT_FAULT_OK		BIT(5)
-@@ -207,6 +209,8 @@
+@@ -206,6 +208,8 @@
  #define RTL_8221B_VM_CG				0x001cc84a
  #define RTL_8251B				0x001cc862
  #define RTL_8261C				0x001cc890
 +#define RTL_8261C_CG				0x001cc898
 +#define RTL_8261D_CG				0x001cc898
- #define RTL_8264				0x001ccaf2
  #define RTL_8261N				0x001ccaf3
+ #define RTL_8264				0x001ccaf2
+ #define RTL_8264B				0x001cc813
+@@ -226,6 +230,33 @@
  
-@@ -223,6 +227,33 @@
- 
- #define RTL826X_VND2_INSR				0xA43A
+ #define RTL826X_VND2_INSR			0xA43A
  
 +/* RTL8261C-CG specific registers */
 +#define RTL8261C_VND2_PHY_STATE			0xA420
@@ -100,7 +100,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  MODULE_DESCRIPTION("Realtek PHY driver");
  MODULE_AUTHOR("Johnson Leung");
  MODULE_LICENSE("GPL");
-@@ -1813,6 +1844,10 @@ static int rtl8224_cable_test_result_tra
+@@ -1816,6 +1847,10 @@ static int rtl8224_cable_test_result_tra
  	if (result & RTL8224_SRAM_RTCT_FAULT_CROSS_SHORT)
  		return ETHTOOL_A_CABLE_RESULT_CODE_CROSS_SHORT;
  
@@ -111,8 +111,8 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	return ETHTOOL_A_CABLE_RESULT_CODE_UNSPEC;
  }
  
-@@ -2399,6 +2434,148 @@ static int rtl8264b_probe(struct phy_dev
- 	return 0;
+@@ -2510,6 +2545,153 @@ static int rtl826x_config_serdes_polarit
+ 			      mask, set);
  }
  
 +static int rtl8261c_cg_match_phy_device(struct phy_device *phydev,
@@ -131,7 +131,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 +
 +	ret = rtl8261c_phy_patch_db_init(phydev);
 +	if (ret < 0)
-+		return -EPROBE_DEFER;
++		return ret;
 +
 +	phy_set_bits_mmd(phydev, MDIO_MMD_VEND2, RTL8261C_VND2_THERMAL_SENSOR_CTRL,
 +			 RTL8261C_THERMAL_OVERTEMP_DWNSPD_EN);
@@ -163,8 +163,22 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 +
 +static int rtl8261c_cg_config_init(struct phy_device *phydev)
 +{
-+	struct rtl826x_priv *priv = phydev->priv;
 +	int ret, ret2, val;
++
++	/* Suppress PHY interrupt output before the hardware reset below.
++	 * The RTL8261C asserts its interrupt pin during power-on reset and
++	 * the VEND1 0x145 reset toggle, which races with phylib registering
++	 * phy_interrupt. If the IRQ fires first the kernel disables it
++	 * permanently. rtl826x_config_intr() will re-enable the interrupt
++	 * correctly once phylib is ready.
++	 */
++	ret = phy_write_mmd(phydev, MDIO_MMD_VEND2, RTL826X_VND2_INER, 0);
++	if (ret < 0)
++		return ret;
++
++	ret = phy_clear_bits_mmd(phydev, MDIO_MMD_VEND1, 0xE1, BIT(0));
++	if (ret < 0)
++		return ret;
 +
 +	ret = phy_read_mmd(phydev, MDIO_MMD_VEND2, RTL8261C_VND2_PHY_STATE);
 +	if (ret < 0)
@@ -245,22 +259,13 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 +	rtl8261c_cg_write_indirect(phydev, RTL8261C_INDIRECT_PATCH_VER, 0x1515);
 +
 +configure:
-+	if (priv->pnswap_tx)
-+		phy_set_bits_mmd(phydev, MDIO_MMD_VEND1,
-+				 RTL826X_VEND1_SERDES_GLOBAL_CFG,
-+				 RTL826X_VEND1_SERDES_GLOBAL_CFG_HSO_INV);
-+	if (priv->pnswap_rx)
-+		phy_set_bits_mmd(phydev, MDIO_MMD_VEND1,
-+				 RTL826X_VEND1_SERDES_GLOBAL_CFG,
-+				 RTL826X_VEND1_SERDES_GLOBAL_CFG_HSI_INV);
-+
-+	return 0;
++	return rtl826x_config_serdes_polarity(phydev);
 +}
 +
  static int rtl826x_config_init(struct phy_device *phydev)
  {
- 	struct rtl826x_priv *priv = phydev->priv;
-@@ -2458,6 +2635,24 @@ static int rtl826x_get_features(struct p
+ 	const unsigned int max_dereset_tries = 5;
+@@ -2584,6 +2766,24 @@ static int rtl826x_get_features(struct p
  	return 0;
  }
  
@@ -285,7 +290,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  static int rtl825xb_get_features(struct phy_device *phydev)
  {
  	int ret;
-@@ -3169,6 +3364,25 @@ static struct phy_driver realtek_drvs[]
+@@ -3285,6 +3485,25 @@ static struct phy_driver realtek_drvs[]
  		.get_tunable    = rtl826x_get_tunable,
  		.set_tunable    = rtl826x_set_tunable,
  	}, {
@@ -293,7 +298,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 +		.config_init    = rtl8261c_cg_config_init,
 +		.probe          = rtl8261c_cg_probe,
 +		.get_features   = rtl8261c_cg_get_features,
-+		.suspend        = genphy_c45_pma_suspend,
++		.suspend        = rtl826x_suspend,
 +		.resume         = rtlgen_c45_resume,
 +		.config_aneg    = rtl826x_config_aneg,
 +		.aneg_done      = genphy_c45_aneg_done,
