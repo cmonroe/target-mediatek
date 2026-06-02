@@ -222,7 +222,7 @@ Signed-off-by: Tim Hayes <tim.hayes@smartrg.com>
  static int
  mt7530_get_sset_count(struct dsa_switch *ds, int port, int sset)
  {
-@@ -3164,6 +3274,7 @@ const struct dsa_switch_ops mt7530_switc
+@@ -3175,6 +3285,7 @@ const struct dsa_switch_ops mt7530_switc
  	.preferred_default_local_cpu_port = mt753x_preferred_default_local_cpu_port,
  	.get_strings		= mt7530_get_strings,
  	.get_ethtool_stats	= mt7530_get_ethtool_stats,
@@ -230,7 +230,7 @@ Signed-off-by: Tim Hayes <tim.hayes@smartrg.com>
  	.get_sset_count		= mt7530_get_sset_count,
  	.set_ageing_time	= mt7530_set_ageing_time,
  	.port_enable		= mt7530_port_enable,
-@@ -3283,6 +3394,11 @@ mt7530_probe_common(struct mt7530_priv *
+@@ -3294,6 +3405,11 @@ mt7530_probe_common(struct mt7530_priv *
  	mutex_init(&priv->reg_mutex);
  	dev_set_drvdata(dev, priv);
  
@@ -242,7 +242,7 @@ Signed-off-by: Tim Hayes <tim.hayes@smartrg.com>
  	return 0;
  }
  EXPORT_SYMBOL_GPL(mt7530_probe_common);
-@@ -3290,6 +3406,8 @@ EXPORT_SYMBOL_GPL(mt7530_probe_common);
+@@ -3301,6 +3417,8 @@ EXPORT_SYMBOL_GPL(mt7530_probe_common);
  void
  mt7530_remove_common(struct mt7530_priv *priv)
  {

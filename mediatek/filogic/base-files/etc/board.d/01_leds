@@ -24,6 +24,9 @@ acer,predator-w6x-stock|\
 acer,predator-w6x-ubootmod)
 	ucidef_set_led_netdev "wan" "wan" "rgb:status" "eth1"
 	;;
+alwaylink,m01k43)
+	ucidef_set_led_netdev "wan" "WAN" "blue:wan" "wan"
+	;;
 asus,rt-ax52|\
 asus,rt-ax57m|\
 snr,snr-cpe-ax2)
@@ -122,6 +125,9 @@ glinet,gl-xe3000)
 	;;
 huasifei,wh3000)
 	ucidef_set_led_netdev "wan" "WAN" "red:wan" "eth1" "link tx rx"
+	;;
+huasifei,wh3000r-nand)
+	ucidef_set_led_netdev "wan" "WAN" "blue:wan-online" "wan" "link"
 	;;
 iptime,ax3000q)
 	ucidef_set_led_netdev "wan" "WAN" "amber:wan" "wan" "link tx rx"
@@ -336,7 +342,8 @@ xiaomi,redmi-router-ax6000-ubootmod)
 	ucidef_set_led_netdev "wan" "wan" "rgb:network" "wan"
 	;;
 zbtlink,zbt-z8103ax|\
-zbtlink,zbt-z8103ax-c)
+zbtlink,zbt-z8103ax-c|\
+zbtlink,zbt-z8803be)
 	ucidef_set_led_netdev "wan" "wan" "green:wan" "eth1" "link tx rx"
 	;;
 zbtlink,zbt-z8106ax-s|\

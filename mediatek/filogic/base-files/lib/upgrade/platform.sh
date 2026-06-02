@@ -162,6 +162,7 @@ platform_do_upgrade() {
 	mediatek,mt7981-rfb|\
 	mediatek,mt7988a-rfb|\
 	mercusys,mr90x-v1-ubi|\
+	netis,eap930-v1|\
 	netis,nx30v2|\
 	netis,nx31|\
 	netis,nx32u|\
@@ -196,6 +197,7 @@ platform_do_upgrade() {
 	glinet,gl-mt6000|\
 	glinet,gl-x3000|\
 	glinet,gl-xe3000|\
+	globitel,bt-r320|\
 	huasifei,wh3000|\
 	huasifei,wh3000-pro-emmc|\
 	smartrg,sdg-8612|\
@@ -232,6 +234,7 @@ platform_do_upgrade() {
 	cudy,wr3000h-v1|\
 	cudy,wr3000p-v1|\
 	huasifei,wh3000-pro-nand|\
+	huasifei,wh3000r-nand|\
 	jiorouter,ax6000-jidu6101)
 		CI_UBIPART="ubi"
 		nand_do_upgrade "$1"
@@ -290,7 +293,8 @@ platform_do_upgrade() {
 		nand_do_flash_file "$1" || nand_do_upgrade_failed
 		nand_do_upgrade_success
 		;;
-	tplink,fr365-v1)
+	tplink,fr365-v1|\
+	zbtlink,zbt-z8803be)
 		CI_UBIPART="ubi"
 		CI_KERNPART="kernel"
 		CI_ROOTPART="rootfs"
@@ -370,6 +374,7 @@ platform_check_image() {
 	mediatek,mt7988a-rfb|\
 	mercusys,mr90x-v1-ubi|\
 	nokia,ea0326gmp|\
+	netis,eap930-v1|\
 	netis,nx32u|\
 	openwrt,one|\
 	netcore,n60|\
@@ -435,6 +440,7 @@ platform_copy_config() {
 	glinet,gl-mt6000|\
 	glinet,gl-x3000|\
 	glinet,gl-xe3000|\
+	globitel,bt-r320|\
 	huasifei,wh3000|\
 	huasifei,wh3000-pro-emmc|\
 	jdcloud,re-cp-03|\
