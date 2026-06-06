@@ -1,0 +1,44 @@
+From: Chad Monroe <chad@monroe.io>
+Date: Sat, 6 Jun 2026 11:21:07 -0700
+Subject: [PATCH] net: dsa: mxl862xx: advertise legacy SerDes phy-modes on old
+ firmware
+
+The downstream legacy SFP API fallback wires up the legacy PCS for
+firmware older than 1.0.84, but mxl862xx_phylink_get_caps() still gated
+every SerDes interface mode behind a 1.0.84 check. On a switch running
+older firmware this left the SerDes ports (9 and 13) with an empty
+supported_interfaces bitmap, so phylink_create() returned -EINVAL and
+the whole switch failed to probe. On the SDG-9000 the CPU port is port 9
+(10gbase-r), so this took down every LAN port with it.
+
+Advertise the interface modes the legacy SFP PCS can actually drive
+(SGMII, 1000BASEX, 2500BASEX, 10GBASER, USXGMII) regardless of firmware
+version. Keep 10GKR and the QSGMII sub-port modes gated on 1.0.84, since
+they require the XPCS API that only newer firmware provides.
+
+Signed-off-by: Chad Monroe <chad@monroe.io>
+---
+--- a/drivers/net/dsa/mxl862xx/mxl862xx-phylink.c
++++ b/drivers/net/dsa/mxl862xx/mxl862xx-phylink.c
+@@ -32,14 +32,18 @@ void mxl862xx_phylink_get_caps(struct ds
+ 		break;
+ 	case 9:
+ 	case 13:
+-		if (!MXL862XX_FW_VER_MIN(priv, 1, 0, 84))
+-			break;
+ 		__set_bit(PHY_INTERFACE_MODE_SGMII, config->supported_interfaces);
+ 		__set_bit(PHY_INTERFACE_MODE_1000BASEX, config->supported_interfaces);
+ 		__set_bit(PHY_INTERFACE_MODE_2500BASEX, config->supported_interfaces);
+ 		__set_bit(PHY_INTERFACE_MODE_10GBASER, config->supported_interfaces);
+-		__set_bit(PHY_INTERFACE_MODE_10GKR, config->supported_interfaces);
+ 		__set_bit(PHY_INTERFACE_MODE_USXGMII, config->supported_interfaces);
++		/* 10GKR and the QSGMII sub-port modes need the XPCS API only
++		 * present in firmware >= 1.0.84; the legacy SFP PCS drives the
++		 * modes set above on older firmware.
++		 */
++		if (!MXL862XX_FW_VER_MIN(priv, 1, 0, 84))
++			break;
++		__set_bit(PHY_INTERFACE_MODE_10GKR, config->supported_interfaces);
+ 		fallthrough;
+ 	case 10 ... 12:
+ 	case 14 ... 16:
