@@ -7,7 +7,7 @@ traffic has been observed. This allows packet inspection tools to analyze
 early flow packets before they are accelerated.
 
 Threshold is configurable via nf_flow_table.offload_delay_per_dir
-module parameter/sysfs (default 25 packets per direction, 0 disables).
+module parameter/sysfs (default 5 packets per direction, 0 disables).
 
 Non-TCP flows only require the threshold in a single direction
 since they may be unidirectional.
@@ -63,7 +63,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  #include <net/switchdev.h>
  #endif
  
-+unsigned int nf_flowtable_offload_delay_per_dir __read_mostly = 25;
++unsigned int nf_flowtable_offload_delay_per_dir __read_mostly = 5;
 +module_param_named(offload_delay_per_dir, nf_flowtable_offload_delay_per_dir, uint, 0644);
 +MODULE_PARM_DESC(offload_delay_per_dir,
 +		 "Packets per direction before enabling flowtable acceleration (0 disables delay)");
