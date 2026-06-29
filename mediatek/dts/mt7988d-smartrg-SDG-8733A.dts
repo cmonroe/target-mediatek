@@ -114,6 +114,11 @@
 	};
 };
 
+/* mt7996-233 precal data size */
+&precal_factory_1e10 {
+	reg = <0x1e10 0xee434>;
+};
+
 &pcie0 {
 	/delete-property/ wifi-reset-gpios;
 	/delete-property/ wifi-reset-msleep;

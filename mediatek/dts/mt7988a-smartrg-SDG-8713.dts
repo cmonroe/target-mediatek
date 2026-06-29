@@ -123,6 +123,11 @@
 	};
 };
 
+/* mt7992 precal data size */
+&precal_factory_1e10 {
+	reg = <0x1e10 0x8b038>;
+};
+
 &pcie0 {
 	status = "disabled";
 };
