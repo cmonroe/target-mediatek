@@ -56,12 +56,14 @@ mediatek_setup_interfaces()
 	confiabits,mt7981|\
 	creatlentem,clt-r30b1|\
 	creatlentem,clt-r30b1-112m|\
+	creatlentem,clt-r30b1-ubi|\
 	cudy,wr3000-v1|\
 	globitel,bt-r320|\
 	huasifei,wh3000r-nand|\
 	jcg,q30-pro|\
 	keenetic,kn-3711|\
 	keenetic,kn-3811|\
+	livinet,li320|\
 	netis,nx32u|\
 	qihoo,360t7|\
 	qihoo,360t7-ubi|\

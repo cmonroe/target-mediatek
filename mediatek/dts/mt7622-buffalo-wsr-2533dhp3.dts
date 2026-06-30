@@ -6,11 +6,11 @@
 #include "mt7622-buffalo-wsr.dtsi"
 
 / {
-	model = "Buffalo WSR-3200AX4S";
-	compatible = "buffalo,wsr-3200ax4s", "mediatek,mt7622";
+	model = "Buffalo WSR-2533DHP3";
+	compatible = "buffalo,wsr-2533dhp3", "mediatek,mt7622";
 
 	memory@40000000 {
-		reg = <0 0x40000000 0 0x1f000000>;
+		reg = <0 0x40000000 0 0x0f000000>;
 		device_type = "memory";
 	};
 };
@@ -104,10 +104,10 @@
 		mediatek,bmt-table-size = <0x1000>;
 		/*
 		 * - Preloader - (kernel (6MiB, in firmware))
-		 * - Kernel2 - WTB
+		 * - Kernel2 - board_data
 		 */
-		mediatek,bmt-remap-range = <0x0 0x8c0000>,
-					   <0x1ac0000 0x5200000>;
+		mediatek,bmt-remap-range = <0x0 0x800000>,
+					   <0x3400000 0x3600000>;
 
 		partitions {
 			compatible = "fixed-partitions";
@@ -140,7 +140,7 @@
 
 			partition@1c0000 {
 				label = "factory";
-				reg = <0x1c0000 0x100000>;
+				reg = <0x1c0000 0x40000>;
 				read-only;
 
 				nvmem-layout {
@@ -153,38 +153,32 @@
 					};
 
 					eeprom_factory_5000: eeprom@5000 {
-						reg = <0x5000 0xe00>;
+						reg = <0x5000 0x4da8>;
 					};
 				};
 			};
 
-			partition@2c0000 {
+			partition@200000 {
 				compatible = "brcm,trx";
 				brcm,trx-magic = <0x33504844>;
 				label = "firmware";
-				reg = <0x2c0000 0x1800000>;
+				reg = <0x200000 0x3200000>;
 			};
 
-			partition@1ac0000 {
+			partition@3400000 {
 				label = "Kernel2";
-				reg = <0x1ac0000 0x1800000>;
+				reg = <0x3400000 0x3200000>;
 			};
 
-			partition@32c0000 {
+			partition@6600000 {
 				label = "glbcfg";
-				reg = <0x32c0000 0x200000>;
+				reg = <0x6600000 0x200000>;
 				read-only;
 			};
 
-			partition@34c0000 {
+			partition@6800000 {
 				label = "board_data";
-				reg = <0x34c0000 0x200000>;
-				read-only;
-			};
-
-			partition@36c0000 {
-				label = "WTB";
-				reg = <0x36c0000 0x3600000>;
+				reg = <0x6800000 0x200000>;
 				read-only;
 			};
 		};
