@@ -14,7 +14,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 
 --- a/drivers/net/phy/realtek/realtek_main.c
 +++ b/drivers/net/phy/realtek/realtek_main.c
-@@ -264,6 +264,21 @@
+@@ -265,6 +265,21 @@
  #define RTL8261C_PATCH_MODE_SETUP		0x0090
  #define RTL8261C_PATCH_SETUP_VAL		0x6100
  
@@ -36,7 +36,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  MODULE_DESCRIPTION("Realtek PHY driver");
  MODULE_AUTHOR("Johnson Leung");
  MODULE_LICENSE("GPL");
-@@ -1092,6 +1107,214 @@ static int rtl8211e_led_hw_control_set(s
+@@ -1093,6 +1108,214 @@ static int rtl8211e_led_hw_control_set(s
  	return ret;
  }
  
@@ -251,7 +251,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  static int rtl8211e_config_init(struct phy_device *phydev)
  {
  	u16 val;
-@@ -3590,6 +3813,11 @@ static struct phy_driver realtek_drvs[]
+@@ -3518,6 +3741,11 @@ static struct phy_driver realtek_drvs[]
  		.get_wol        = rtl826x_get_wol,
  		.get_tunable    = rtl826x_get_tunable,
  		.set_tunable    = rtl826x_set_tunable,

@@ -16,7 +16,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
-@@ -5905,6 +5905,8 @@ static int mtk_probe(struct platform_dev
+@@ -5921,6 +5921,8 @@ static int mtk_probe(struct platform_dev
  			dev_err(&pdev->dev, "Wrong DMA config\n");
  			return -EINVAL;
  		}
