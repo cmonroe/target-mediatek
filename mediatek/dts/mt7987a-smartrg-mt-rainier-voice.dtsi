@@ -74,17 +74,10 @@
 };
 
 &pio {
-	i2s_pins: i2s-pins {
-		mux {
-			function = "audio";
-			groups = "i2s";
-		};
-	};
-
 	pcm_pins: pcm-pins {
 		mux {
-			function = "audio";
-			groups = "pcm";
+			function = "pcm";
+			groups = "pcm0_1_4w";
 		};
 	};
 
