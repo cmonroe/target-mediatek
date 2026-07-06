@@ -12,12 +12,22 @@ module parameter/sysfs (default 5 packets per direction, 0 disables).
 Non-TCP flows only require the threshold in a single direction
 since they may be unidirectional.
 
+Directions that can never match in the software fast-path hook are
+pre-qualified so offload is not blocked waiting for packets that
+cannot be counted: directions with VLAN encaps (the tag is stripped
+before the netfilter hook) and directions whose forward path does
+not resolve to a flowtable device (e.g. wifi paths terminating in
+DEV_PATH_MTK_WDMA, which keep the L3 device iifidx). Packets of a
+pre-qualified direction continue through the slow path until the
+flow is accelerated, so inspection tools still see them.
+
 Signed-off-by: Chad Monroe <chad@monroe.io>
 ---
- include/net/netfilter/nf_flow_table.h |    8 ++++
- net/netfilter/nf_flow_table_core.c    |   55 ++++++++++++++++++++++++++++++----
- net/netfilter/nf_flow_table_ip.c      |   18 +++++++----
- 3 files changed, 70 insertions(+), 11 deletions(-)
+ include/net/netfilter/nf_flow_table.h |   11 ++++
+ net/netfilter/nf_flow_table_core.c    |   78 +++++++++++++++++++++++++++++++---
+ net/netfilter/nf_flow_table_ip.c      |   18 +++++--
+ net/netfilter/nft_flow_offload.c      |    6 ++
+ 4 files changed, 100 insertions(+), 13 deletions(-)
 
 --- a/include/net/netfilter/nf_flow_table.h
 +++ b/include/net/netfilter/nf_flow_table.h
@@ -57,6 +67,16 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  static inline __s32 nf_flow_timeout_delta(unsigned int timeout)
  {
  	return (__s32)(timeout - nf_flowtable_time_stamp);
+@@ -219,7 +227,8 @@ struct nf_flow_route {
+ 				__be16		proto;
+ 			} encap[NF_FLOW_TABLE_ENCAP_MAX];
+ 			u8			num_encaps:2,
+-						ingress_vlans:2;
++						ingress_vlans:2,
++						unmatchable:1;
+ 		} in;
+ 		struct {
+ 			u32			ifindex;
 --- a/net/netfilter/nf_flow_table_core.c
 +++ b/net/netfilter/nf_flow_table_core.c
 @@ -17,6 +17,11 @@
@@ -71,7 +91,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  static DEFINE_MUTEX(flowtable_lock);
  static LIST_HEAD(flowtables);
  
-@@ -168,9 +173,25 @@ static void nft_flow_dst_release(struct
+@@ -168,9 +173,32 @@ static void nft_flow_dst_release(struct
  void flow_offload_route_init(struct flow_offload *flow,
  			     struct nf_flow_route *route)
  {
@@ -81,23 +101,30 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	flow_offload_fill_route(flow, route, FLOW_OFFLOAD_DIR_REPLY);
  	flow->type = NF_FLOW_OFFLOAD_ROUTE;
 +
-+	/* VLAN encaps are stored in the tuple hash key but the SW
-+	 * fast-path can only populate them when the tag is still in
-+	 * the skb at hook time.  Both bridge HW-untag (in_vlan_ingress)
-+	 * and standalone VLAN sub-interfaces strip the tag before the
-+	 * netfilter hook, so the hash can never match for those
-+	 * directions.  Pre-qualify them so that the per-dir threshold
-+	 * is already satisfied and HW offload is not blocked waiting
-+	 * for SW matches that will never arrive. */
++	/* Pre-qualify directions whose tuple can never match in the SW
++	 * fast-path hook, so that the per-dir threshold is already
++	 * satisfied and offload is not blocked waiting for SW matches
++	 * that will never arrive:
++	 *
++	 * - VLAN encaps are stored in the tuple hash key but can only
++	 *   be populated when the tag is still in the skb at hook time.
++	 *   Both bridge HW-untag (in_vlan_ingress) and standalone VLAN
++	 *   sub-interfaces strip the tag before the netfilter hook.
++	 *
++	 * - Directions whose forward path did not resolve to a flowtable
++	 *   device (e.g. wifi paths terminating in DEV_PATH_MTK_WDMA)
++	 *   keep the L3 device iifidx, which the per-device ingress
++	 *   hooks never present. */
 +	for (dir = 0; dir < FLOW_OFFLOAD_DIR_MAX; dir++) {
-+		if (flow->tuplehash[dir].tuple.encap_num)
++		if (flow->tuplehash[dir].tuple.encap_num ||
++		    route->tuple[dir].in.unmatchable)
 +			atomic_set(&flow->slowpath_pkts[dir],
 +				   READ_ONCE(nf_flowtable_offload_delay_per_dir));
 +	}
  }
  EXPORT_SYMBOL_GPL(flow_offload_route_init);
  
-@@ -329,6 +350,48 @@ unsigned long flow_offload_get_timeout(s
+@@ -329,6 +357,48 @@ unsigned long flow_offload_get_timeout(s
  	return timeout;
  }
  
@@ -146,7 +173,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  int flow_offload_add(struct nf_flowtable *flow_table, struct flow_offload *flow)
  {
  	int err;
-@@ -359,11 +422,6 @@ int flow_offload_add(struct nf_flowtable
+@@ -359,11 +429,6 @@ int flow_offload_add(struct nf_flowtable
  		atomic_inc(&flow_table->direct_xmit_count);
  #endif
  
@@ -158,7 +185,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	return 0;
  }
  EXPORT_SYMBOL_GPL(flow_offload_add);
-@@ -383,6 +441,9 @@ void flow_offload_refresh(struct nf_flow
+@@ -383,6 +448,9 @@ void flow_offload_refresh(struct nf_flow
  	    test_bit(NF_FLOW_CLOSING, &flow->flags))
  		return;
  
@@ -216,3 +243,19 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	switch (tuplehash->tuple.xmit_type) {
  	case FLOW_OFFLOAD_XMIT_NEIGH:
  		rt = dst_rt6_info(tuplehash->tuple.dst_cache);
+--- a/net/netfilter/nft_flow_offload.c
++++ b/net/netfilter/nft_flow_offload.c
+@@ -207,8 +207,12 @@ static void nft_dev_forward_path(struct
+ 	if (nft_dev_fill_forward_path(route, dst, ct, dir, ha, &stack) >= 0)
+ 		nft_dev_path_info(&stack, &info, ha, &ft->data);
+ 
+-	if (!info.indev || !nft_flowtable_find_dev(info.indev, ft))
++	if (!info.indev || !nft_flowtable_find_dev(info.indev, ft)) {
++		/* The ingress hooks run on the flowtable devices, so tuples
++		 * left at the L3 device iifidx can never match there. */
++		route->tuple[!dir].in.unmatchable = 1;
+ 		return;
++	}
+ 
+ 	route->tuple[!dir].in.ifindex = info.indev->ifindex;
+ 	for (i = 0; i < info.num_encaps; i++) {
