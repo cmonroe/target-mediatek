@@ -67,7 +67,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  static inline __s32 nf_flow_timeout_delta(unsigned int timeout)
  {
  	return (__s32)(timeout - nf_flowtable_time_stamp);
-@@ -219,7 +227,8 @@ struct nf_flow_route {
+@@ -217,7 +225,8 @@ struct nf_flow_route {
  				__be16		proto;
  			} encap[NF_FLOW_TABLE_ENCAP_MAX];
  			u8			num_encaps:2,
@@ -245,7 +245,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  		rt = dst_rt6_info(tuplehash->tuple.dst_cache);
 --- a/net/netfilter/nft_flow_offload.c
 +++ b/net/netfilter/nft_flow_offload.c
-@@ -207,8 +207,12 @@ static void nft_dev_forward_path(struct
+@@ -206,8 +206,12 @@ static void nft_dev_forward_path(struct
  	if (nft_dev_fill_forward_path(route, dst, ct, dir, ha, &stack) >= 0)
  		nft_dev_path_info(&stack, &info, ha, &ft->data);
  
