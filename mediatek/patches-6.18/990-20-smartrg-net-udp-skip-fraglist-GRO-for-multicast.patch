@@ -1,0 +1,64 @@
+From: Chad Monroe <chad.monroe@adtran.com>
+Date: Mon, 29 Jun 2026 13:51:57 -0700
+Subject: [PATCH] net: udp: do not fraglist-GRO forwarded multicast
+
+Forwarded/bridged multicast UDP (e.g. IPTV) reaches the GRO layer
+with no matching socket, so udp_gro_receive() unconditionally sets
+is_flist and fraglist-coalesces up to UDP_GRO_CNT_MAX datagrams into
+one superframe. On egress the superframe is re-segmented and
+re-burst, which de-paces a real-time stream and can drop or reorder
+datagrams. The aggregation provides no benefit for forwarded
+multicast and shows up as pixelated IPTV when rx-gro-list is on.
+
+Skip GRO for multicast destinations in udp4_gro_receive() and
+udp6_gro_receive(), where the L3 destination is available. This
+also covers the NETIF_F_GRO_UDP_FWD path. Unicast forwarding, the
+intended beneficiary of fraglist GRO, is unaffected.
+
+Signed-off-by: Chad Monroe <chad@monroe.io>
+--- a/net/ipv4/udp_offload.c
++++ b/net/ipv4/udp_offload.c
+@@ -875,12 +875,20 @@ INDIRECT_CALLABLE_SCOPE
+ struct sk_buff *udp4_gro_receive(struct list_head *head, struct sk_buff *skb)
+ {
+ 	struct udphdr *uh = udp_gro_udphdr(skb);
++	const struct iphdr *iph = skb_gro_network_header(skb);
+ 	struct sock *sk = NULL;
+ 	struct sk_buff *pp;
+ 
+ 	if (unlikely(!uh))
+ 		goto flush;
+ 
++	/* Multicast UDP (e.g. IPTV) is forwarded with no socket to gate GRO;
++	 * fraglist-coalescing a real-time stream and re-segmenting it on
++	 * egress de-paces and drops frames. Do not GRO multicast.
++	 */
++	if (ipv4_is_multicast(iph->daddr))
++		goto flush;
++
+ 	/* Don't bother verifying checksum if we're going to flush anyway. */
+ 	if (NAPI_GRO_CB(skb)->flush)
+ 		goto skip;
+--- a/net/ipv6/udp_offload.c
++++ b/net/ipv6/udp_offload.c
+@@ -136,12 +136,20 @@ INDIRECT_CALLABLE_SCOPE
+ struct sk_buff *udp6_gro_receive(struct list_head *head, struct sk_buff *skb)
+ {
+ 	struct udphdr *uh = udp_gro_udphdr(skb);
++	const struct ipv6hdr *iph = skb_gro_network_header(skb);
+ 	struct sock *sk = NULL;
+ 	struct sk_buff *pp;
+ 
+ 	if (unlikely(!uh))
+ 		goto flush;
+ 
++	/* Multicast UDP (e.g. IPTV) is forwarded with no socket to gate GRO;
++	 * fraglist-coalescing a real-time stream and re-segmenting it on
++	 * egress de-paces and drops frames. Do not GRO multicast.
++	 */
++	if (ipv6_addr_is_multicast(&iph->daddr))
++		goto flush;
++
+ 	/* Don't bother verifying checksum if we're going to flush anyway. */
+ 	if (NAPI_GRO_CB(skb)->flush)
+ 		goto skip;
