@@ -8,23 +8,22 @@ with a single debug command.
 
 Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 ---
- drivers/net/ethernet/mediatek/mtk_eth_soc.c   |  2 ++
+ drivers/net/ethernet/mediatek/mtk_eth_soc.c   |  1 +
  drivers/net/ethernet/mediatek/mtk_ppe.c       |  3 +-
  drivers/net/ethernet/mediatek/mtk_ppe.h       |  4 +--
  .../net/ethernet/mediatek/mtk_ppe_debugfs.c   | 32 +++++++++++++------
- 4 files changed, 28 insertions(+), 13 deletions(-)
+ 4 files changed, 27 insertions(+), 13 deletions(-)
 
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
-@@ -5921,6 +5921,8 @@ static int mtk_probe(struct platform_dev
- 			dev_err(&pdev->dev, "Wrong DMA config\n");
- 			return -EINVAL;
+@@ -6163,6 +6163,7 @@ static int mtk_probe(struct platform_dev
  		}
-+
+ 
+ 		mtk_eth_dbg_init(eth);
 +		mtk_ppe_debugfs_init(eth);
  	}
  
- 	spin_lock_init(&eth->page_lock);
+ 	for (i = 0; i < MTK_MAX_DEVS; i++) {
 --- a/drivers/net/ethernet/mediatek/mtk_ppe.c
 +++ b/drivers/net/ethernet/mediatek/mtk_ppe.c
 @@ -921,6 +921,7 @@ struct mtk_ppe *mtk_ppe_init(struct mtk_
@@ -122,8 +121,8 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  
 -	snprintf(ppe->dirname, sizeof(ppe->dirname), "ppe%d", index);
 +	root = debugfs_create_dir("mtk_ppe", NULL);
-+	if (!root)
-+		return -ENOMEM;
++	if (IS_ERR(root))
++		return PTR_ERR(root);
  
 -	root = debugfs_create_dir(ppe->dirname, NULL);
 -	debugfs_create_file("entries", S_IRUGO, root, ppe, &mtk_ppe_debugfs_foe_all_fops);
