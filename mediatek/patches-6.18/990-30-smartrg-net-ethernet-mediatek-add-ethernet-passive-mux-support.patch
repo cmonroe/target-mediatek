@@ -22,6 +22,17 @@ the GPIO to control this mux, which will switch to the SFP framework
 when the SFP module is inserted and will switch to the PHY framework
 when the SFP module is removed.
 
+Additional fixes:
+- Parse the phylink PCS list ("pcs-handle") from the GMAC DT node
+  saved at probe (mac->pcs_of_node). mtk_mux_create_phylink() repoints
+  mac->of_node at the active channel node, which carries no
+  pcs-handle, so every phylink_create() after the first channel switch
+  failed with -ENODEV.
+- Skip mtk_stop() in mtk_mux_switch_channel() when a previously failed
+  switch already destroyed the phylink instance; the retry otherwise
+  crashed in phylink_stop(NULL) (observed as a panic on every SFP
+  removal).
+
 Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 ---
  drivers/net/ethernet/mediatek/mtk_eth_soc.c | 226 +++++++++++++++++++-
@@ -38,7 +49,19 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  #include <linux/jhash.h>
  #include <linux/bitfield.h>
  #include <net/dsa.h>
-@@ -5207,6 +5208,236 @@ static int mtk_fill_available_pcs(struct
+@@ -5192,7 +5193,10 @@ static int mtk_fill_available_pcs(struct
+ 	unsigned int sid;
+ 
+ 	if (mtk_is_netsys_v3_or_greater(eth)) {
+-		return fwnode_phylink_pcs_parse(of_fwnode_handle(mac->of_node),
++		/* Use the GMAC node: the ethernet-mux repoints mac->of_node
++		 * at a channel node, which carries no pcs-handle.
++		 */
++		return fwnode_phylink_pcs_parse(of_fwnode_handle(mac->pcs_of_node),
+ 						available_pcs,
+ 						&num_available_pcs);
+ 	} else {
+@@ -5207,6 +5211,241 @@ static int mtk_fill_available_pcs(struct
  	return 0;
  }
  
@@ -79,7 +102,12 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
 +	int err;
 +
 +	rtnl_lock();
-+	mtk_stop(dev);
++	/* A previously failed switch leaves mac->phylink NULL and the
++	 * device already stopped; calling mtk_stop() again would crash in
++	 * phylink_stop().
++	 */
++	if (mac->phylink)
++		mtk_stop(dev);
 +	rtnl_unlock();
 +
 +	while (test_and_set_bit_lock(MTK_RESETTING, &eth->state))
@@ -275,7 +303,15 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  static int mtk_add_mac(struct mtk_eth *eth, struct device_node *np)
  {
  	const __be32 *_id = of_get_property(np, "reg", NULL);
-@@ -5547,7 +5778,7 @@ static int mtk_setup_legacy_sram(struct
+@@ -5246,6 +5485,7 @@ static int mtk_add_mac(struct mtk_eth *e
+ 	mac->id = id;
+ 	mac->hw = eth;
+ 	mac->of_node = np;
++	mac->pcs_of_node = np;
+ 
+ 	/*
+ 	 * Initialize the DSA user-port queue map to an identity mapping
+@@ -5547,7 +5787,7 @@ static int mtk_setup_legacy_sram(struct
  static int mtk_probe(struct platform_device *pdev)
  {
  	struct resource *res = NULL;
@@ -284,7 +320,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	struct mtk_eth *eth;
  	int err, i;
  
-@@ -5774,6 +6005,26 @@ static int mtk_probe(struct platform_dev
+@@ -5774,6 +6014,26 @@ static int mtk_probe(struct platform_dev
  			goto err_free_dev;
  	}
  
@@ -311,7 +347,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	if (eth->soc->offload_version) {
  		u8 ppe_num = eth->soc->ppe_num;
  
-@@ -5833,6 +6084,7 @@ err_unreg_netdev:
+@@ -5833,6 +6093,7 @@ err_unreg_netdev:
  	mtk_unreg_dev(eth);
  err_deinit_ppe:
  	mtk_ppe_deinit(eth);
@@ -319,7 +355,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	mtk_mdio_cleanup(eth);
  err_free_dev:
  	mtk_free_dev(eth);
-@@ -5869,6 +6121,7 @@ static void mtk_remove(struct platform_d
+@@ -5869,6 +6130,7 @@ static void mtk_remove(struct platform_d
  	mtk_cleanup(eth);
  	free_netdev(eth->dummy_dev);
  	mtk_mdio_cleanup(eth);
@@ -345,7 +381,25 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	int				irq[MTK_FE_IRQ_NUM];
  	u32				msg_enable;
  	unsigned long			sysclk;
-@@ -1470,6 +1472,28 @@ struct mtk_mac {
+@@ -1447,6 +1449,9 @@ struct mtk_eth {
+  * @id:			The number of the MAC
+  * @interface:		Interface mode kept for detecting change in hw settings
+  * @of_node:		Our devicetree node
++ * @pcs_of_node:	Devicetree node carrying our pcs-handle; stays on the
++ *			GMAC node while the ethernet-mux repoints of_node at
++ *			the active channel node
+  * @hw:			Backpointer to our main datastruture
+  * @hw_stats:		Packet statistics counter
+  */
+@@ -1456,6 +1461,7 @@ struct mtk_mac {
+ 	u8				ppe_idx;
+ 	int				speed;
+ 	struct device_node		*of_node;
++	struct device_node		*pcs_of_node;
+ 	struct phylink			*phylink;
+ 	struct phylink_config		phylink_config;
+ 	struct phylink_pcs		*current_pcs;
+@@ -1470,6 +1476,28 @@ struct mtk_mac {
  	u8				dsa_port_rank[MTK_DSA_USER_PORT_MAX];
  };
  
