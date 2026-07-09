@@ -18,6 +18,11 @@ mod-def0 GPIO to detect whether the SFP module has been inserted.
 We need to change this GPIO to shared to avoid failures in GPIO
 requests within mtk_add_mux().
 
+Also request the module GPIO interrupts with IRQF_SHARED.
+ledtrig-gpio holds the shared lines' IRQs with IRQF_SHARED, so the
+sfp driver's non-shared request failed with -EBUSY (genirq flags
+mismatch) and the sfp core fell back to 1-second polling.
+
 Signed-off-by: neal.yen <neal.yen@mediatek.com>
 
 --- a/drivers/net/phy/sfp.c
@@ -53,3 +58,20 @@ Signed-off-by: neal.yen <neal.yen@mediatek.com>
  			continue;
  
  		sfp->gpio_irq[i] = gpiod_to_irq(sfp->gpio[i]);
+@@ -3484,9 +3484,16 @@ static int sfp_probe(struct platform_dev
+ 		if (!sfp_irq_name)
+ 			return -ENOMEM;
+ 
++		/* The module GPIOs may be shared with gpio-triggered LEDs
++		 * (ledtrig-gpio requests the lines with IRQF_SHARED); request
++		 * the interrupt shared as well so both consumers get events
++		 * instead of this one failing with -EBUSY and falling back
++		 * to polling.
++		 */
+ 		err = devm_request_threaded_irq(sfp->dev, sfp->gpio_irq[i],
+ 						NULL, sfp_irq,
+ 						IRQF_ONESHOT |
++						IRQF_SHARED |
+ 						IRQF_TRIGGER_RISING |
+ 						IRQF_TRIGGER_FALLING,
+ 						sfp_irq_name, sfp);
