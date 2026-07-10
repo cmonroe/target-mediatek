@@ -214,7 +214,13 @@
 			function = "sfp";
 			gpios = <&pio 67 GPIO_ACTIVE_LOW>;
 			linux,default-trigger = "gpio";
-			trigger-sources = <&pio 81 GPIO_ACTIVE_LOW>;
+			/* LOS is active-high per SFP MSA and the descriptor is
+			 * shared with the sfp driver, so the flag must stay
+			 * active-high; the inversion makes the LED show
+			 * "signal OK" instead of "LOS".
+			 */
+			trigger-sources = <&pio 81 GPIO_ACTIVE_HIGH>;
+			trigger-sources-inverted;
 		};
 
 		sfp_red {
@@ -457,7 +463,7 @@
 	sfp1: sfp1 {
 		compatible = "sff,sfp";
 		i2c-bus = <&i2c1>;
-		los-gpios = <&pio 81 GPIO_ACTIVE_LOW>;
+		los-gpios = <&pio 81 GPIO_ACTIVE_HIGH>;
 		mod-def0-gpios = <&pio 82 GPIO_ACTIVE_LOW>;
 		rate-select0-gpios = <&pio 83 GPIO_ACTIVE_HIGH>;
 		rate-select1-gpios = <&pio 80 GPIO_ACTIVE_HIGH>;
