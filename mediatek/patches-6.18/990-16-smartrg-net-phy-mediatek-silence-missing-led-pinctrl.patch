@@ -1,0 +1,64 @@
+From: Piotr Kubik <piotr.kubik@adtran.com>
+Date: Wed, 9 Jul 2026 12:00:00 +0200
+Subject: [PATCH] net: phy: mediatek: silence missing LED pinctrl errors
+
+The mtk-2p5ge and mtk-ge-soc drivers unconditionally log an error
+when the "i2p5gbe-led" / "gbe-led" pinctrl state is absent. Boards
+that do not route the PHY LED pins (e.g. boards driving their port
+LEDs from GPIO expanders) define no such state, and
+devm_pinctrl_get_select() returns -ENODEV, so every boot logs bogus
+errors for perfectly healthy PHYs. The kernel 6.12 version of the
+2.5G driver carried an -ENODEV guard; restore it and apply the same
+guard to the gigabit SoC PHY driver.
+
+--- a/drivers/net/phy/mediatek/mtk-2p5ge.c
++++ b/drivers/net/phy/mediatek/mtk-2p5ge.c
+@@ -692,9 +692,12 @@ static int mt798x_2p5ge_phy_probe(struct
+ 			 MTK_2P5GPHY_LED_TX_BLINK_SET |
+ 			 MTK_2P5GPHY_LED_RX_BLINK_SET);
+
+-	/* Switch pinctrl after setting polarity to avoid bogus blinking */
++	/* Switch pinctrl after setting polarity to avoid bogus blinking.
++	 * Boards that do not route the PHY LED pins define no "i2p5gbe-led"
++	 * pinctrl state (-ENODEV); that is not an error.
++	 */
+ 	pinctrl = devm_pinctrl_get_select(&phydev->mdio.dev, "i2p5gbe-led");
+-	if (IS_ERR(pinctrl))
++	if (IS_ERR(pinctrl) && PTR_ERR(pinctrl) != -ENODEV)
+ 		dev_err(&phydev->mdio.dev, "Fail to set LED pins!\n");
+
+ 	mtk_phy_leds_state_init(phydev);
+--- a/drivers/net/phy/mediatek/mtk-ge-soc.c
++++ b/drivers/net/phy/mediatek/mtk-ge-soc.c
+@@ -1374,11 +1374,14 @@ static int mt7988_phy_fix_leds_polaritie
+ 			       mt7988_phy_led_get_polarity(phydev, index) ?
+ 				MTK_PHY_LED_ON_POLARITY : 0);
+
+-	/* Only now setup pinctrl to avoid bogus blinking */
++	/* Only now setup pinctrl to avoid bogus blinking. Boards that do
++	 * not route the PHY LED pins define no "gbe-led" pinctrl state
++	 * (-ENODEV); that is not an error.
++	 */
+ 	pinctrl = devm_pinctrl_get_select(&phydev->mdio.dev, "gbe-led");
+-	if (IS_ERR(pinctrl))
++	if (IS_ERR(pinctrl) && PTR_ERR(pinctrl) != -ENODEV)
+ 		dev_err(&phydev->mdio.bus->dev,
+ 			"Failed to setup PHY LED pinctrl\n");
+
+ 	return 0;
+ }
+@@ -1487,10 +1490,12 @@ static int an7581_phy_probe(struct phy_d
+ 	struct mtk_socphy_priv *priv;
+ 	struct pinctrl *pinctrl;
+
+-	/* Toggle pinctrl to enable PHY LED */
++	/* Toggle pinctrl to enable PHY LED. A missing "gbe-led" pinctrl
++	 * state (-ENODEV) is not an error.
++	 */
+ 	pinctrl = devm_pinctrl_get_select(&phydev->mdio.dev, "gbe-led");
+-	if (IS_ERR(pinctrl))
++	if (IS_ERR(pinctrl) && PTR_ERR(pinctrl) != -ENODEV)
+ 		dev_err(&phydev->mdio.bus->dev,
+ 			"Failed to setup PHY LED pinctrl\n");
+
+ 	priv = devm_kzalloc(&phydev->mdio.dev, sizeof(*priv), GFP_KERNEL);
