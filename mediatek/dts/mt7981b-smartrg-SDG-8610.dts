@@ -170,6 +170,7 @@
 
 			chan-sel-gpios = <&pio 6 GPIO_ACTIVE_LOW>;
 			mod-def0-gpios = <&pio 0 GPIO_ACTIVE_LOW>;
+			sfp-connected-channel = <1>;
 
 			channel0: channel@0 {
 				reg = <0>;
