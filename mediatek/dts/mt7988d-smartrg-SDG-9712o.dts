@@ -13,7 +13,7 @@
 
 / {
 	model = "SmartRG SDG-9712o";
-	compatible = "smartrg,sdg-9712o", "mediatek,mt7988a";
+	compatible = "smartrg,sdg-9712o", "mediatek,mt7988d";
 };
 
 /* mt7992 precal data size */

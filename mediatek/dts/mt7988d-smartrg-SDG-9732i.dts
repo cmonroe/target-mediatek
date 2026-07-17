@@ -14,7 +14,7 @@
 
 / {
 	model = "SmartRG SDG-9732i";
-	compatible = "smartrg,sdg-9732i", "mediatek,mt7988a";
+	compatible = "smartrg,sdg-9732i", "mediatek,mt7988d";
 };
 
 /* MT7995 tri band radio: main function on pcie0, second on pcie3 */
