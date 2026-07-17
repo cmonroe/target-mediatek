@@ -14,7 +14,7 @@
 
 / {
 	aliases {
-		label-mac-device = &gmac1;
+		label-mac-device = &gmac2;
 	};
 
 	chosen {
@@ -36,7 +36,7 @@
 };
 
 &gmac1 {
-	nvmem-cells = <&macaddr 0x0>;
+	nvmem-cells = <&macaddr 0x1>;
 	nvmem-cell-names = "mac-address";
 	label = "lan1";
 	phy-mode = "usxgmii";
@@ -46,7 +46,7 @@
 };
 
 &gmac2 {
-	nvmem-cells = <&macaddr 0x1>;
+	nvmem-cells = <&macaddr 0x0>;
 	nvmem-cell-names = "mac-address";
 	label = "wan";
 	phy-mode = "usxgmii";
