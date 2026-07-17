@@ -1,0 +1,134 @@
+// SPDX-License-Identifier: (GPL-2.0 OR MIT)
+/*
+ * Copyright (C) 2026 SmartRG Inc.
+ * Author: Chad Monroe <chad.monroe@smartrg.com>
+ *
+ * Mt. Stuart phase 5 skeleton. Known hardware: dual RTL8261 10G
+ * PHYs with the SDG-8713 reset mapping plus mdi-reversal, MT7995
+ * tri-band radio like SDG-8733A/9732i. Not yet wired into the image
+ * build; TBD markers need the PRD/schematic before this can ship.
+ */
+
+#include "mt7988-smartrg-base.dtsi"
+#include "mt7988-smartrg-sysled.dtsi"
+#include "mt7988-smartrg-wifi-mt7995.dtsi"
+
+/*
+ * TBD: power-limit tables (files do not exist yet)
+ * #include "mt7988a-smartrg-SDG-8733B-power-limits-r0-RCM-AU-NZ.dtsi"
+ * ...
+ */
+
+/ {
+	model = "SmartRG SDG-8733B";
+	compatible = "smartrg,sdg-8733b", "mediatek,mt7988a";
+
+	aliases {
+		label-mac-device = &gmac2;
+	};
+
+	chosen {
+		linux,usable-memory-range = <0x0 0x40000000 0x0 0x3fc00000>;
+	};
+
+	/* TBD: sync/WPS button presence */
+	/* TBD: gpio-export (Bluetooth?) */
+	/* TBD: fan and thermal zones */
+	/* TBD: gpio-leds */
+};
+
+&gmac1 {
+	nvmem-cells = <&macaddr 0x1>;
+	nvmem-cell-names = "mac-address";
+	label = "lan1";
+	phy-mode = "usxgmii";
+	phy = <&phy1>;
+
+	status = "okay";
+};
+
+&gmac2 {
+	nvmem-cells = <&macaddr 0x0>;
+	nvmem-cell-names = "mac-address";
+	label = "wan";
+	phy-mode = "usxgmii";
+	phy = <&phy2>;
+
+	status = "okay";
+};
+
+&mdio_bus {
+	phy1: ethernet-phy@1 {
+		/* Realtek RTL8261 - LAN1 (USXGMII_1) */
+		compatible = "ethernet-phy-ieee802.3-c45";
+		reg = <1>;
+		#thermal-sensor-cells = <0>;
+
+		reset-gpios = <&pio 62 GPIO_ACTIVE_LOW>;
+		reset-assert-us = <100000>;
+		reset-deassert-us = <221000>;
+		mdi-reversal = /bits/ 16 <0>;
+
+		/* TBD: PHY LED configuration */
+	};
+
+	phy2: ethernet-phy@2 {
+		/* Realtek RTL8261 - WAN (USXGMII_0) */
+		compatible = "ethernet-phy-ieee802.3-c45";
+		reg = <2>;
+		#thermal-sensor-cells = <0>;
+
+		reset-gpios = <&pio 71 GPIO_ACTIVE_LOW>;
+		reset-assert-us = <100000>;
+		reset-deassert-us = <221000>;
+		mdi-reversal = /bits/ 16 <0>;
+
+		/* TBD: PHY LED configuration */
+	};
+};
+
+&emmc_block {
+	partitions {
+		block-partition-factory {
+			partname = "factory";
+
+			nvmem-layout {
+				compatible = "fixed-layout";
+				#address-cells = <1>;
+				#size-cells = <1>;
+
+				eeprom_factory_0: eeprom@0 {
+					reg = <0x0 0x1e00>;
+				};
+
+				/* mt7996-233 precal data size */
+				precal_factory_1e10: precal@1e10 {
+					reg = <0x1e10 0xee434>;
+				};
+			};
+		};
+
+		block-partition-mfginfo {
+			partname = "mfginfo";
+
+			nvmem-layout {
+				compatible = "adtran,mfginfo";
+
+				macaddr: mfg-mac {
+					#nvmem-cell-cells = <1>;
+				};
+			};
+		};
+	};
+};
+
+/*
+ * TBD: pcie0 pin group for the MT7995 main function. 8733A muxes
+ * pcie0_1_pins (no CLKREQ/WAKE pins), 9732i keeps the upstream
+ * default pcie0_pins; confirm board routing before enabling wifi.
+ */
+
+/*
+ * TBD: the 1GbE LAN port. Likely one gsw port (lan2); define the
+ * switch port mapping, LEDs and disable the unused gsw phys.
+ */
