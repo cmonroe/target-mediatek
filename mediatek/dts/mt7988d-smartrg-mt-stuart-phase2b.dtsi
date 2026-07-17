@@ -1,0 +1,128 @@
+// SPDX-License-Identifier: (GPL-2.0 OR MIT)
+/*
+ * Copyright (C) 2024 SmartRG Inc.
+ * Author: Chad Monroe <chad.monroe@smartrg.com>
+ *
+ * Mt. Stuart phase 2b (MT7988D APs): internal 2.5G PHY as the single
+ * wan port, radio main function on pcie0. Shared by SDG-9712o and
+ * SDG-9732i; the radio module wiring differs per model.
+ */
+
+#include "mt7988-smartrg-base.dtsi"
+#include "mt7988-smartrg-sysled.dtsi"
+
+/ {
+	aliases {
+		label-mac-device = &gmac1;
+	};
+
+	chosen {
+		linux,usable-memory-range = <0x0 0x40000000 0x0 0x3fc00000>;
+	};
+
+	cpus {
+		/delete-node/ cpu@3;
+	};
+};
+
+&gmac1 {
+	nvmem-cells = <&macaddr 0x1>;
+	nvmem-cell-names = "mac-address";
+	label = "wan";
+	phy-mode = "internal";
+	phy = <&int_2p5g_phy>;
+
+	status = "okay";
+};
+
+&int_2p5g_phy {
+	pinctrl-names = "i2p5gbe-led";
+	pinctrl-0 = <&gbe1_led0_pins>;
+};
+
+&emmc_block {
+	partitions {
+		block-partition-factory {
+			partname = "factory";
+
+			nvmem-layout {
+				compatible = "fixed-layout";
+				#address-cells = <1>;
+				#size-cells = <1>;
+
+				eeprom_factory_0: eeprom@0 {
+					reg = <0x0 0x1e00>;
+				};
+
+				/* mt7996-233 precal data size */
+				precal_factory_1e10: precal@1e10 {
+					reg = <0x1e10 0xee434>;
+				};
+			};
+		};
+
+		block-partition-mfginfo {
+			partname = "mfginfo";
+
+			nvmem-layout {
+				compatible = "adtran,mfginfo";
+
+				macaddr: mfg-mac {
+					#nvmem-cell-cells = <1>;
+				};
+			};
+		};
+	};
+};
+
+&pcie0 {
+	status = "okay";
+
+	pcie@0,0 {
+		#address-cells = <3>;
+		#size-cells = <2>;
+		reg = <0x0000 0 0 0 0>;
+
+		radio0: mt7996@0,0 {
+			reg = <0x0000 0 0 0 0>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+			nvmem-cells = <&eeprom_factory_0>, <&precal_factory_1e10>;
+			nvmem-cell-names = "eeprom", "precal";
+
+			band@0 {
+				/* 2.4 GHz */
+				reg = <0>;
+				nvmem-cells = <&macaddr 0x4>;
+				nvmem-cell-names = "mac-address";
+			};
+
+			band@1 {
+				/* 5 GHz */
+				reg = <1>;
+				nvmem-cells = <&macaddr 0xa>;
+				nvmem-cell-names = "mac-address";
+			};
+
+			band@2 {
+				/* 6 GHz */
+				reg = <2>;
+				nvmem-cells = <&macaddr 0x6>;
+				nvmem-cell-names = "mac-address";
+			};
+		};
+	};
+};
+
+&pio {
+	gbe1_led0_pins: gbe1-led0-pins {
+		mux {
+			function = "led";
+			groups = "gbe1_led0";
+		};
+	};
+};
+
+&switch {
+	status = "disabled";
+};
