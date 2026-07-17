@@ -4,7 +4,7 @@
  * Author: Chad Monroe <chad.monroe@smartrg.com>
  */
 
-#include "mt7988a-smartrg-mt-stuart.dtsi"
+#include "mt7988a-smartrg-SDG-8733.dtsi"
 #include "mt7988a-smartrg-mt-stuart-voice.dtsi"
 #include "mt7988a-smartrg-mt-stuart-power-limits-r1-RCM-AU-NZ.dtsi"
 #include "mt7988a-smartrg-mt-stuart-power-limits-r2-IC-CA.dtsi"
@@ -15,21 +15,4 @@
 / {
 	model = "SmartRG SDG-8733v";
 	compatible = "smartrg,sdg-8733v", "mediatek,mt7988a";
-};
-
-&gmac1 {
-	managed = "in-band-status";
-	phy = <&phy0>;
-};
-
-&gmac2 {
-	managed = "in-band-status";
-};
-
-&aqr_wan_thermal {
-	thermal-sensors = <&phy0>;
-};
-
-&aqr_lan_thermal {
-	thermal-sensors = <&phy8>;
 };

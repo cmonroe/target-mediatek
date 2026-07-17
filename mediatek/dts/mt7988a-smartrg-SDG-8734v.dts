@@ -4,7 +4,7 @@
  * Author: Chad Monroe <chad.monroe@smartrg.com>
  */
 
-#include "mt7988a-smartrg-mt-stuart.dtsi"
+#include "mt7988a-smartrg-SDG-8734.dtsi"
 #include "mt7988a-smartrg-mt-stuart-voice.dtsi"
 #include "mt7988a-smartrg-mt-stuart-power-limits-r1-RCM-AU-NZ.dtsi"
 #include "mt7988a-smartrg-mt-stuart-power-limits-r2-IC-CA.dtsi"
@@ -15,57 +15,4 @@
 / {
 	model = "SmartRG SDG-8734v";
 	compatible = "smartrg,sdg-8734v", "mediatek,mt7988a";
-
-	i2c_sfp1: i2c-gpio-0 {
-		pinctrl-names = "default";
-		pinctrl-0 = <&sfp_i2c_pins>;
-
-		compatible = "i2c-gpio";
-		sda-gpios = <&pio 27 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
-		scl-gpios = <&pio 22 (GPIO_ACTIVE_HIGH | GPIO_OPEN_DRAIN)>;
-		i2c-gpio,delay-us = <2>;
-		#address-cells = <1>;
-		#size-cells = <0>;
-	};
-
-	sfp1: sfp1 {
-		compatible = "sff,sfp";
-		i2c-bus = <&i2c_sfp1>;
-		los-gpios = <&pio 32 GPIO_ACTIVE_HIGH>;
-		mod-def0-gpios = <&pio 35 GPIO_ACTIVE_LOW>;
-		rate-select0-gpios = <&pio 34 GPIO_ACTIVE_HIGH>;
-		rate-select1-gpios = <&pio 33 GPIO_ACTIVE_HIGH>;
-		tx-disable-gpios = <&pio 36 GPIO_ACTIVE_HIGH>;
-		tx-fault-gpios = <&pio 37 GPIO_ACTIVE_HIGH>;
-		maximum-power-milliwatt = <4000>;
-	};
-};
-
-&leds {
-	sfp_green {
-		color = <LED_COLOR_ID_GREEN>;
-		function = "sfp";
-		gpios = <&pio 69 GPIO_ACTIVE_HIGH>;
-	};
-
-	sfp_red {
-		color = <LED_COLOR_ID_RED>;
-		function = "sfp";
-		gpios = <&pio 70 GPIO_ACTIVE_HIGH>;
-	};
-};
-
-&gmac1 {
-	sfp = <&sfp1>;
-	managed = "in-band-status";
-};
-
-&gmac2 {
-	managed = "in-band-status";
-};
-
-/delete-node/ &aqr_wan_thermal;
-
-&aqr_lan_thermal {
-	thermal-sensors = <&phy8>;
 };
