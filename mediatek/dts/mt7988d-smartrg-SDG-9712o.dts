@@ -16,6 +16,11 @@
 	compatible = "smartrg,sdg-9712o", "mediatek,mt7988a";
 };
 
+/* mt7992 precal data size */
+&precal_factory_1e10 {
+	reg = <0x1e10 0x8b038>;
+};
+
 /* MT7992 dual band radio on pcie0 */
 &pcie0 {
 	pinctrl-0 = <&pcie0_1_pins>;
