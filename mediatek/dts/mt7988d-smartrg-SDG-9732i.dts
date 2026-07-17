@@ -20,4 +20,11 @@
 /* MT7995 tri band radio: main function on pcie0, second on pcie3 */
 &radio0 {
 	ieee80211-freq-limit = <2400000 2500000>, <5170000 5835000>, <5945000 7125000>;
+
+	band@2 {
+		/* 6 GHz */
+		reg = <2>;
+		nvmem-cells = <&macaddr 0x6>;
+		nvmem-cell-names = "mac-address";
+	};
 };

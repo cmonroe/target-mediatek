@@ -127,7 +127,8 @@
 	pins = "GPIO_RESET", "GPIO_WPS";
 };
 
-/* ballast: dsa0 against the disabled switch, carried from pre-refactor dtb */
+/* dsa0 netdev kept despite the disabled switch so the interface
+ * naming seen by userspace does not change */
 &gmac0 {
 	nvmem-cells = <&macaddr 0x1>;
 	nvmem-cell-names = "mac-address";
@@ -244,13 +245,6 @@
 	pinctrl-0 = <&pcie0_1_pins>;
 };
 
-/* ballast: pinctrl on a disabled port, carried from pre-refactor dtb */
-&pcie1 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pcie1_pins>;
-	status = "disabled";
-};
-
 &pio {
 	gbe1_led0_pins: gbe1-led0-pins {
 		mux {
@@ -273,27 +267,6 @@
 		};
 	};
 
-	/* ballast: unused pin groups, carried from pre-refactor dtb */
-	sfp_i2c_pins: sfp-i2c-pins {
-		conf-scl {
-			pins = "LED_A";
-			drive-strength =  <MTK_DRIVE_8mA>;
-			bias-pull-up = <MTK_PUPD_SET_R1R0_01>;
-		};
-		conf-sda {
-			pins = "LED_E";
-			drive-strength =  <MTK_DRIVE_8mA>;
-			bias-disable;
-		};
-	};
-
-	uart1_pins: uart1-pins {
-		mux {
-			function = "uart";
-			groups = "uart1_2";
-		};
-	};
-
 	uart2_pins: uart2-pins {
 		mux {
 			function = "uart";
@@ -308,13 +281,6 @@
 	status = "okay";
 };
 
-/* ballast: pinctrl on a disabled uart, carried from pre-refactor dtb */
-&serial1 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&uart1_pins>;
-	status = "disabled";
-};
-
 &serial2 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&uart2_pins>;
@@ -323,35 +289,6 @@
 	/* DA14531MOD Bluetooth */
 };
 
-/* ballast: u3p mask on a disabled controller, carried from pre-refactor dtb */
-&ssusb1 {
-	mediatek,u3p-dis-msk = <0x1>;
-};
-
-/* ballast: gsw remnants against the disabled switch */
-&gsw_phy0 {
-	status = "disabled";
-};
-
 &switch {
 	status = "disabled";
-
-	/* ballast: port labels against the disabled switch */
-	ports {
-		port@0 {
-			status = "disabled";
-		};
-
-		port@1 {
-			label = "lan2";
-		};
-
-		port@2 {
-			label = "lan3";
-		};
-
-		port@3 {
-			label = "lan4";
-		};
-	};
 };

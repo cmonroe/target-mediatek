@@ -103,13 +103,6 @@
 				nvmem-cells = <&macaddr 0xa>;
 				nvmem-cell-names = "mac-address";
 			};
-
-			band@2 {
-				/* 6 GHz */
-				reg = <2>;
-				nvmem-cells = <&macaddr 0x6>;
-				nvmem-cell-names = "mac-address";
-			};
 		};
 	};
 };

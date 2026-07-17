@@ -51,20 +51,6 @@
 			gpios = <&pio 9 GPIO_ACTIVE_LOW>;
 		};
 
-		/* ballast: slic exports on non-voice models, owned by the
-		 * voice dtsi; removed here in the cleanup commit */
-		slic_interrupt {
-			gpio-export,name = "slic_interrupt";
-			gpio-export,direction_may_change;
-			gpios = <&pio 54 GPIO_ACTIVE_HIGH>;
-		};
-
-		slic_reset {
-			gpio-export,name = "slic_reset";
-			gpio-export,output = <0>;
-			gpios = <&pio 72 GPIO_ACTIVE_HIGH>;
-		};
-
 		usb_enable {
 			gpio-export,name = "usb_enable";
 			gpio-export,output = <1>;
@@ -279,21 +265,6 @@
 		mux {
 			function = "pwm";
 			groups = "pwm0", "pwm1";
-		};
-	};
-
-	/* ballast: only referenced by SDG-8734; moves there in the
-	 * cleanup commit */
-	sfp_i2c_pins: sfp-i2c-pins {
-		conf-scl {
-			pins = "LED_A";
-			drive-strength =  <MTK_DRIVE_8mA>;
-			bias-pull-up = <MTK_PUPD_SET_R1R0_01>;
-		};
-		conf-sda {
-			pins = "LED_E";
-			drive-strength =  <MTK_DRIVE_8mA>;
-			bias-disable;
 		};
 	};
 

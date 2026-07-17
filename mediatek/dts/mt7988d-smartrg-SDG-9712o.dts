@@ -31,14 +31,6 @@
 			groups = "pcie_2l_0_pereset", "pcie_clk_req_n0_0";
 		};
 	};
-
-	/* ballast: unused pin group, carried from pre-refactor dtb */
-	pcie3_1_pins: pcie3-pins-g1 {
-		mux {
-			function = "pcie";
-			groups = "pcie_1l_1_pereset", "pcie_clk_req_n3";
-		};
-	};
 };
 
 &radio0 {
