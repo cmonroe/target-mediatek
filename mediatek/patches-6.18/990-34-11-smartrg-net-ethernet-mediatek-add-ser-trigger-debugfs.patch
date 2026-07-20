@@ -1,0 +1,48 @@
+From: Piotr Kubik <piotr.kubik@adtran.com>
+Date: Mon, 14 Jul 2026 12:00:00 +0200
+Subject: [PATCH] net: ethernet: mtk_eth_soc: add SER trigger debugfs
+
+Companion to the forced-reset control: expose a write-only debugfs
+file that schedules the SER  pending work on demand,
+so the full frame-engine reset and recovery path can be
+exercised deterministically:
+
+  echo 1 > /sys/kernel/debug/mtk_eth/ser_trigger
+
+
+--- a/drivers/net/ethernet/mediatek/mtk_ppe_debugfs.c
++++ b/drivers/net/ethernet/mediatek/mtk_ppe_debugfs.c
+@@ -691,6 +691,24 @@ static const struct file_operations mtk_
+ 	.llseek = default_llseek,
+ };
+ 
++static ssize_t mtk_ser_trigger_write(struct file *file, const char __user *buf,
++				     size_t count, loff_t *ppos)
++{
++	struct mtk_eth *eth = file->private_data;
++
++	if (!test_bit(MTK_RESETTING, &eth->state))
++		schedule_work(&eth->pending_work);
++
++	return count;
++}
++
++static const struct file_operations mtk_ser_trigger_fops = {
++	.owner = THIS_MODULE,
++	.open = simple_open,
++	.write = mtk_ser_trigger_write,
++	.llseek = default_llseek,
++};
++
+ static void mtk_qdma_sch_txq_init(struct mtk_eth *eth)
+ {
+ 	const struct mtk_soc_data *soc = eth->soc;
+@@ -995,6 +1013,8 @@ void mtk_eth_dbg_init(struct mtk_eth *et
+ 			    &mtk_hwtx_ring_fops);
+ 	debugfs_create_file("rx_ring", 0444, eth->mtk_dbg_root, eth,
+ 			    &mtk_rx_ring_fops);
++	debugfs_create_file("ser_trigger", 0200, eth->mtk_dbg_root, eth,
++			    &mtk_ser_trigger_fops);
+ 
+ 	mtk_qdma_sch_txq_init(eth);
+ }
