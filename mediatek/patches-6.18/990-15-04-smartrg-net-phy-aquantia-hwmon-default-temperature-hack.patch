@@ -180,7 +180,7 @@ Signed-off-by: Cezary Wilmanski <cezary.wilmanski@adtran.com>
  	return 0;
  }
  
-@@ -1302,6 +1304,7 @@ static int aqr107_probe(struct phy_devic
+@@ -1309,6 +1311,7 @@ static int aqr107_probe(struct phy_devic
  static void aqr107_remove(struct phy_device *phydev)
  {
  	aqr_mib_remove(phydev);

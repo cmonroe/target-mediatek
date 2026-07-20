@@ -16,7 +16,7 @@ guard to the gigabit SoC PHY driver.
 @@ -692,9 +692,12 @@ static int mt798x_2p5ge_phy_probe(struct
  			 MTK_2P5GPHY_LED_TX_BLINK_SET |
  			 MTK_2P5GPHY_LED_RX_BLINK_SET);
-
+ 
 -	/* Switch pinctrl after setting polarity to avoid bogus blinking */
 +	/* Switch pinctrl after setting polarity to avoid bogus blinking.
 +	 * Boards that do not route the PHY LED pins define no "i2p5gbe-led"
@@ -26,14 +26,14 @@ guard to the gigabit SoC PHY driver.
 -	if (IS_ERR(pinctrl))
 +	if (IS_ERR(pinctrl) && PTR_ERR(pinctrl) != -ENODEV)
  		dev_err(&phydev->mdio.dev, "Fail to set LED pins!\n");
-
+ 
  	mtk_phy_leds_state_init(phydev);
 --- a/drivers/net/phy/mediatek/mtk-ge-soc.c
 +++ b/drivers/net/phy/mediatek/mtk-ge-soc.c
-@@ -1374,11 +1374,14 @@ static int mt7988_phy_fix_leds_polaritie
+@@ -1374,9 +1374,12 @@ static int mt7988_phy_fix_leds_polaritie
  			       mt7988_phy_led_get_polarity(phydev, index) ?
  				MTK_PHY_LED_ON_POLARITY : 0);
-
+ 
 -	/* Only now setup pinctrl to avoid bogus blinking */
 +	/* Only now setup pinctrl to avoid bogus blinking. Boards that do
 +	 * not route the PHY LED pins define no "gbe-led" pinctrl state
@@ -44,13 +44,11 @@ guard to the gigabit SoC PHY driver.
 +	if (IS_ERR(pinctrl) && PTR_ERR(pinctrl) != -ENODEV)
  		dev_err(&phydev->mdio.bus->dev,
  			"Failed to setup PHY LED pinctrl\n");
-
- 	return 0;
- }
-@@ -1487,10 +1490,12 @@ static int an7581_phy_probe(struct phy_d
+ 
+@@ -1487,9 +1490,11 @@ static int an7581_phy_probe(struct phy_d
  	struct mtk_socphy_priv *priv;
  	struct pinctrl *pinctrl;
-
+ 
 -	/* Toggle pinctrl to enable PHY LED */
 +	/* Toggle pinctrl to enable PHY LED. A missing "gbe-led" pinctrl
 +	 * state (-ENODEV) is not an error.
@@ -60,5 +58,4 @@ guard to the gigabit SoC PHY driver.
 +	if (IS_ERR(pinctrl) && PTR_ERR(pinctrl) != -ENODEV)
  		dev_err(&phydev->mdio.bus->dev,
  			"Failed to setup PHY LED pinctrl\n");
-
- 	priv = devm_kzalloc(&phydev->mdio.dev, sizeof(*priv), GFP_KERNEL);
+ 
