@@ -15,6 +15,11 @@ Fix by:
 1. Adding fallback logic to retrieve the afe pointer from the CPU DAI's
    drvdata when the platform component lookup fails
 2. Adding pointer and pcm_construct callbacks to the DAI component
+3. Giving the MT7986 DAI component a debugfs_prefix ("dai") so its
+   debugfs directory does not collide with the platform component
+   (both otherwise derive their name from the device), which silences
+   a "debugfs: Directory '<addr>.audio-controller' with parent
+   '<card>' already present" warning.
 
 Affects MT7986/MT7988 and MT2701/MT7622.
 
@@ -22,8 +27,8 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 ---
  sound/soc/mediatek/common/mtk-afe-fe-dai.c |   10 ++++++++--
  sound/soc/mediatek/mt2701/mt2701-afe-pcm.c |    2 ++
- sound/soc/mediatek/mt7986/mt7986-afe-pcm.c |   16 ++++++++++++++--
- 3 files changed, 24 insertions(+), 4 deletions(-)
+ sound/soc/mediatek/mt7986/mt7986-afe-pcm.c |   17 +++++++++++++++--
+ 3 files changed, 25 insertions(+), 4 deletions(-)
 
 --- a/sound/soc/mediatek/common/mtk-afe-fe-dai.c
 +++ b/sound/soc/mediatek/common/mtk-afe-fe-dai.c
@@ -87,10 +92,11 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  
  	return mt7986_afe_rate_transform(afe->dev, rate);
  }
-@@ -192,6 +202,8 @@ static const struct snd_soc_dapm_route m
+@@ -192,6 +202,9 @@ static const struct snd_soc_dapm_route m
  
  static const struct snd_soc_component_driver mt7986_afe_pcm_dai_component = {
  	.name = "mt7986-afe-pcm-dai",
++	.debugfs_prefix	= "dai",
 +	.pointer	= mtk_afe_pcm_pointer,
 +	.pcm_construct	= mtk_afe_pcm_new,
  };
