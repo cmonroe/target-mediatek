@@ -1,0 +1,45 @@
+// SPDX-License-Identifier: (GPL-2.0 OR MIT)
+/*
+ * MT7988 eMMC factory partition layout common to every SmartRG SKU:
+ * the radio eeprom cell and the mfginfo MAC provider. The radio
+ * precal cell is supplied by the matching per-radio fragment, so the
+ * precal size is tied to the radio and cannot be mismatched:
+ *
+ *   radio             fragment          precal
+ *   mt7992 dual-band  factory-mt7992    0x8b038
+ *   mt7995 tri-band   factory-mt7995    0xee434
+ *   mt7996 tri-band   factory-mt7996    0xee834
+ *
+ * Boards built on wifi-mt7995.dtsi pull in factory-mt7995
+ * automatically. Include after mt7988-smartrg-base.dtsi.
+ */
+
+&emmc_block {
+	partitions {
+		block-partition-factory {
+			partname = "factory";
+
+			factory_layout: nvmem-layout {
+				compatible = "fixed-layout";
+				#address-cells = <1>;
+				#size-cells = <1>;
+
+				eeprom_factory_0: eeprom@0 {
+					reg = <0x0 0x1e00>;
+				};
+			};
+		};
+
+		block-partition-mfginfo {
+			partname = "mfginfo";
+
+			nvmem-layout {
+				compatible = "adtran,mfginfo";
+
+				macaddr: mfg-mac {
+					#nvmem-cell-cells = <1>;
+				};
+			};
+		};
+	};
+};

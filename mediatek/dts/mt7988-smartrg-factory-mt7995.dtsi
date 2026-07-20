@@ -1,0 +1,13 @@
+// SPDX-License-Identifier: (GPL-2.0 OR MIT)
+/*
+ * Factory layout for the MT7995 tri-band radio.
+ */
+
+#include "mt7988-smartrg-factory.dtsi"
+
+&factory_layout {
+	/* mt7995 precal data size */
+	precal_factory_1e10: precal@1e10 {
+		reg = <0x1e10 0xee434>;
+	};
+};

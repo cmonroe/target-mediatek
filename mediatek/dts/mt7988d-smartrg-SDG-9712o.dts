@@ -5,6 +5,7 @@
  */
 
 #include "mt7988d-smartrg-mt-stuart-phase2b.dtsi"
+#include "mt7988-smartrg-factory-mt7992.dtsi"
 #include "mt7988d-smartrg-SDG-9712o-power-limits-r1-RCM-AU-NZ.dtsi"
 #include "mt7988d-smartrg-SDG-9712o-power-limits-r2-IC-CA.dtsi"
 #include "mt7988d-smartrg-SDG-9712o-power-limits-r3-ETSI-GB.dtsi"
@@ -14,11 +15,6 @@
 / {
 	model = "SmartRG SDG-9712o";
 	compatible = "smartrg,sdg-9712o", "mediatek,mt7988d";
-};
-
-/* mt7992 precal data size */
-&precal_factory_1e10 {
-	reg = <0x1e10 0x8b038>;
 };
 
 /* MT7992 dual band radio on pcie0 */

@@ -12,6 +12,7 @@
 #include "mt7988-smartrg-base.dtsi"
 #include "mt7988-smartrg-sysled.dtsi"
 #include "mt7988-smartrg-mt-stuart-gsw.dtsi"
+#include "mt7988-smartrg-factory-mt7996.dtsi"
 
 / {
 	aliases {
@@ -163,41 +164,6 @@
 				function = LED_FUNCTION_LAN;
 				color = <LED_COLOR_ID_WHITE>;
 				active-high;
-			};
-		};
-	};
-};
-
-&emmc_block {
-	partitions {
-		block-partition-factory {
-			partname = "factory";
-
-			nvmem-layout {
-				compatible = "fixed-layout";
-				#address-cells = <1>;
-				#size-cells = <1>;
-
-				eeprom_factory_0: eeprom@0 {
-					reg = <0x0 0x1e00>;
-				};
-
-				/* mt7996-444 precal data size */
-				precal_factory_1e10: precal@1e10 {
-					reg = <0x1e10 0xee834>;
-				};
-			};
-		};
-
-		block-partition-mfginfo {
-			partname = "mfginfo";
-
-			nvmem-layout {
-				compatible = "adtran,mfginfo";
-
-				macaddr: mfg-mac {
-					#nvmem-cell-cells = <1>;
-				};
 			};
 		};
 	};
