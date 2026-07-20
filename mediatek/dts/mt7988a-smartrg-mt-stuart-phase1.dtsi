@@ -11,7 +11,7 @@
 
 #include "mt7988-smartrg-base.dtsi"
 #include "mt7988-smartrg-sysled.dtsi"
-#include "mt7988a-smartrg-mt-stuart-gsw.dtsi"
+#include "mt7988-smartrg-mt-stuart-gsw.dtsi"
 
 / {
 	aliases {
