@@ -12,7 +12,7 @@
 #include "mt7988-smartrg-base.dtsi"
 #include "mt7988-smartrg-sysled.dtsi"
 #include "mt7988-smartrg-mt-stuart-gsw.dtsi"
-#include "mt7988-smartrg-factory-mt7996.dtsi"
+#include "mt798x-smartrg-factory-mt7996.dtsi"
 
 / {
 	aliases {

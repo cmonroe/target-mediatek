@@ -5,7 +5,7 @@
  */
 
 #include "mt7988d-smartrg-mt-stuart-phase2b.dtsi"
-#include "mt7988-smartrg-factory-mt7992.dtsi"
+#include "mt798x-smartrg-factory-mt7992.dtsi"
 #include "mt7988d-smartrg-SDG-9712o-power-limits-r1-RCM-AU-NZ.dtsi"
 #include "mt7988d-smartrg-SDG-9712o-power-limits-r2-IC-CA.dtsi"
 #include "mt7988d-smartrg-SDG-9712o-power-limits-r3-ETSI-GB.dtsi"

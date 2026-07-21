@@ -3,7 +3,7 @@
  * Factory layout for the MT7996 tri-band radio.
  */
 
-#include "mt7988-smartrg-factory.dtsi"
+#include "mt798x-smartrg-factory.dtsi"
 
 &factory_layout {
 	/* mt7996 precal data size */

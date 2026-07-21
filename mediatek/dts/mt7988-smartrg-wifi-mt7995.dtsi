@@ -10,7 +10,7 @@
  */
 
 #include "mt7988-smartrg-wifi-pcie3.dtsi"
-#include "mt7988-smartrg-factory-mt7995.dtsi"
+#include "mt798x-smartrg-factory-mt7995.dtsi"
 
 &pcie0 {
 	status = "okay";
