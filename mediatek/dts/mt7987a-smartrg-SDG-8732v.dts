@@ -6,6 +6,7 @@
 
 #include "mt7987a-smartrg-mt-rainier.dtsi"
 #include "mt7987a-smartrg-mt-rainier-voice.dtsi"
+#include "mt798x-smartrg-factory-mt7995.dtsi"
 #include "mt7987a-smartrg-SDG-8732-power-limits-r1-RCM-AU-NZ.dtsi"
 #include "mt7987a-smartrg-SDG-8732-power-limits-r2-IC-CA.dtsi"
 #include "mt7987a-smartrg-SDG-8732-power-limits-r3-ETSI-GB.dtsi"

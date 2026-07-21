@@ -240,41 +240,8 @@
 		compatible = "mmc-card";
 		reg = <0>;
 
-		block {
+		emmc_block: block {
 			compatible = "block-device";
-
-			partitions {
-				block-partition-factory {
-					partname = "factory";
-
-					nvmem-layout {
-						compatible = "fixed-layout";
-						#address-cells = <1>;
-						#size-cells = <1>;
-
-						eeprom_factory_0: eeprom@0 {
-							reg = <0x0 0x1e00>;
-						};
-
-						/* mt7996-233 precal data size */
-						precal_factory_1e10: precal@1e10 {
-							reg = <0x1e10 0xee434>;
-						};
-					};
-				};
-
-				block-partition-mfginfo {
-					partname = "mfginfo";
-
-					nvmem-layout {
-						compatible = "adtran,mfginfo";
-
-						macaddr: mfg-mac {
-							#nvmem-cell-cells = <1>;
-						};
-					};
-				};
-			};
 		};
 	};
 };

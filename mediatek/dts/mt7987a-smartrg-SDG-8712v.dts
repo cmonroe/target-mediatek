@@ -6,6 +6,7 @@
 
 #include "mt7987a-smartrg-mt-rainier.dtsi"
 #include "mt7987a-smartrg-mt-rainier-voice.dtsi"
+#include "mt798x-smartrg-factory-mt7992.dtsi"
 #include "mt7987a-smartrg-SDG-8712-power-limits-r1-RCM-AU-NZ.dtsi"
 #include "mt7987a-smartrg-SDG-8712-power-limits-r2-IC-CA.dtsi"
 #include "mt7987a-smartrg-SDG-8712-power-limits-r3-ETSI-GB.dtsi"
@@ -15,9 +16,4 @@
 / {
 	model = "SmartRG SDG-8712v";
 	compatible = "smartrg,sdg-8712v", "mediatek,mt7987a";
-};
-
-/* mt7992 precal data size */
-&precal_factory_1e10 {
-	reg = <0x1e10 0x8b038>;
 };
