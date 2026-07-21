@@ -41,6 +41,7 @@
 	nvmem-cell-names = "mac-address";
 	label = "lan1";
 	phy-mode = "usxgmii";
+	managed = "in-band-status";
 	phy = <&phy1>;
 
 	status = "okay";
@@ -51,6 +52,7 @@
 	nvmem-cell-names = "mac-address";
 	label = "wan";
 	phy-mode = "usxgmii";
+	managed = "in-band-status";
 	phy = <&phy2>;
 
 	status = "okay";
