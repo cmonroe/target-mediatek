@@ -3,13 +3,12 @@
  * Copyright (C) 2026 SmartRG Inc.
  * Author: Chad Monroe <chad.monroe@smartrg.com>
  *
- * MT7995 tri-band radio: main function and radio node on
- * pcie0, second function and module reset on pcie3, with the matching
- * mt7995 factory precal. Consumers set the pcie0 pinctrl (board
- * routing differs).
+ * MT7995 tri-band radio: main function and radio node on pcie0 with
+ * the matching mt7995 factory precal. Consumers set the pcie0
+ * pinctrl and wire up the second PCIe function and module reset;
+ * board routing differs (pcie3 on SDG-8733A, pcie1 on SDG-8733B).
  */
 
-#include "mt7988-smartrg-wifi-pcie3.dtsi"
 #include "mt798x-smartrg-factory-mt7995.dtsi"
 
 &pcie0 {

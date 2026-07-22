@@ -6,6 +6,7 @@
 
 #include "mt7988-smartrg-base.dtsi"
 #include "mt7988-smartrg-sysled.dtsi"
+#include "mt7988-smartrg-wifi-pcie3.dtsi"
 #include "mt7988-smartrg-wifi-mt7995.dtsi"
 #include "mt7988d-smartrg-SDG-8733A-power-limits-r1-RCM-AU-NZ.dtsi"
 #include "mt7988d-smartrg-SDG-8733A-power-limits-r2-IC-CA.dtsi"
