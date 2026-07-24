@@ -1,0 +1,128 @@
+From: Chad Monroe <chad@monroe.io>
+Date: Fri, 24 Jul 2026 03:31:48 -0700
+Subject: [PATCH] net: ethernet: mtk_ppe: fix orphaned bound hw entries
+
+__mtk_ppe_check_skb() detaches any sw entry in the checked bucket
+that does not match the current packet, assuming its hw slot was
+stolen. Buckets have several slots, so a colliding flow can be
+auto-learned next to a neighbor that is still validly bound. The
+detached neighbor keeps forwarding in hw, never re-binds, and its
+flow destroy finds hash == 0xffff and leaves the bound entry behind,
+NATing one direction forever after its conntrack is gone.
+
+Detach only entries whose own slot no longer holds their flow, and
+make the destroy path scan the bucket for a matching bound entry not
+owned by another sw entry, so a destroy never leaves one behind.
+
+Signed-off-by: Chad Monroe <chad@monroe.io>
+---
+ drivers/net/ethernet/mediatek/mtk_ppe.c |   84 +++++++++++++++++++++-
+ 1 file changed, 83 insertions(+), 1 deletion(-)
+
+--- a/drivers/net/ethernet/mediatek/mtk_ppe.c
++++ b/drivers/net/ethernet/mediatek/mtk_ppe.c
+@@ -521,6 +521,76 @@ mtk_flow_entry_match(struct mtk_eth *eth
+ 	return !memcmp(&entry->data.data, &data->data, len - 4);
+ }
+ 
++static bool
++mtk_flow_entry_still_bound(struct mtk_ppe *ppe, struct mtk_flow_entry *entry)
++{
++	struct mtk_foe_entry foe = {};
++	struct mtk_foe_entry *hwe;
++	int len;
++
++	hwe = mtk_foe_get_entry(ppe, entry->hash);
++	if (FIELD_GET(MTK_FOE_IB1_STATE, hwe->ib1) != MTK_FOE_STATE_BIND)
++		return false;
++
++	len = mtk_flow_entry_match_len(ppe->eth, &entry->data);
++	memcpy(&foe, hwe, len);
++
++	return mtk_flow_entry_match(ppe->eth, entry, &foe, len);
++}
++
++static bool
++mtk_foe_slot_owned(struct mtk_ppe *ppe, struct mtk_flow_entry *entry, u32 hash)
++{
++	const struct mtk_soc_data *soc = ppe->eth->soc;
++	struct mtk_flow_entry *cur;
++
++	hlist_for_each_entry(cur, &ppe->foe_flow[hash / soc->hash_offset], list)
++		if (cur != entry && cur->hash == hash)
++			return true;
++
++	return false;
++}
++
++/* A bucket collision in __mtk_ppe_check_skb() may have detached this
++ * sw entry from a still-bound hw entry. Scan the bucket for a bound
++ * entry carrying this flow that no other sw entry owns, so flow
++ * destroy never leaves one behind.
++ */
++static void
++mtk_foe_entry_clear_orphan(struct mtk_ppe *ppe, struct mtk_flow_entry *entry)
++{
++	const struct mtk_soc_data *soc = ppe->eth->soc;
++	struct mtk_foe_entry foe = {};
++	struct mtk_foe_entry *hwe;
++	u32 hash;
++	int i, len;
++
++	hash = mtk_ppe_hash_entry(ppe->eth, &entry->data);
++	if (hash == MTK_PPE_HASH_MASK)
++		return;
++
++	len = mtk_flow_entry_match_len(ppe->eth, &entry->data);
++
++	for (i = 0; i < soc->hash_offset; i++) {
++		hwe = mtk_foe_get_entry(ppe, hash + i);
++		if (FIELD_GET(MTK_FOE_IB1_STATE, hwe->ib1) != MTK_FOE_STATE_BIND)
++			continue;
++
++		memcpy(&foe, hwe, len);
++		if (!mtk_flow_entry_match(ppe->eth, entry, &foe, len))
++			continue;
++
++		if (mtk_foe_slot_owned(ppe, entry, hash + i))
++			continue;
++
++		hwe->ib1 &= ~MTK_FOE_IB1_STATE;
++		hwe->ib1 |= FIELD_PREP(MTK_FOE_IB1_STATE, MTK_FOE_STATE_INVALID);
++		dma_wmb();
++		mtk_ppe_cache_clear(ppe);
++		return;
++	}
++}
++
+ static void
+ __mtk_foe_entry_clear(struct mtk_ppe *ppe, struct mtk_flow_entry *entry,
+ 		      bool set_state)
+@@ -536,6 +606,9 @@ __mtk_foe_entry_clear(struct mtk_ppe *pp
+ 		return;
+ 	}
+ 
++	if (entry->hash == 0xffff && set_state)
++		mtk_foe_entry_clear_orphan(ppe, entry);
++
+ 	if (entry->hash != 0xffff && set_state) {
+ 		struct mtk_foe_entry *hwe = mtk_foe_get_entry(ppe, entry->hash);
+ 
+@@ -812,7 +885,16 @@ void __mtk_ppe_check_skb(struct mtk_ppe
+ 	hlist_for_each_entry_safe(entry, n, head, list) {
+ 		if (found ||
+ 		    !mtk_flow_entry_match(ppe->eth, entry, &foe, entry_len)) {
+-			if (entry->hash != 0xffff)
++			/* Detach only entries whose own slot no longer
++			 * holds their flow; a still-bound neighbor in this
++			 * bucket must be left alone or it can never
++			 * re-bind. Entries naming this slot are always
++			 * stale: if it got bound during the walk it
++			 * belongs to a new sw owner.
++			 */
++			if (entry->hash != 0xffff &&
++			    (entry->hash == hash ||
++			     !mtk_flow_entry_still_bound(ppe, entry)))
+ 				__mtk_foe_entry_clear(ppe, entry, false);
+ 			continue;
+ 		}
