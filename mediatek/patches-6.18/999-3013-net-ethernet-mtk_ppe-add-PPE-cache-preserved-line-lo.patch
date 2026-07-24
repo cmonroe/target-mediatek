@@ -188,7 +188,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  
  	ppe_m32(ppe, MTK_PPE_CACHE_CTL, MTK_PPE_CACHE_CTL_EN,
  		enable * MTK_PPE_CACHE_CTL_EN);
-@@ -531,6 +678,7 @@ __mtk_foe_entry_clear(struct mtk_ppe *pp
+@@ -601,6 +748,7 @@ __mtk_foe_entry_clear(struct mtk_ppe *pp
  		      bool set_state)
  {
  	struct hlist_node *tmp;
@@ -196,7 +196,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  
  	if (entry->type == MTK_FLOW_TYPE_L2) {
  		rhashtable_remove_fast(&ppe->l2_flows, &entry->l2_node,
-@@ -544,10 +692,13 @@ __mtk_foe_entry_clear(struct mtk_ppe *pp
+@@ -617,10 +765,13 @@ __mtk_foe_entry_clear(struct mtk_ppe *pp
  	if (entry->hash != 0xffff && set_state) {
  		struct mtk_foe_entry *hwe = mtk_foe_get_entry(ppe, entry->hash);
  
@@ -211,7 +211,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	}
  	entry->hash = 0xffff;
  
-@@ -706,8 +857,6 @@ __mtk_foe_entry_commit(struct mtk_ppe *p
+@@ -779,8 +930,6 @@ __mtk_foe_entry_commit(struct mtk_ppe *p
  		acct->packets = 0;
  		acct->bytes = 0;
  	}
@@ -220,7 +220,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  }
  
  void mtk_foe_entry_clear(struct mtk_ppe *ppe, struct mtk_flow_entry *entry)
-@@ -958,6 +1107,8 @@ struct mtk_ppe *mtk_ppe_init(struct mtk_
+@@ -1040,6 +1189,8 @@ struct mtk_ppe *mtk_ppe_init(struct mtk_
  		ppe->acct_table = acct;
  	}
  
@@ -229,7 +229,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	return ppe;
  
  err_free_l2_flows:
-@@ -1061,8 +1212,6 @@ void mtk_ppe_start(struct mtk_ppe *ppe)
+@@ -1143,8 +1294,6 @@ void mtk_ppe_start(struct mtk_ppe *ppe)
  	ppe_w32(ppe, MTK_PPE_IP_PROTO_CHK,
  		MTK_PPE_IP_PROTO_CHK_IPV4 | MTK_PPE_IP_PROTO_CHK_IPV6);
  
@@ -238,7 +238,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	val = MTK_PPE_FLOW_CFG_IP6_3T_ROUTE |
  	      MTK_PPE_FLOW_CFG_IP6_5T_ROUTE |
  	      MTK_PPE_FLOW_CFG_IP6_6RD |
-@@ -1114,6 +1263,8 @@ void mtk_ppe_start(struct mtk_ppe *ppe)
+@@ -1196,6 +1345,8 @@ void mtk_ppe_start(struct mtk_ppe *ppe)
  	}
  	ppe_w32(ppe, MTK_PPE_GLO_CFG, val);
  

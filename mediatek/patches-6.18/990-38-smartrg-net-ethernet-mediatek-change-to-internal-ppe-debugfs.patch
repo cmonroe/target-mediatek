@@ -26,7 +26,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	for (i = 0; i < MTK_MAX_DEVS; i++) {
 --- a/drivers/net/ethernet/mediatek/mtk_ppe.c
 +++ b/drivers/net/ethernet/mediatek/mtk_ppe.c
-@@ -921,6 +921,7 @@ struct mtk_ppe *mtk_ppe_init(struct mtk_
+@@ -1003,6 +1003,7 @@ struct mtk_ppe *mtk_ppe_init(struct mtk_
  	ppe->eth = eth;
  	ppe->dev = dev;
  	ppe->version = eth->soc->offload_version;
@@ -34,7 +34,7 @@ Signed-off-by: Bo-Cun Chen <bc-bocun.chen@mediatek.com>
  	ppe->accounting = accounting;
  
  	foe = dmam_alloc_coherent(ppe->dev,
-@@ -956,8 +957,6 @@ struct mtk_ppe *mtk_ppe_init(struct mtk_
+@@ -1038,8 +1039,6 @@ struct mtk_ppe *mtk_ppe_init(struct mtk_
  		ppe->acct_table = acct;
  	}
  
