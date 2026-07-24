@@ -1,0 +1,71 @@
+From: Chad Monroe <chad@monroe.io>
+Date: Fri, 24 Jul 2026 03:31:48 -0700
+Subject: [PATCH] net: ethernet: mtk_eth_soc: replace stale entries on cookie collision
+
+Flowtable cookies are tuple addresses and get recycled. If a driver
+entry outlives its flow because its destroy was lost, a later flow
+reusing the address collides with it and every FLOW_CLS_REPLACE fails
+with -EEXIST, keeping that flow at CPU speed for its whole life.
+
+Check the tuple on a cookie collision: a matching entry is a real
+duplicate and still returns -EEXIST, a mismatch is a stale leftover
+and gets replaced. The check runs before mtk_wed_flow_add() so a
+duplicate's -EEXIST cannot leak a WED flow reference.
+
+Signed-off-by: Chad Monroe <chad@monroe.io>
+---
+ drivers/net/ethernet/mediatek/mtk_ppe_offload.c |   29 ++++++++++++--
+ 1 file changed, 26 insertions(+), 3 deletions(-)
+
+--- a/drivers/net/ethernet/mediatek/mtk_ppe_offload.c
++++ b/drivers/net/ethernet/mediatek/mtk_ppe_offload.c
+@@ -310,6 +310,7 @@ mtk_flow_offload_replace(struct mtk_eth
+ 	struct mtk_flow_data data = {};
+ 	struct mtk_foe_entry foe;
+ 	struct mtk_flow_entry *entry;
++	struct mtk_flow_entry *stale;
+ 	int offload_type = 0;
+ 	int wed_index = -1;
+ 	u16 addr_type = 0;
+@@ -317,9 +318,8 @@ mtk_flow_offload_replace(struct mtk_eth
+ 	int err = 0;
+ 	int i;
+ 
+-	if (rhashtable_lookup_fast(&eth->flow_table, &f->cookie,
+-				   mtk_flow_ht_params))
+-		return -EEXIST;
++	stale = rhashtable_lookup_fast(&eth->flow_table, &f->cookie,
++				       mtk_flow_ht_params);
+ 
+ 	if (flow_rule_match_key(rule, FLOW_DISSECTOR_KEY_META)) {
+ 		struct flow_match_meta match;
+@@ -520,6 +520,29 @@ mtk_flow_offload_replace(struct mtk_eth
+ 			return err;
+ 	}
+ 
++	/* Checked before mtk_wed_flow_add() so a duplicate's -EEXIST
++	 * cannot leak a WED flow reference; the tuple compared by
++	 * mtk_flow_entry_match() is complete at this point.
++	 */
++	if (stale) {
++		if (stale->type == MTK_FLOW_TYPE_L4 &&
++		    mtk_flow_entry_match(eth, stale, &foe,
++					 mtk_flow_entry_match_len(eth, &foe)))
++			return -EEXIST;
++
++		/* Stale leftover of a dead flow whose destroy was lost;
++		 * its cookie address has been recycled for this flow.
++		 */
++		pr_warn_ratelimited("%s: replacing stale flow entry, cookie=%lx\n",
++				    __func__, f->cookie);
++		mtk_foe_entry_clear(eth->ppe[stale->ppe_index], stale);
++		rhashtable_remove_fast(&eth->flow_table, &stale->node,
++				       mtk_flow_ht_params);
++		if (stale->wed_index >= 0)
++			mtk_wed_flow_remove(stale->wed_index);
++		kfree(stale);
++	}
++
+ 	err = mtk_flow_set_output_device(eth, &foe, odev, data.eth.h_dest,
+ 					 &wed_index);
+ 	if (err)

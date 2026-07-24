@@ -232,8 +232,8 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	mtk_foe_entry_set_queue(eth, foe, queue);
  
  out:
-@@ -520,8 +620,9 @@ mtk_flow_offload_replace(struct mtk_eth
- 			return err;
+@@ -543,8 +643,9 @@ mtk_flow_offload_replace(struct mtk_eth
+ 		kfree(stale);
  	}
  
 -	err = mtk_flow_set_output_device(eth, &foe, odev, data.eth.h_dest,
