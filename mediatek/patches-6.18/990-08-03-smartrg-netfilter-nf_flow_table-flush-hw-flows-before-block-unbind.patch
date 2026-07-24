@@ -1,0 +1,77 @@
+From: Chad Monroe <chad@monroe.io>
+Date: Fri, 24 Jul 2026 03:31:48 -0700
+Subject: [PATCH] netfilter: nf_flow_table: flush hw flows before block unbind
+
+When nftables deletes or replaces a flowtable, it unbinds the flow
+block callbacks before the table is freed, so the destroys issued
+from nf_flow_table_free() never reach the drivers and the driver flow
+entries leak. Leaked entries keep forwarding for dead conntracks and
+block offload of any later flow that reuses the same cookie address.
+On OpenWrt this happens on every boot and every wifi restart, both of
+which replace the flowtable.
+
+Flush the hw offload state on FLOW_BLOCK_UNBIND, while the callbacks
+are still bound: settle in-flight work, tear down all flows and push
+the destroys through the drivers. The gc pass runs via the
+flowtable's own gc worker because a direct nf_flow_table_gc_run()
+call can race the periodic worker and double-free flows.
+
+Signed-off-by: Chad Monroe <chad@monroe.io>
+---
+ include/net/netfilter/nf_flow_table.h |    1 +
+ net/netfilter/nf_flow_table_core.c    |   18 ++++++++++++++++++
+ net/netfilter/nf_flow_table_offload.c |    6 ++++++
+ 3 files changed, 25 insertions(+)
+
+--- a/include/net/netfilter/nf_flow_table.h
++++ b/include/net/netfilter/nf_flow_table.h
+@@ -304,6 +304,7 @@ void nf_flow_table_gc_cleanup(struct nf_
+ void nf_flow_table_cleanup(struct net_device *dev);
+ 
+ int nf_flow_table_init(struct nf_flowtable *flow_table);
++void nf_flow_table_flush_hw(struct nf_flowtable *flow_table);
+ void nf_flow_table_free(struct nf_flowtable *flow_table);
+ 
+ void flow_offload_teardown(struct flow_offload *flow);
+--- a/net/netfilter/nf_flow_table_core.c
++++ b/net/netfilter/nf_flow_table_core.c
+@@ -930,6 +930,24 @@ static struct notifier_block flow_offloa
+ };
+ #endif
+ 
++/* nftables unbinds a flowtable's block callbacks before the table is
++ * freed, so destroys issued from nf_flow_table_free() no longer reach
++ * the drivers and their flow entries leak. Flush hw state here while
++ * the blocks are still bound. The gc pass runs via the gc worker
++ * since a direct walk could race the periodic worker and double-free
++ * flows; it is re-kicked first so an already-running pass that missed
++ * the teardowns is not the one we wait for.
++ */
++void nf_flow_table_flush_hw(struct nf_flowtable *flow_table)
++{
++	nf_flow_table_offload_flush(flow_table);
++	nf_flow_table_iterate(flow_table, nf_flow_table_do_cleanup, NULL);
++	mod_delayed_work(system_power_efficient_wq, &flow_table->gc_work, 0);
++	flush_delayed_work(&flow_table->gc_work);
++	nf_flow_table_offload_flush(flow_table);
++}
++EXPORT_SYMBOL_GPL(nf_flow_table_flush_hw);
++
+ void nf_flow_table_free(struct nf_flowtable *flow_table)
+ {
+ 	mutex_lock(&flowtable_lock);
+--- a/net/netfilter/nf_flow_table_offload.c
++++ b/net/netfilter/nf_flow_table_offload.c
+@@ -1266,6 +1266,12 @@ int nf_flow_table_offload_setup(struct n
+ 	if (!nf_flowtable_hw_offload(flowtable))
+ 		return nf_flow_offload_xdp_setup(flowtable, dev, cmd);
+ 
++	/* Flush hw flows while this device's callback is still bound so
++	 * their destroys reach the driver.
++	 */
++	if (cmd == FLOW_BLOCK_UNBIND)
++		nf_flow_table_flush_hw(flowtable);
++
+ 	if (dev->netdev_ops->ndo_setup_tc)
+ 		err = nf_flow_table_offload_cmd(&bo, flowtable, dev, cmd,
+ 						&extack);
