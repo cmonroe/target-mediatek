@@ -1,0 +1,135 @@
+From: Chad Monroe <chad@monroe.io>
+Date: Fri, 24 Jul 2026 03:31:48 -0700
+Subject: [PATCH] netfilter: nf_flow_table: delay flowtable acceleration
+
+Defer flow creation until conntrack has accounted enough packets so
+DPI can inspect the start of every connection on the slow path. Until
+the thresholds are met the flow offload statement is a no-op and every
+packet takes the normal forward path.. once they are met, offload
+proceeds exactly as before.
+
+TCP flows need offload_delay_per_dir packets (default 25) in the
+busier direction but only offload_delay_min_dir (default 5) in the
+other. Non-TCP flows may be unidirectional so one direction reaching
+the threshold is enough.
+
+The counts come from the conntrack accounting extension; without it
+the delay cannot be enforced and flows offload immediately.
+offload_delay_per_dir=0 disables the delay.
+
+Signed-off-by: Chad Monroe <chad@monroe.io>
+---
+ include/net/netfilter/nf_flow_table.h |    3 +
+ net/netfilter/nf_flow_table_core.c    |   44 ++++++++++++++++++++++++
+ net/netfilter/nft_flow_offload.c      |    5 ++
+ net/netfilter/xt_FLOWOFFLOAD.c        |    3 +
+ 4 files changed, 54 insertions(+), 1 deletion(-)
+
+--- a/include/net/netfilter/nf_flow_table.h
++++ b/include/net/netfilter/nf_flow_table.h
+@@ -202,6 +202,9 @@ struct flow_offload {
+ 
+ unsigned long flow_offload_get_timeout(struct flow_offload *flow);
+ 
++bool nf_flow_offload_ready(const struct nf_conn *ct,
++			   enum ip_conntrack_dir dir);
++
+ static inline __s32 nf_flow_timeout_delta(unsigned int timeout)
+ {
+ 	return (__s32)(timeout - nf_flowtable_time_stamp);
+--- a/net/netfilter/nf_flow_table_core.c
++++ b/net/netfilter/nf_flow_table_core.c
+@@ -10,6 +10,7 @@
+ #include <net/ip6_route.h>
+ #include <net/netfilter/nf_flow_table.h>
+ #include <net/netfilter/nf_conntrack.h>
++#include <net/netfilter/nf_conntrack_acct.h>
+ #include <net/netfilter/nf_conntrack_core.h>
+ #include <net/netfilter/nf_conntrack_l4proto.h>
+ #include <net/netfilter/nf_conntrack_tuple.h>
+@@ -17,6 +18,16 @@
+ #include <net/switchdev.h>
+ #endif
+ 
++static unsigned int nf_flowtable_offload_delay_per_dir __read_mostly = 25;
++module_param_named(offload_delay_per_dir, nf_flowtable_offload_delay_per_dir, uint, 0644);
++MODULE_PARM_DESC(offload_delay_per_dir,
++		 "Packets seen in a flow's busier direction before it may be offloaded (0 disables delay)");
++
++static unsigned int nf_flowtable_offload_delay_min_dir __read_mostly = 5;
++module_param_named(offload_delay_min_dir, nf_flowtable_offload_delay_min_dir, uint, 0644);
++MODULE_PARM_DESC(offload_delay_min_dir,
++		 "Packets seen in a TCP flow's lesser direction before it may be offloaded (0 requires only the busier direction)");
++
+ static DEFINE_MUTEX(flowtable_lock);
+ static LIST_HEAD(flowtables);
+ 
+@@ -329,6 +340,39 @@ unsigned long flow_offload_get_timeout(s
+ 	return timeout;
+ }
+ 
++/* Delay flow creation until conntrack has accounted enough packets in
++ * the slow path so DPI/TC classifiers can observe how flows start.
++ * Non-TCP flows may be unidirectional so a single direction reaching
++ * the threshold suffices there.
++ *
++ * Without the accounting extension delay cannot be enforced; offload
++ * immediately in that case.
++ */
++bool nf_flow_offload_ready(const struct nf_conn *ct,
++			   enum ip_conntrack_dir dir)
++{
++	unsigned int threshold = READ_ONCE(nf_flowtable_offload_delay_per_dir);
++	const struct nf_conn_acct *acct;
++	u64 cur, rev;
++
++	if (!threshold)
++		return true;
++
++	acct = nf_conn_acct_find(ct);
++	if (!acct)
++		return true;
++
++	cur = atomic64_read(&acct->counter[dir].packets);
++	rev = atomic64_read(&acct->counter[!dir].packets);
++
++	if (nf_ct_protonum(ct) != IPPROTO_TCP)
++		return cur >= threshold;
++
++	return max(cur, rev) >= threshold &&
++	       min(cur, rev) >= READ_ONCE(nf_flowtable_offload_delay_min_dir);
++}
++EXPORT_SYMBOL_GPL(nf_flow_offload_ready);
++
+ int flow_offload_add(struct nf_flowtable *flow_table, struct flow_offload *flow)
+ {
+ 	int err;
+--- a/net/netfilter/nft_flow_offload.c
++++ b/net/netfilter/nft_flow_offload.c
+@@ -360,10 +360,13 @@ static void nft_flow_offload_eval(const
+ 	if (!nf_ct_is_confirmed(ct))
+ 		goto out;
+ 
++	dir = CTINFO2DIR(ctinfo);
++	if (!nf_flow_offload_ready(ct, dir))
++		goto out;
++
+ 	if (test_and_set_bit(IPS_OFFLOAD_BIT, &ct->status))
+ 		goto out;
+ 
+-	dir = CTINFO2DIR(ctinfo);
+ 	if (nft_flow_route(pkt, ct, &route, dir, priv->flowtable) < 0)
+ 		goto err_flow_route;
+ 
+--- a/net/netfilter/xt_FLOWOFFLOAD.c
++++ b/net/netfilter/xt_FLOWOFFLOAD.c
+@@ -517,6 +517,9 @@ flowoffload_tg(struct sk_buff *skb, cons
+ 	if (!devs[dir] || !devs[!dir])
+ 		return XT_CONTINUE;
+ 
++	if (!nf_flow_offload_ready(ct, dir))
++		return XT_CONTINUE;
++
+ 	if (test_and_set_bit(IPS_OFFLOAD_BIT, &ct->status))
+ 		return XT_CONTINUE;
+ 
