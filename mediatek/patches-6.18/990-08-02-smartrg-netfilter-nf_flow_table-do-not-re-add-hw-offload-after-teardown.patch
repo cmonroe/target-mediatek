@@ -1,0 +1,48 @@
+From: Chad Monroe <chad@monroe.io>
+Date: Fri, 24 Jul 2026 03:31:48 -0700
+Subject: [PATCH] netfilter: nf_flow_table: do not re-add hw offload after teardown
+
+flow_offload_refresh() can queue a FLOW_CLS_REPLACE work that runs
+after teardown already destroyed the flow's driver entries. The late
+replace re-installs them with nobody left to remove them: they keep
+forwarding for a dead conntrack and block offload of any later flow
+that reuses the same cookie address.
+
+Skip the refresh re-add once a flow is in teardown, and bail out of
+flow_offload_work_add() if NF_FLOW_TEARDOWN is set.
+
+Signed-off-by: Chad Monroe <chad@monroe.io>
+---
+ net/netfilter/nf_flow_table_core.c    |    3 ++-
+ net/netfilter/nf_flow_table_offload.c |    8 ++++++++
+ 2 files changed, 10 insertions(+), 1 deletion(-)
+
+--- a/net/netfilter/nf_flow_table_core.c
++++ b/net/netfilter/nf_flow_table_core.c
+@@ -424,7 +424,8 @@ void flow_offload_refresh(struct nf_flow
+ 		return;
+ 
+ 	if (likely(!nf_flowtable_hw_offload(flow_table)) ||
+-	    test_bit(NF_FLOW_CLOSING, &flow->flags))
++	    test_bit(NF_FLOW_CLOSING, &flow->flags) ||
++	    test_bit(NF_FLOW_TEARDOWN, &flow->flags))
+ 		return;
+ 
+ 	nf_flow_offload_add(flow_table, flow);
+--- a/net/netfilter/nf_flow_table_offload.c
++++ b/net/netfilter/nf_flow_table_offload.c
+@@ -973,6 +973,14 @@ static void flow_offload_work_add(struct
+ 	struct nf_flow_rule *flow_rule[FLOW_OFFLOAD_DIR_MAX];
+ 	int err;
+ 
++	/* A queued add can run after teardown already destroyed the
++	 * driver entries; installing here would orphan them as no
++	 * destroy follows. flow->flags is modified with fully ordered
++	 * atomics so a completed destroy implies this flag is visible.
++	 */
++	if (test_bit(NF_FLOW_TEARDOWN, &offload->flow->flags))
++		return;
++
+ 	err = nf_flow_offload_alloc(offload, flow_rule);
+ 	if (err < 0)
+ 		return;
