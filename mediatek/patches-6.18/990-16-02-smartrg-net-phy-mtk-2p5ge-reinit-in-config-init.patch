@@ -1,0 +1,72 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+Date: Tue, 22 Jul 2026 00:00:00 +0000
+Subject: [PATCH] net: phy: mtk-2p5ge: re-init PHY in config_init
+
+Mainline mtk-2p5ge downloads the PHY firmware (ending in a PHY BMCR_RESET /
+MCU re-init) only from probe(). After a phylink reconfigure the MT7988
+built-in 2.5G PHY is left un-reset and can no longer re-negotiate 2.5G with
+some link partners: the link comes up 2.5G at boot, drops at the first
+reconfigure and then only ever renegotiates 1G and flaps.
+
+The MediaTek out-of-tree 6.12 driver avoided this by loading the firmware
+from config_init(). Restore that behaviour on MT7988 with a lightweight MCU
+re-init (stall + restart of the firmware already resident in PMB, plus the
+PHY reset) that does not re-download the ~131KB blob.
+
+---
+ drivers/net/phy/mediatek/mtk-2p5ge.c | 38 ++++++++++++++++++++++++++++
+ 1 file changed, 38 insertions(+)
+
+--- a/drivers/net/phy/mediatek/mtk-2p5ge.c
++++ b/drivers/net/phy/mediatek/mtk-2p5ge.c
+@@ -418,12 +418,50 @@
+ 	return ret;
+ }
+
++static int mt7988_2p5ge_phy_reinit(struct phy_device *phydev)
++{
++	void __iomem *mcu_csr_base;
++	u32 reg;
++
++	mcu_csr_base = ioremap(MTK_2P5GPHY_MCU_CSR_BASE, MTK_2P5GPHY_MCU_CSR_LEN);
++	if (!mcu_csr_base)
++		return -ENOMEM;
++
++	reg = readw(mcu_csr_base + MD32_EN_CFG);
++	if (reg & MD32_EN) {
++		phy_set_bits(phydev, MII_BMCR, BMCR_RESET);
++		usleep_range(10000, 11000);
++	}
++	phy_set_bits(phydev, MII_BMCR, BMCR_PDOWN);
++
++	/* Write magic number to safely stall MCU */
++	phy_write_mmd(phydev, MDIO_MMD_VEND1, MTK_PHY_HOST_CMD1, 0x1100);
++	phy_write_mmd(phydev, MDIO_MMD_VEND1, MTK_PHY_HOST_CMD2, 0x00df);
++
++	writew(reg & ~MD32_EN, mcu_csr_base + MD32_EN_CFG);
++	writew(reg | MD32_EN, mcu_csr_base + MD32_EN_CFG);
++	phy_set_bits(phydev, MII_BMCR, BMCR_RESET);
++	/* We need a delay here to stabilize initialization of MCU */
++	usleep_range(7000, 8000);
++
++	iounmap(mcu_csr_base);
++
++	return 0;
++}
++
+ static int mt798x_2p5ge_phy_config_init(struct phy_device *phydev)
+ {
+ 	/* Check if PHY interface type is compatible */
+ 	if (phydev->interface != PHY_INTERFACE_MODE_INTERNAL)
+ 		return -ENODEV;
+
++	if (phydev->drv->phy_id == MTK_2P5GPHY_ID_MT7988) {
++		int ret = mt7988_2p5ge_phy_reinit(phydev);
++
++		if (ret < 0)
++			return ret;
++	}
++
+ 	phy_modify_mmd(phydev, MDIO_MMD_VEND1, MTK_PHY_LPI_PCS_DSP_CTRL,
+ 		       MTK_PHY_LPI_SIG_EN_LO_THRESH100_MASK, 0);
+
