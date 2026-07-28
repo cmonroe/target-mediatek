@@ -36,6 +36,7 @@ define Device/polecat
   DEVICE_DTS += mt7988d-smartrg-SDG-8733A
   DEVICE_DTS += mt7988a-smartrg-SDG-8713
   DEVICE_DTS += mt7988a-smartrg-SDG-8713v
+  DEVICE_DTS += mt7988a-smartrg-SDG-8733B
   DEVICE_DTS += mt7987a-smartrg-SDG-8712
   DEVICE_DTS += mt7987a-smartrg-SDG-8712v
   DEVICE_DTS += mt7987a-smartrg-SDG-8732
@@ -87,6 +88,7 @@ define Build/SrgFit
 		-i "SDG-8733A" -d $(KDIR)/image-mt7988d-smartrg-SDG-8733A.dtb.lzma -C lzma -h "crc32" -h "sha1" \
 		-i "SDG-8713" -d $(KDIR)/image-mt7988a-smartrg-SDG-8713.dtb.lzma -C lzma -h "crc32" -h "sha1" \
 		-i "SDG-8713v" -d $(KDIR)/image-mt7988a-smartrg-SDG-8713v.dtb.lzma -C lzma -h "crc32" -h "sha1" \
+		-i "SDG-8733B" -d $(KDIR)/image-mt7988a-smartrg-SDG-8733B.dtb.lzma -C lzma -h "crc32" -h "sha1" \
 		-i "SDG-8712" -d $(KDIR)/image-mt7987a-smartrg-SDG-8712.dtb.lzma -C lzma -h "crc32" -h "sha1" \
 		-i "SDG-8712v" -d $(KDIR)/image-mt7987a-smartrg-SDG-8712v.dtb.lzma -C lzma -h "crc32" -h "sha1" \
 		-i "SDG-8732" -d $(KDIR)/image-mt7987a-smartrg-SDG-8732.dtb.lzma -C lzma -h "crc32" -h "sha1" \
@@ -120,6 +122,7 @@ define Build/SrgFit
 		-c "434" -K k1 -R rdisk -D "SDG-8733A" -T "smartrg,sdg-8733a" \
 		-c "435" -K k1 -R rdisk -D "SDG-8713" -T "smartrg,sdg-8713" \
 		-c "436" -K k1 -R rdisk -D "SDG-8713v" -T "smartrg,sdg-8713v" \
+		-c "437" -K k1 -R rdisk -D "SDG-8733B" -T "smartrg,sdg-8733b" \
 		-c "440" -K k1 -R rdisk -D "SDG-8712" -T "smartrg,sdg-8712" \
 		-c "441" -K k1 -R rdisk -D "SDG-8712v" -T "smartrg,sdg-8712v" \
 		-c "442" -K k1 -R rdisk -D "SDG-8732" -T "smartrg,sdg-8732" \
