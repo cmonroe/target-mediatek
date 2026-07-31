@@ -1,0 +1,68 @@
+--- a/drivers/net/ethernet/airoha/airoha_npu.c
++++ b/drivers/net/ethernet/airoha/airoha_npu.c
+@@ -22,7 +22,7 @@ int airoha_npu_send_msg(struct airoha_np
+ 	u16 core = 0; /* FIXME */
+ 	u32 val, offset = core << 4;
+ 	dma_addr_t dma_addr;
+-	int ret;
++	int ret, retry_cnt=0, is_err=0;
+ 
+ 	dma_addr = dma_map_single(npu->dev, p, size, DMA_TO_DEVICE);
+ 	ret = dma_mapping_error(npu->dev, dma_addr);
+@@ -31,17 +31,40 @@ int airoha_npu_send_msg(struct airoha_np
+ 
+ 	spin_lock_bh(&npu->cores[core].lock);
+ 
++npu_send_msg_retry:
+ 	regmap_write(npu->regmap, REG_CR_MBQ0_CTRL(0) + offset, dma_addr);
+ 	regmap_write(npu->regmap, REG_CR_MBQ0_CTRL(1) + offset, size);
+-	regmap_read(npu->regmap, REG_CR_MBQ0_CTRL(2) + offset, &val);
+-	regmap_write(npu->regmap, REG_CR_MBQ0_CTRL(2) + offset, val + 1);
+ 	val = FIELD_PREP(MBOX_MSG_FUNC_ID, func_id) | MBOX_MSG_WAIT_RSP;
+ 	regmap_write(npu->regmap, REG_CR_MBQ0_CTRL(3) + offset, val);
++	regmap_read(npu->regmap, REG_CR_MBQ0_CTRL(2) + offset, &val);
++	regmap_write(npu->regmap, REG_CR_MBQ0_CTRL(2) + offset, val + 1);
+ 
+ 	ret = regmap_read_poll_timeout_atomic(npu->regmap,
+ 					      REG_CR_MBQ0_CTRL(3) + offset,
+ 					      val, (val & MBOX_MSG_DONE),
+-					      100, 500 * MSEC_PER_SEC);
++					      100, (1000 * MSEC_PER_SEC));
++    is_err=0;
++	if (!ret && FIELD_GET(MBOX_MSG_STATUS, val) != NPU_MBOX_SUCCESS) {
++		retry_cnt++;
++		is_err=1;
++	    printk("(%s) npu done but failed at task_exec! (ret:%d, retry:%d, val:0x%x)\n", __func__, ret, retry_cnt, val);
++	}
++	else if (ret) {
++	    retry_cnt++;
++	    is_err=1;
++	    printk("(%s) regmap_read fail or timeout due to npu not done! (ret:%d, retry:%d)\n", __func__, ret, retry_cnt);
++	}
++	else {}
++
++    if (is_err==0) {}
++    else {
++    	if (retry_cnt<=3) {
++            goto npu_send_msg_retry;
++    	}
++    	else {
++            ret = -EINVAL;
++    	}
++	}
+ 	arht_npu_retry_send_msg(npu, ret, val, dma_addr, size, func_id);
+ 
+ 	spin_unlock_bh(&npu->cores[core].lock);
+@@ -443,11 +466,10 @@ static int airoha_npu_wlan_init_memory(s
+ 	if (of_property_match_string(npu->dev->of_node, "memory-region-names",
+ 				     "ba") >= 0) {
+ 		cmd = WLAN_FUNC_SET_WAIT_DRAM_BA_NODE_ADDR;
+-		err = airoha_npu_wlan_set_reserved_memory(npu, 0, "ba", cmd);
++		err = airoha_npu_wlan_cmd_with_retry(npu, 0, cmd, "ba", 0, &val);
+ 		if (err)
+ 			return err;
+ 	}
+-
+ 	cmd = WLAN_FUNC_SET_WAIT_IS_FORCE_TO_CPU;
+ 	return airoha_npu_wlan_cmd_with_retry(npu, 0, cmd, "force_to_cpu", 1, &val);
+ }

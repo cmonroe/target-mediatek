@@ -1,0 +1,38 @@
+--- a/drivers/net/ethernet/airoha/airoha_npu.c
++++ b/drivers/net/ethernet/airoha/airoha_npu.c
+@@ -14,6 +14,7 @@
+ 
+ #include "airoha_eth.h"
+ #include "airoha_npu.h"
++#include "airoha_function.h"
+ 
+ int airoha_npu_send_msg(struct airoha_npu *npu, int func_id,
+ 			       void *p, int size)
+@@ -41,6 +42,7 @@ int airoha_npu_send_msg(struct airoha_np
+ 					      REG_CR_MBQ0_CTRL(3) + offset,
+ 					      val, (val & MBOX_MSG_DONE),
+ 					      100, 500 * MSEC_PER_SEC);
++	arht_npu_retry_send_msg(npu, ret, val, dma_addr, size, func_id);
+ 
+ 	spin_unlock_bh(&npu->cores[core].lock);
+ 
+@@ -608,6 +610,9 @@ static int airoha_npu_probe(struct platf
+ 	npu->ops.wlan_enable_irq = airoha_npu_wlan_irq_enable;
+ 	npu->ops.wlan_disable_irq = airoha_npu_wlan_irq_disable;
+ 
++	err = airoha_npu_extra_init(npu);
++	if (err)
++		return err;
+ 	npu->regmap = devm_regmap_init_mmio(dev, base, &regmap_config);
+ 	if (IS_ERR(npu->regmap))
+ 		return PTR_ERR(npu->regmap);
+--- a/drivers/net/ethernet/airoha/airoha_npu.h
++++ b/drivers/net/ethernet/airoha/airoha_npu.h
+@@ -174,6 +174,7 @@ struct wlan_mbox_data {
+ 	};
+ };
+ int airoha_npu_send_msg(struct airoha_npu *npu, int func_id, void *p, int size);
++int airoha_npu_send_msg_need_retry(struct airoha_npu *npu, int func_id, void *p, int size);
+ int airoha_npu_l4s_setup(struct airoha_npu *npu, u32 set_cmd, u32 set_water_mark);
+ int airoha_npu_wlan_msg_get(struct airoha_npu *npu, int ifindex, enum airoha_npu_wlan_get_cmd func_id, void *data, int data_len, gfp_t gfp);
+ int airoha_npu_wlan_msg_send(struct airoha_npu *npu, int ifindex,

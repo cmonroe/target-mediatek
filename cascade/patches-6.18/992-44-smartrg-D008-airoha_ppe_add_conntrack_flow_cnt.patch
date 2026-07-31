@@ -1,0 +1,24 @@
+---
+ drivers/net/ethernet/airoha/airoha_ppe.c |    4 ++++
+ 1 file changed, 4 insertions(+)
+
+--- a/drivers/net/ethernet/airoha/airoha_ppe.c
++++ b/drivers/net/ethernet/airoha/airoha_ppe.c
+@@ -835,6 +835,8 @@ static void airoha_ppe_foe_remove_flow(s
+ 		e->data.ib1 &= ~AIROHA_FOE_IB1_BIND_STATE;
+ 		e->data.ib1 |= FIELD_PREP(AIROHA_FOE_IB1_BIND_STATE,
+ 					  AIROHA_FOE_STATE_INVALID);
++		if (ppe->eth->extra_ops.conntrack_free_cnt)
++			ppe->eth->extra_ops.conntrack_free_cnt(e->hash);
+ 		airoha_ppe_foe_commit_entry(ppe, &e->data, e->hash, false);
+ 		e->hash = 0xffff;
+ 	}
+@@ -1354,6 +1356,8 @@ void airoha_ppe_foe_entry_get_stats(stru
+ 	struct airoha_npu *npu;
+ 	u32 index;
+ 
++	if (eth->extra_ops.conntrack_get_cnt)
++		eth->extra_ops.conntrack_get_cnt(hash, stats);
+ 	ppe_num_stats_entries = airoha_ppe_get_total_num_stats_entries(ppe);
+ 	if (ppe_num_stats_entries < 0)
+ 		return;

@@ -1,0 +1,30 @@
+From: Scott Iveland <scott.iveland@adtran.com>
+Date: Mon, 20 Jul 2026 10:41:46 -0700
+Subject: [PATCH] net: airoha: respect deferred probe timeout for MAC address
+
+When MAC address retrieval returns -EPROBE_DEFER, check if the kernel's
+deferred probe timeout has expired before falling back to the vendor
+set_mac_addr hook or a random MAC. This allows recovery/initramfs
+environments to proceed when nvmem providers are unavailable while
+still waiting for deferred probes during normal boot.
+
+Ported from the target-mediatek 990-32 patch of the same name.
+
+--- a/drivers/net/ethernet/airoha/airoha_eth.c
++++ b/drivers/net/ethernet/airoha/airoha_eth.c
+@@ -3972,9 +3972,14 @@ static int airoha_alloc_gdm_device(struc
+ 		return err;
+ 
+ 	err = of_get_ethdev_address(np, netdev);
+-	if (err) {
++	if (err == -EPROBE_DEFER) {
++		err = driver_deferred_probe_check_state(eth->dev);
+ 		if (err == -EPROBE_DEFER)
+ 			return err;
++		dev_warn(eth->dev, "MAC address defer timeout, using fallback MAC\n");
++	}
++
++	if (err) {
+ 	if (eth->extra_ops.set_mac_addr)
+ 		eth->extra_ops.set_mac_addr(eth, netdev);
+ 	else {

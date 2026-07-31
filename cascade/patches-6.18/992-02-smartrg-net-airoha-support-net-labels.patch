@@ -1,0 +1,20 @@
+--- a/drivers/net/ethernet/airoha/airoha_eth.c
++++ b/drivers/net/ethernet/airoha/airoha_eth.c
+@@ -3850,6 +3850,7 @@ static int airoha_alloc_gdm_device(struc
+ 				   struct airoha_gdm_port *port,
+ 				   int nbq, struct device_node *np)
+ {
++	const char *name = of_get_property(np, "label", NULL);
+ 	struct net_device *netdev;
+ 	struct airoha_gdm_dev *dev;
+ 	u8 index;
+@@ -3863,6 +3864,9 @@ static int airoha_alloc_gdm_device(struc
+ 		return -ENOMEM;
+ 	}
+ 
++	if (name)
++		strncpy(netdev->name, name, IFNAMSIZ);
++
+ 	netdev->netdev_ops = &airoha_netdev_ops;
+ 	netdev->ethtool_ops = &airoha_ethtool_ops;
+ 	netdev->max_mtu = AIROHA_MAX_MTU;

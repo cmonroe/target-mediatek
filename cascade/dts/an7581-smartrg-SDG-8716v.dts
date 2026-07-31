@@ -1,0 +1,493 @@
+// SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+/dts-v1/;
+
+/* Bootloader installs ATF here */
+/memreserve/ 0x80000000 0x200000;
+
+#include <dt-bindings/leds/common.h>
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/input/input.h>
+#include "an7581.dtsi"
+#include "an7581-smartrg-dragontail.dtsi"
+#include "an7581-smartrg-pon.dtsi"
+
+/ {
+	model = "SmartRG SDG-8716v";
+	compatible = "smartrg,sdg-8716v", "airoha,an7581", "airoha,en7581";
+
+	aliases {
+		serial0 = &uart1;
+		led-boot = &led_sys_green;
+		led-failsafe = &led_sys_blue;
+		led-running = &led_sys_white;
+		led-upgrade = &led_sys_red;
+	};
+
+	chosen {
+		bootargs = "console=ttyS0,115200 earlycon";
+		stdout-path = "serial0:115200n8";
+		linux,usable-memory-range = <0x0 0x80200000 0x0 0x3fc00000>;
+	};
+
+	memory@80000000 {
+		device_type = "memory";
+		reg = <0x0 0x80000000 0x0 0x80000000>;
+	};
+
+	gpio-keys-polled {
+		compatible = "gpio-keys-polled";
+		poll-interval = <100>;
+
+		button-reset {
+			label = "reset";
+			linux,code = <KEY_RESTART>;
+			gpios = <&en7581_pinctrl 0 GPIO_ACTIVE_LOW>;
+		};
+	};
+
+	gpio-export {
+		compatible = "gpio-export";
+
+		slic_reset {
+			gpio-export,name = "slic_reset";
+			/*
+			* Keep SLIC (Si32184) in reset by default. voip_loader
+			* releases it after slic3_silicon.ko is ready. Pairs
+			* with the U-Boot gpio_direction_output(14, 0) so the
+			* pin never floats from power-on through Linux boot.
+			*/
+			gpio-export,output = <0>;
+			gpios = <&en7581_pinctrl 14 GPIO_ACTIVE_HIGH>;
+		};
+	};
+
+	voip_pcm: pcm@1fbd0000 {
+		compatible = "airoha,airoha-pcm";
+		reg = <0x0 0x1fbd0000 0x0 0x4fff>;
+		interrupts = <GIC_SPI 27 IRQ_TYPE_LEVEL_HIGH>;
+	};
+
+	leds: gpio-leds {
+		compatible = "gpio-leds";
+
+		lan2_amber {
+			color = <LED_COLOR_ID_AMBER>;
+			function = "lan2";
+			gpios = <&en7581_pinctrl 33 GPIO_ACTIVE_LOW>;
+			linux,default-trigger = "mt7530-0:09:100Mbps";
+		};
+
+		lan2_green {
+			color = <LED_COLOR_ID_GREEN>;
+			function = "lan2";
+			gpios = <&en7581_pinctrl 43 GPIO_ACTIVE_LOW>;
+			linux,default-trigger = "mt7530-0:09:1Gbps";
+		};
+
+		lan3_amber {
+			color = <LED_COLOR_ID_AMBER>;
+			function = "lan3";
+			gpios = <&en7581_pinctrl 34 GPIO_ACTIVE_LOW>;
+			linux,default-trigger = "mt7530-0:0a:100Mbps";
+		};
+
+		lan3_green {
+			color = <LED_COLOR_ID_GREEN>;
+			function = "lan3";
+			gpios = <&en7581_pinctrl 44 GPIO_ACTIVE_LOW>;
+			linux,default-trigger = "mt7530-0:0a:1Gbps";
+		};
+
+		lan4_amber {
+			color = <LED_COLOR_ID_AMBER>;
+			function = "lan4";
+			gpios = <&en7581_pinctrl 35 GPIO_ACTIVE_LOW>;
+			linux,default-trigger = "mt7530-0:0b:100Mbps";
+		};
+
+		lan4_green {
+			color = <LED_COLOR_ID_GREEN>;
+			function = "lan4";
+			gpios = <&en7581_pinctrl 45 GPIO_ACTIVE_LOW>;
+			linux,default-trigger = "mt7530-0:0b:1Gbps";
+		};
+	};
+};
+
+&en7581_pinctrl {
+	gpio-ranges = <&en7581_pinctrl 0 13 47>;
+
+	mdio_pins: mdio-pins {
+		mux {
+			function = "mdio";
+			groups = "mdio";
+		};
+
+		conf {
+			pins = "gpio2";
+			output-high;
+		};
+	};
+
+	i2c1_pins: i2c1-pins {
+		mux {
+			function = "i2c";
+			groups = "i2c1";
+		};
+	};
+
+	pcie0_rst_pins: pcie0-rst-pins {
+		conf {
+			pins = "pcie_reset0";
+			drive-open-drain = <1>;
+		};
+	};
+
+	pcie1_rst_pins: pcie1-rst-pins {
+		conf {
+			pins = "pcie_reset1";
+			drive-open-drain = <1>;
+		};
+	};
+
+	pcie2_rst_pins: pcie2-rst-pins {
+		conf {
+			pins = "pcie_reset2";
+			drive-open-drain = <1>;
+		};
+	};
+
+	mmc_pins: mmc-pins {
+		mux {
+			function = "emmc";
+			groups = "emmc";
+		};
+	};
+};
+
+&usb0 {
+	status = "disabled";
+};
+
+&usb1 {
+	status = "disabled";
+
+	mediatek,u3p-dis-msk = <0x1>;
+	phys = <&usb1_phy PHY_TYPE_USB2>;
+};
+
+&mmc0 {
+	pinctrl-names = "default", "state_uhs";
+	pinctrl-0 = <&mmc_pins>;
+	pinctrl-1 = <&mmc_pins>;
+	status = "okay";
+
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	card@0 {
+		#address-cells = <0>;
+		#size-cells = <0>;
+		compatible = "mmc-card";
+		reg = <0>;
+
+		block {
+			compatible = "block-device";
+
+			partitions {
+				block-partition-factory {
+					partname = "factory";
+
+					nvmem-layout {
+						compatible = "fixed-layout";
+						#address-cells = <1>;
+						#size-cells = <1>;
+
+						eeprom_factory_0: eeprom@0 {
+							reg = <0x0 0x1e00>;
+						};
+
+						/* mt7992 precal data size */
+						precal_factory_1e10: precal@1e10 {
+							reg = <0x1e10 0x8b038>;
+						};
+
+						pon_factory_1d0000: pon@1d0000 {
+							reg = <0x1d0000 0x400>;
+						};
+
+						onu_type_factory_1e0000: onu_type@1e0000 {
+							reg = <0x1e0000 0x10>;
+						};
+					};
+				};
+
+				block-partition-mfginfo {
+					partname = "mfginfo";
+
+					nvmem-layout {
+						compatible = "adtran,mfginfo";
+
+						macaddr: mfg-mac {
+							#nvmem-cell-cells = <1>;
+						};
+					};
+				};
+			};
+		};
+	};
+};
+
+&i2c0 {
+	status = "okay";
+};
+
+&i2c1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c1_pins>;
+	status = "okay";
+
+	system-leds@30 {
+		compatible = "srg,sysled";
+		reg = <0x30>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		led_sys_red: system_red {
+			label = "red";
+			reg = <1>;
+		};
+
+		led_sys_green: system_green {
+			label = "green";
+			reg = <2>;
+		};
+
+		led_sys_blue: system_blue {
+			label = "blue";
+			reg = <3>;
+		};
+
+		led_sys_white: system_white {
+			label = "white";
+			reg = <4>;
+		};
+	};
+};
+
+&pciephy {
+	status = "okay";
+};
+
+&pcie0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pcie0_rst_pins>;
+	status = "okay";
+};
+
+&pcie1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pcie1_rst_pins>;
+	status = "okay";
+
+	airoha,np-scu = <&scuclk>;
+
+	pcie@1,0 {
+		reg = <0x0000 0 0 0 0>;
+		#address-cells = <3>;
+		#size-cells = <2>;
+
+		radio0: mt7992@0,0 {
+			reg = <0x0000 0 0 0 0>;
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			airoha,npu = <&npu>;
+			airoha,eth = <&eth>;
+			nvmem-cells = <&eeprom_factory_0>, <&precal_factory_1e10>;
+			nvmem-cell-names = "eeprom", "precal";
+			ieee80211-freq-limit = <2400000 2500000>, <5170000 5835000>;
+
+			band@0 {
+				/* 2.4 GHz */
+				reg = <0>;
+				nvmem-cells = <&macaddr 0x4>;
+				nvmem-cell-names = "mac-address";
+			};
+
+			band@1 {
+				/* 5 GHz */
+				reg = <1>;
+				nvmem-cells = <&macaddr 0xa>;
+				nvmem-cell-names = "mac-address";
+			};
+		};
+	};
+};
+
+&pcie2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pcie2_rst_pins>;
+	status = "okay";
+
+	pcie@2,0 {
+		reg = <0x0000 0 0 0 0>;
+		wifi@0,0 {
+			compatible = "mediatek,mt76";
+			reg = <0x0000 0 0 0 0>;
+			airoha,npu = <&npu>;
+			airoha,eth = <&eth>;
+		};
+	};
+};
+
+&pon_bob {
+	nvmem-cells = <&pon_factory_1d0000>, <&onu_type_factory_1e0000>;
+	nvmem-cell-names = "bob_data", "onu_type";
+
+	status = "okay";
+};
+
+&pon_phy {
+	status = "okay";
+};
+
+&xpon_mac {
+	nvmem-cells = <&onu_type_factory_1e0000>, <&macaddr 0x0>;
+	nvmem-cell-names = "onu_type", "pon_mac";
+
+	status = "okay";
+};
+
+&mdio {
+	phy1: ethernet-phy@1 {
+		/* Realtek RTL8261C/D - LAN1 */
+		compatible = "ethernet-phy-ieee802.3-c45";
+		reg = <0x1>;
+		#thermal-sensor-cells = <0>;
+
+		reset-gpios = <&en7581_pinctrl 31 GPIO_ACTIVE_LOW>;
+		reset-assert-us = <40000>;
+		reset-deassert-us = <150000>;
+
+		leds {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			led@0 {
+				reg = <0>;
+				color = <LED_COLOR_ID_WHITE>;
+				function = LED_FUNCTION_LAN;
+				function-enumerator = <1>;
+			};
+
+			led@1 {
+				reg = <1>;
+				color = <LED_COLOR_ID_ORANGE>;
+				function = LED_FUNCTION_LAN;
+				function-enumerator = <1>;
+			};
+
+			led@3 {
+				reg = <3>;
+				color = <LED_COLOR_ID_GREEN>;
+				function = LED_FUNCTION_LAN;
+				function-enumerator = <1>;
+			};
+		};
+	};
+};
+
+&npu {
+	status = "okay";
+};
+
+&eth {
+	/*
+	 * Description for QDMA RX ring configuration:
+	 *
+	 * QDMA LAN/WAN total has 32 RX rings, each ring size can be configured.
+	 * Hardware supports MAX 8 LRO rings, ring 12-19 are LRO capable.
+	 * Use lro-mask-lan/lro-mask-wan bit mask to enable/disable LRO rings.
+	 * e.g., lro-mask-lan = <0x0f> means ring 12-15 are enabled for LRO.
+	 * LRO ring DSCP values are taken from rx-dscp-lan/rx-dscp-wan at the
+	 * corresponding ring index (12-19).
+	 *
+	 * LRO ring payload size is 32KB, non-LRO ring payload size is 2KB.
+	 * Ring size means buffer capability.
+	 *
+	 * The following configuration is for DRAM size optimization.
+	 * If there is no config in DTS, driver will use default configuration.
+	 */
+	rx-dscp-lan = <1024 256 128 128 256 16 128 128
+				   128 128 16 256 128 16 16 128
+				   16 16 16 16 16 16 16 16
+				   16 16 16 16 16 16 16 16>;
+	rx-dscp-wan = <1024 256 128 128 256 16 128 128
+				   128 128 16 256 16 16 16 128
+				   16 16 16 16 16 16 16 16
+				   16 16 16 16 16 16 16 16>;
+	lro-mask-lan = <0x01>;
+	lro-mask-wan = <0x00>;
+	nvmem-cells = <&macaddr 0x0>;
+	nvmem-cell-names = "mac";
+	status = "okay";
+};
+
+&gdm1 {
+	label = "dsa0";
+
+	status = "okay";
+};
+
+&gdm2 {
+	phy-mode = "internal";
+
+	nvmem-cells = <&macaddr 0x0>;
+	nvmem-cell-names = "mac-address";
+
+	status = "okay";
+};
+
+&gdm4 {
+	label = "lan1";
+	phy-handle = <&phy1>;
+	phy-mode = "usxgmii";
+	managed = "in-band-status";
+
+	nvmem-cells = <&macaddr 0x1>;
+	nvmem-cell-names = "mac";
+
+	status = "okay";
+};
+
+&switch {
+	status = "okay";
+};
+
+&gsw_port1 {
+	status = "okay";
+	label = "lan2";
+};
+
+&gsw_phy1 {
+	status = "okay";
+};
+
+&gsw_port2 {
+	status = "okay";
+	label = "lan3";
+};
+
+&gsw_phy2 {
+	status = "okay";
+};
+
+&gsw_port3 {
+	status = "okay";
+	label = "lan4";
+};
+
+&gsw_phy3 {
+	status = "okay";
+};

@@ -1,0 +1,157 @@
+From: Chad Monroe <chad@monroe.io>
+Date: Wed, 03 Jun 2026 09:05:00 -0700
+Subject: net: bridge: export PON multicast hooks and forwarding helpers
+
+The Airoha PON multicast offload modules (arht-xpon, arht-multicast) link
+against bridge symbols that cannot live anywhere else:
+
+  - br_multicast_get_fwd_ports(), br_multicast_spin_lock/unlock(): real
+    helpers that dereference bridge-private state (struct net_bridge,
+    br_mdb_ip_get_rcu(), br_multicast_is_star_g(), the port-group list).
+    br_mdb_ip_get_rcu() is static to br_multicast.c, so these can only be
+    compiled inside the bridge.
+  - arht_update_hwnat_multicast_mdb_hook: a pointer the bridge invokes from
+    br_mdb_notify() so the PON HW-NAT multicast table tracks snooping state.
+  - arht_xpon_igmp_sfu_enable_hook: gates that update so the XPON SFU module
+    owns multicast while it is active. Co-located here since br_mdb_notify()
+    consults it; arht_dp_api.c only declares it extern.
+
+get_fwd_ports() reports the per-port group MAC for multicast-to-unicast ports
+via uni_addrs[], matching the five-argument prototype the PON modules expect.
+
+This consolidates the Airoha vendor bridge changes (F002, PP726, F004, F021,
+F006) into a single SmartRG patch; the dead br_multicast_nlmsg_send_hook and
+br_multicast_hook_notify carried by the vendor series are dropped.
+
+Signed-off-by: Chad Monroe <chad@monroe.io>
+---
+ net/bridge/br_mdb.c       |   13 ++++++++
+ net/bridge/br_multicast.c |   70 ++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 83 insertions(+)
+
+--- a/net/bridge/br_mdb.c
++++ b/net/bridge/br_mdb.c
+@@ -547,12 +547,25 @@ errout:
+ 	rtnl_set_sk_err(net, RTNLGRP_MDB, err);
+ }
+ 
++/* PON HW-NAT multicast offload couples the bridge mdb path to the Airoha PON
++ * datapath: br_mdb_notify() drives arht_update_hwnat_multicast_mdb_hook when
++ * snooping state changes, and the SFU enable hook lets that update defer to the
++ * XPON SFU module while it is active. Both are registered by PON modules built
++ * separately, so the bridge owns and exports the pointers.
++ */
++int (*arht_update_hwnat_multicast_mdb_hook)(struct br_ip *addr) = NULL;
++EXPORT_SYMBOL(arht_update_hwnat_multicast_mdb_hook);
++int (*arht_xpon_igmp_sfu_enable_hook)(struct net_device *port_dev) = NULL;
++EXPORT_SYMBOL(arht_xpon_igmp_sfu_enable_hook);
+ void br_mdb_notify(struct net_device *dev,
+ 		   struct net_bridge_mdb_entry *mp,
+ 		   struct net_bridge_port_group *pg,
+ 		   int type)
+ {
+ 	__br_mdb_notify(dev, mp, pg, type, true);
++
++	if (arht_update_hwnat_multicast_mdb_hook && arht_xpon_igmp_sfu_enable_hook == NULL)
++		arht_update_hwnat_multicast_mdb_hook(&mp->addr);
+ }
+ 
+ void br_mdb_flag_change_notify(struct net_device *dev,
+--- a/net/bridge/br_multicast.c
++++ b/net/bridge/br_multicast.c
+@@ -36,6 +36,15 @@
+ #include "br_private.h"
+ #include "br_private_mcast_eht.h"
+ 
++/* Exported for the Airoha PON HW-NAT multicast offload; defined at end of file.
++ * Declared here so -Wmissing-prototypes does not fire on the definitions.
++ */
++int br_multicast_get_fwd_ports(struct net_device *br_dev, struct br_ip *addr,
++			       struct net_device *ports[], int nport,
++			       unsigned char *uni_addrs[]);
++void br_multicast_spin_lock(struct net_device *br_dev);
++void br_multicast_spin_unlock(struct net_device *br_dev);
++
+ static const struct rhashtable_params br_mdb_rht_params = {
+ 	.head_offset = offsetof(struct net_bridge_mdb_entry, rhnode),
+ 	.key_offset = offsetof(struct net_bridge_mdb_entry, addr),
+@@ -5248,3 +5257,79 @@ void br_mdb_hash_fini(struct net_bridge
+ 	rhashtable_destroy(&br->sg_port_tbl);
+ 	rhashtable_destroy(&br->mdb_hash_tbl);
+ }
++
++/* Caller must hold rcu_read_lock() and br->multicast_lock. Returns the number
++ * of forwarding ports for the group, or -1 if more than @nport ports match.
++ * For ports in multicast-to-unicast mode the per-port group MAC is reported
++ * via @uni_addrs so the caller can rewrite the destination.
++ */
++int br_multicast_get_fwd_ports(struct net_device *br_dev, struct br_ip *addr,
++			       struct net_device *ports[], int nport,
++			       unsigned char *uni_addrs[])
++{
++	struct net_bridge *br;
++	struct net_bridge_mdb_entry *mdst;
++	struct net_bridge_port_group *p;
++	bool allow_mode_include = true;
++	int cnt = 0;
++
++	/* Callers resolve @br_dev by name; reject non-bridge devices (e.g. a
++	 * "br-lan" VLAN) before treating netdev_priv() as struct net_bridge.
++	 */
++	if (!br_dev || !netif_is_bridge_master(br_dev))
++		return 0;
++
++	br = netdev_priv(br_dev);
++	mdst = br_mdb_ip_get_rcu(br, addr);
++	if (!mdst) {
++		/* Retry as a (*,G) lookup if the (S,G) entry is absent. */
++		memset(&addr->src.ip6, 0, sizeof(addr->src.ip6));
++		mdst = br_mdb_ip_get_rcu(br, addr);
++		if (!mdst)
++			return 0;
++	}
++
++	if (br_multicast_is_star_g(&mdst->addr))
++		allow_mode_include = false;
++
++	for (p = rcu_dereference(mdst->ports); p; p = rcu_dereference(p->next)) {
++		if ((!allow_mode_include && p->filter_mode == MCAST_INCLUDE) ||
++		    (p->flags & MDB_PG_FLAGS_BLOCKED))
++			continue;
++
++		if (p->key.port->flags & BR_MULTICAST_TO_UNICAST)
++			uni_addrs[cnt] = p->eth_addr;
++
++		ports[cnt++] = p->key.port->dev;
++		if (cnt >= nport)
++			return -1;
++	}
++
++	return cnt;
++}
++
++void br_multicast_spin_lock(struct net_device *br_dev)
++{
++	struct net_bridge *br;
++
++	if (!br_dev || !netif_is_bridge_master(br_dev))
++		return;
++
++	br = netdev_priv(br_dev);
++	spin_lock(&br->multicast_lock);
++}
++
++void br_multicast_spin_unlock(struct net_device *br_dev)
++{
++	struct net_bridge *br;
++
++	if (!br_dev || !netif_is_bridge_master(br_dev))
++		return;
++
++	br = netdev_priv(br_dev);
++	spin_unlock(&br->multicast_lock);
++}
++
++EXPORT_SYMBOL(br_multicast_get_fwd_ports);
++EXPORT_SYMBOL(br_multicast_spin_lock);
++EXPORT_SYMBOL(br_multicast_spin_unlock);

@@ -1,0 +1,59 @@
+--- a/include/linux/soc/airoha/airoha_offload.h
++++ b/include/linux/soc/airoha/airoha_offload.h
+@@ -204,6 +204,17 @@ struct airoha_npu {
+ 		u32 (*wlan_get_irq_status)(struct airoha_npu *npu, int q);
+ 		void (*wlan_enable_irq)(struct airoha_npu *npu, int q);
+ 		void (*wlan_disable_irq)(struct airoha_npu *npu, int q);
++		int (*wlan_get_dbg_counter_address)(struct airoha_npu *npu,
++					     int ifindex, void *data, int data_len, gfp_t gfp);
++		int (*wlan_set_txrx_reg_addr)(struct airoha_npu *npu,
++					      int ifindex, u32 dir,
++					      u32 in_counter_addr,
++					      u32 out_status_addr,
++					      u32 out_counter_addr);
++		int (*l4s_setup)(struct airoha_npu *npu, u32 set_cmd,
++				  u32 set_water_mark);
++		int (*tr471_send_msg)(struct airoha_npu *npu,int func_type,char *data);
++		int (*tr471_get_msg)(struct airoha_npu *npu,int func_type,char *data);
+ 	} ops;
+ #endif
+ };
+@@ -211,6 +222,7 @@ struct airoha_npu {
+ #if (IS_BUILTIN(CONFIG_NET_AIROHA_NPU) || IS_MODULE(CONFIG_NET_AIROHA_NPU))
+ struct airoha_npu *airoha_npu_get(struct device *dev);
+ void airoha_npu_put(struct airoha_npu *npu);
++int airoha_npu_l4s_setup(struct airoha_npu *npu, u32 set_cmd, u32 set_water_mark);
+ 
+ static inline int airoha_npu_wlan_init_reserved_memory(struct airoha_npu *npu)
+ {
+@@ -232,12 +244,30 @@ static inline int airoha_npu_wlan_get_ms
+ 	return npu->ops.wlan_get_msg(npu, ifindex, cmd, data, data_len, gfp);
+ }
+ 
++static inline int airoha_npu_wlan_get_dbg_counter_address(struct airoha_npu *npu, int ifindex,
++						   void *data, int data_len, gfp_t gfp)
++{
++	return npu->ops.wlan_get_dbg_counter_address(npu, ifindex, data, data_len, gfp);
++}
++
+ static inline u32 airoha_npu_wlan_get_queue_addr(struct airoha_npu *npu,
+ 						 int qid, bool xmit)
+ {
+ 	return npu->ops.wlan_get_queue_addr(npu, qid, xmit);
+ }
+ 
++static inline int airoha_npu_wlan_set_txrx_reg_addr(struct airoha_npu *npu,
++						    int ifindex, u32 dir,
++						    u32 in_counter_addr,
++						    u32 out_status_addr,
++						    u32 out_counter_addr)
++{
++	return npu->ops.wlan_set_txrx_reg_addr(npu, ifindex, dir,
++					       in_counter_addr,
++					       out_status_addr,
++					       out_counter_addr);
++}
++
+ static inline void airoha_npu_wlan_set_irq_status(struct airoha_npu *npu,
+ 						  u32 val)
+ {

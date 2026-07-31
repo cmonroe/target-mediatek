@@ -1,0 +1,99 @@
+--- a/drivers/net/ethernet/airoha/airoha_regs.h
++++ b/drivers/net/ethernet/airoha/airoha_regs.h
+@@ -66,9 +66,11 @@
+ #define PSE_CFG_PORT_ID_MASK		GENMASK(27, 24)
+ #define PSE_CFG_QUEUE_ID_MASK		GENMASK(20, 16)
+ #define PSE_CFG_WR_EN_MASK		BIT(8)
++#define PSE_CFG_OQFCEN_SEL              BIT(4)
+ #define PSE_CFG_OQRSV_SEL_MASK		BIT(0)
+ 
+ #define REG_FE_PSE_QUEUE_CFG_VAL	0x0084
++#define PSE_CFG_OQ_FC_ON                BIT(17)
+ #define PSE_CFG_OQ_RSV_MASK		GENMASK(13, 0)
+ 
+ #define PSE_FQ_CFG			0x008c
+@@ -177,6 +179,7 @@
+ #define FE_CPORT_PAD			BIT(26)
+ #define FE_CPORT_PORT_XFC_MASK		BIT(25)
+ #define FE_CPORT_QUEUE_XFC_MASK		BIT(24)
++#define REG_PPE1_DFT_CPORT_0		(0xE48)
+ 
+ #define REG_FE_GDM_MIB_CLEAR(_n)	(GDM_BASE(_n) + 0xf0)
+ #define FE_GDM_MIB_RX_CLEAR_MASK	BIT(1)
+@@ -348,6 +351,7 @@
+ #define PPE_SRAM_CTRL_ACK_MASK			BIT(31)
+ #define PPE_SRAM_CTRL_DUAL_SUCESS_MASK		BIT(30)
+ #define PPE_SRAM_CTRL_ENTRY_MASK		GENMASK(23, 8)
++#define PPE_SRAM_CTRL_ENTRY_SHIFT				(8)
+ #define PPE_SRAM_WR_DUAL_DIRECTION_MASK		BIT(2)
+ #define PPE_SRAM_CTRL_WR_MASK			BIT(1)
+ #define PPE_SRAM_CTRL_REQ_MASK			BIT(0)
+@@ -365,6 +369,20 @@
+ 
+ #define REG_UPDMEM_DATA(_n)			(((_n) ? PPE2_BASE : PPE1_BASE) + 0x374)
+ 
++
++#define REG_GDM4_CHN_RLS			(GDM4_BASE + 0x20)
++#define REG_GDM4_MBI_RX_BUSY      BIT(27)
++#define REG_GDM4_MBI_RX_TERMINATE      BIT(24)
++#define REG_GDM4_MBI_TX_BUSY      BIT(19)
++#define REG_GDM4_MBI_TX_TERMINATE      BIT(16)
++#define REG_GDM4_TX_CHN_ID      GENMASK(8, 4)
++#define REG_GDM4_TX_CHN_DN      BIT(1)
++#define REG_GDM4_TX_CHN_EN      BIT(0)
++#define REG_GDM4_SRC_PORT_SET		(GDM4_BASE + 0x23c)
++#define GDM4_SPORT_OFF2_MASK		GENMASK(19, 16)
++#define GDM4_SPORT_OFF1_MASK		GENMASK(15, 12)
++#define GDM4_SPORT_OFF0_MASK		GENMASK(11, 8)
++
+ #define REG_IP_FRAG_FP			0x2010
+ #define IP_ASSEMBLE_PORT_MASK		GENMASK(24, 21)
+ #define IP_ASSEMBLE_NBQ_MASK		GENMASK(20, 16)
+@@ -456,6 +474,9 @@
+ 	 ((_n) == 1) ? 0x002c + ((_b) << 3) :	\
+ 		       0x0028 + ((_b) << 3))
+ 
++#define REG_TXQ_TOTALTHR		0x000010A4
++#define REG_TXQ_CHNLTHR_CFG		0x000010A8
++#define REG_TXQ_QUEUETHR_CFG	0x000010AC
+ /* QDMA_CSR_INT_ENABLE1 */
+ #define RX15_COHERENT_INT_MASK		BIT(31)
+ #define RX14_COHERENT_INT_MASK		BIT(30)
+@@ -900,9 +921,17 @@
+ #define QDMA_ETH_TXMSG_PTP_MASK		BIT(12)
+ #define QDMA_ETH_TXMSG_ACNT_G1_MASK	GENMASK(10, 6)	/* 0x1f do not count */
+ #define QDMA_ETH_TXMSG_ACNT_G0_MASK	GENMASK(5, 0)	/* 0x3f do not count */
++/* TX MSG2 */
++#define QDMA_ETH_TXMSG_SW_UDF GENMASK(31, 16)
++#define QDMA_ETH_TXMSG_METER_G2_MASK	GENMASK(15, 12)	/* 0xf  no meters */
++#define QDMA_ETH_TXMSG_METER_G1_MASK   GENMASK(11, 7)	/* 0x1f no meters*/
++#define QDMA_ETH_TXMSG_ACNT_G2_MASK	GENMASK(6, 0)
++
+ 
+ /* RX MSG0 */
+ #define QDMA_ETH_RXMSG_SPTAG		GENMASK(21, 14)
++#define QDMA_ETH_RXMSG_SPTAG_PINGPONG		GENMASK(29, 14)
++#define QDMA_ETH_RXMSG_HOPFLAGS		GENMASK(3, 0)
+ /* RX MSG1 */
+ #define QDMA_ETH_RXMSG_DEI_MASK		BIT(31)
+ #define QDMA_ETH_RXMSG_IP6_MASK		BIT(30)
+@@ -952,4 +981,19 @@ struct airoha_qdma_fwd_desc {
+ 	__le32 rsv1;
+ };
+ 
++/* QDMA_CSR_QOS_AGING_CFG */
++#define QDMA_CSR_QOS_AGING_CFG			0x10bc
++#define QDMA_QOS_AGING_EN				BIT(31)
++#define QDMA_QOS_AGING_METHOD			BIT(30)
++#define QDMA_QOS_AGING_FAST_REPLACE		BIT(29)
++
++#define PSE_FC_CFG						(0x0098)
++#define PSE_PORT7_SHARE_DIS				BIT(23)
++#define FE_RESET_GLO					(0x0004)
++#define REG_FE_CORE_RESET					BIT(0)
++#define GDM4_MBI_ARB_RX_RST	            GENMASK(9, 8)
++#define GDM4_MBI_ARB_TX_RST	            GENMASK(11, 10)
++
++
++
+ #endif /* AIROHA_REGS_H */

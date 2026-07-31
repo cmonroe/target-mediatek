@@ -1,0 +1,32 @@
+From: Chad Monroe <chad@monroe.io>
+Date: Thu, 11 Dec 2025 14:28:49 -0800
+Subject: [PATCH] HACK: export fortify_panic stub 
+
+one of the Airoha PON binaries references fortify_panic() but
+kernel 6.12+ was changed to __fortify_panic().
+
+this is a cheap hack until Airoha makes their binary module
+kernel version independent.
+
+Signed-off-by: Hoang Viet Pham <viet.pham@adtran.com>
+Signed-off-by: Chad Monroe <chad@monroe.io>
+---
+ lib/string_helpers.c |    9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+--- a/lib/string_helpers.c
++++ b/lib/string_helpers.c
+@@ -1043,4 +1043,13 @@ void __fortify_panic(const u8 reason, co
+ 	BUG();
+ }
+ EXPORT_SYMBOL(__fortify_panic);
++
++/* Stub for prebuilt modules compiled with old FORTIFY_SOURCE */
++#undef fortify_panic
++void fortify_panic(const char *func, const char *write, size_t avail, size_t size, int retfail);
++void fortify_panic(const char *func, const char *write, size_t avail, size_t size, int retfail)
++{
++	panic("FORTIFY_SOURCE detected buffer overflow in %s", func);
++}
++EXPORT_SYMBOL(fortify_panic);
+ #endif /* CONFIG_FORTIFY_SOURCE */

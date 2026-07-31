@@ -1,0 +1,22 @@
+--- a/drivers/net/ethernet/airoha/airoha_eth.c
++++ b/drivers/net/ethernet/airoha/airoha_eth.c
+@@ -2603,7 +2603,7 @@ static netdev_tx_t airoha_dev_xmit(struc
+ 	qid = airoha_qdma_get_txq(qdma, skb_get_queue_mapping(skb));
+ 	tag = airoha_get_dsa_tag(skb, netdev);
+ 	if (qdma->eth->extra_ops.get_qdma_channel)
+-		channel = qdma->eth->extra_ops.get_qdma_channel(dev->port->id, tag);
++		channel = qdma->eth->extra_ops.get_qdma_channel(dev, tag);
+ 	else
+ 		channel = qid / AIROHA_NUM_QOS_QUEUES;
+ 	msg0 = FIELD_PREP(QDMA_ETH_TXMSG_CHAN_MASK, channel) |
+--- a/drivers/net/ethernet/airoha/airoha_eth.h
++++ b/drivers/net/ethernet/airoha/airoha_eth.h
+@@ -776,7 +776,7 @@ struct arht_extra_ops {
+ 	void (*set_qdma_regs)(struct airoha_qdma *qdma, struct airoha_eth *eth);
+ 	void (*set_qbi_fttr_chn)(struct airoha_eth *eth);
+ 	void (*set_fe_regs)(struct airoha_eth *eth);
+-	unsigned int (*get_qdma_channel)(u32 portid, u32 sptag);
++	unsigned int (*get_qdma_channel)(struct airoha_gdm_dev *dev, u32 sptag);
+ 	unsigned int (*get_qdma_buf_size)(int id);
+ 	void (*set_mac_addr)(struct airoha_eth *eth, struct net_device *netdev);
+ 	int (*arht_hw_init)(struct airoha_eth *eth);

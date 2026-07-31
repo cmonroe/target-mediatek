@@ -1,0 +1,32 @@
+From: Hoang Viet Pham <hoang.pham@adtran.com>
+Date: Wed, 01 Apr 2026 08:14:03 -0500
+Subject: [PATCH] airoha: allow PPE offload setup from datapath API module
+
+Export airoha_ppe_offload_setup() and add airoha_set_ppe_init_hook so
+external modules can trigger PPE offload re-initialization after load.
+
+Signed-off-by: Hoang Viet Pham <hoang.pham@adtran.com>
+---
+ drivers/net/ethernet/airoha/airoha_ppe.c  |    2 +-
+ drivers/net/ethernet/airoha/arht_dp_api.c |   16 ++++++++++++++++
+ 2 files changed, 17 insertions(+), 1 deletion(-)
+
+--- a/drivers/net/ethernet/airoha/airoha_ppe.c
++++ b/drivers/net/ethernet/airoha/airoha_ppe.c
+@@ -1485,7 +1485,7 @@ static int airoha_ppe_wait_for_npu_init(
+ 	return err;
+ }
+ 
+-static int airoha_ppe_offload_setup(struct airoha_eth *eth)
++int airoha_ppe_offload_setup(struct airoha_eth *eth)
+ {
+ 	struct airoha_npu *npu = airoha_ppe_npu_get(eth);
+ 	struct airoha_ppe *ppe = eth->ppe;
+@@ -1524,6 +1524,7 @@ error_npu_put:
+ 
+ 	return err;
+ }
++EXPORT_SYMBOL(airoha_ppe_offload_setup);
+ 
+ int airoha_ppe_setup_tc_block_cb(struct airoha_ppe_dev *dev, void *type_data)
+ {

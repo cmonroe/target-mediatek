@@ -1,0 +1,128 @@
+--- a/drivers/net/pcs/airoha/pcs-airoha-common.c
++++ b/drivers/net/pcs/airoha/pcs-airoha-common.c
+@@ -19,6 +19,8 @@
+ #include "pcs-airoha.h"
+ #include "common-phy-shared.h"
+ 
++void __iomem* Get_Base(u32 base);
++
+ static void airoha_pcs_setup_scu_eth(struct airoha_pcs_priv *priv,
+ 				     phy_interface_t interface)
+ {
+@@ -1226,6 +1228,8 @@ static int an7583_pcs_pcie_alloc_maps(st
+ 	return 0;
+ }
+ 
++static struct serdes_common_phy *serdes_common_phy = NULL;
++
+ static int airoha_pcs_probe(struct platform_device *pdev)
+ {
+ 	const struct airoha_pcs_match_data *data;
+@@ -1234,6 +1238,12 @@ static int airoha_pcs_probe(struct platf
+ 	struct airoha_pcs_shared_data *shared;
+ 	int index, ret;
+ 
++	if (!serdes_common_phy) {
++		serdes_common_phy = devm_kzalloc(&pdev->dev, sizeof(struct serdes_common_phy), GFP_KERNEL);
++		if (!serdes_common_phy)
++			return -ENOMEM;
++	}
++
+ 	data = of_device_get_match_data(dev);
+ 
+ 	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
+@@ -1265,12 +1275,38 @@ static int airoha_pcs_probe(struct platf
+ 
+ 	switch (data->port_type) {
+ 	case AIROHA_PCS_ETH:
+-	case AIROHA_PCS_PON:
++	case AIROHA_PCS_PON: {
++		struct resource *res;
++		void __iomem *base;
++
+ 		ret = airoha_pcs_alloc_maps(pdev, priv);
+ 		if (ret)
+ 			return ret;
+ 
++		res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "pcs_pma");
++		if (res) {
++			base = devm_ioremap(dev, res->start, resource_size(res));
++			if (base) {
++				if (of_device_is_compatible(dev->of_node, "airoha,an7581-pcs-pon"))
++					serdes_common_phy->pon_pma_phy_rg_base = base;
++				else if (of_device_is_compatible(dev->of_node, "airoha,an7581-pcs-eth"))
++					serdes_common_phy->xfi_pma_phy_rg_base = base;
++			}
++		}
++
++		res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "pcs_ana");
++		if (res) {
++			base = devm_ioremap(dev, res->start, resource_size(res));
++			if (base) {
++				if (of_device_is_compatible(dev->of_node, "airoha,an7581-pcs-pon"))
++					serdes_common_phy->pon_ana_pxp_phy_rg_base = base;
++				else if (of_device_is_compatible(dev->of_node, "airoha,an7581-pcs-eth"))
++					serdes_common_phy->xfi_ana_pxp_phy_rg_base = base;
++			}
++		}
++
+ 		break;
++	}
+ 	case AIROHA_PCS_PCIE:
+ 		if (device_is_compatible(dev, "airoha,an7581-pcs-pcie"))
+ 			ret = an7581_pcs_pcie_alloc_maps(pdev, priv);
+@@ -1391,6 +1427,38 @@ static void airoha_pcs_remove(struct pla
+ 
+ 	rtnl_unlock();
+ }
++void __iomem* Get_Base(u32 base)
++{
++	printk("\ncommon_phy Get_Base:0x%x\n",base);	
++	switch (base){		
++						
++		case 0x1fa7a000:			
++			printk("\nserdes_common_phy->xfi_ana_pxp_phy_rg_base:0x%lx\n",(long unsigned)serdes_common_phy->xfi_ana_pxp_phy_rg_base);	
++			return serdes_common_phy->xfi_ana_pxp_phy_rg_base; 			
++			break;
++			
++		case 0x1fa7b000:			
++			printk("\nserdes_common_phy->xfi_pma_phy_rg_base:0x%lx\n",(long unsigned)serdes_common_phy->xfi_pma_phy_rg_base);	
++			return serdes_common_phy->xfi_pma_phy_rg_base; 			
++			break;
++
++		case 0x1fa8a000:
++			printk("\nserdes_common_phy->pon_ana_pxp_phy_rg_base:0x%lx\n",(long unsigned)serdes_common_phy->pon_ana_pxp_phy_rg_base);	
++			return serdes_common_phy->pon_ana_pxp_phy_rg_base; 			
++			break;
++			
++		case 0x1fa8b000:
++			printk("\nserdes_common_phy->pon_pma_phy_rg_base:0x%lx\n",(long unsigned)serdes_common_phy->pon_pma_phy_rg_base);	
++			return serdes_common_phy->pon_pma_phy_rg_base; 			
++			break;
++			
++		default :
++			printk("base addr not 10G Serdes Common PHY addr!ex: 0x1fa5a000, 0x1fa7a000, 0x1fa8a000\n");
++			return NULL;
++			break;	};
++}
++EXPORT_SYMBOL(Get_Base);
++
+ 
+ static const struct airoha_pcs_match_data an7581_pcs_eth = {
+ 	.num_port = 1,
+--- a/drivers/net/pcs/airoha/pcs-airoha.h
++++ b/drivers/net/pcs/airoha/pcs-airoha.h
+@@ -1623,6 +1623,13 @@ enum pon_eo_buf_vals {
+ 	EO_BUF_MAX,
+ };
+ 
++struct serdes_common_phy {	
++	void __iomem *xfi_ana_pxp_phy_rg_base; /* xfi_ana_pxp physical address */	
++	void __iomem *xfi_pma_phy_rg_base; /* xfi_pma physical address */	
++	void __iomem *pon_ana_pxp_phy_rg_base; /* pon_ana_pxp physical address */	
++	void __iomem *pon_pma_phy_rg_base; /* pon_pma physical address */
++};
++
+ enum xfi_port_type {
+ 	AIROHA_PCS_ETH,
+ 	AIROHA_PCS_PON,

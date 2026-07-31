@@ -1,0 +1,18 @@
+--- a/drivers/net/ethernet/airoha/airoha_ppe_debugfs.c
++++ b/drivers/net/ethernet/airoha/airoha_ppe_debugfs.c
+@@ -5,6 +5,7 @@
+  */
+ 
+ #include "airoha_eth.h"
++#include "airoha_function.h"
+ 
+ static void airoha_debugfs_ppe_print_tuple(struct seq_file *m,
+ 					   void *src_addr, void *dest_addr,
+@@ -196,6 +197,6 @@ int airoha_ppe_debugfs_init(struct airoh
+ 			    &airoha_ppe_debugfs_foe_all_fops);
+ 	debugfs_create_file("bind", 0444, root, ppe,
+ 			    &airoha_ppe_debugfs_foe_bind_fops);
+-
++	airoha_ppe_debugfs_extra_create(root);
+ 	return 0;
+ }

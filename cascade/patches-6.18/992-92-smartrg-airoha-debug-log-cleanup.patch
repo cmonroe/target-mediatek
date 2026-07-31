@@ -1,0 +1,34 @@
+--- a/drivers/net/pcs/airoha/pcs-airoha-common.c
++++ b/drivers/net/pcs/airoha/pcs-airoha-common.c
+@@ -1433,26 +1433,26 @@ static void airoha_pcs_remove(struct pla
+ }
+ void __iomem* Get_Base(u32 base)
+ {
+-	printk("\ncommon_phy Get_Base:0x%x\n",base);	
++	printk("common_phy Get_Base:0x%x\n",base);	
+ 	switch (base){		
+ 						
+ 		case 0x1fa7a000:			
+-			printk("\nserdes_common_phy->xfi_ana_pxp_phy_rg_base:0x%lx\n",(long unsigned)serdes_common_phy->xfi_ana_pxp_phy_rg_base);	
++			printk("serdes_common_phy->xfi_ana_pxp_phy_rg_base:0x%lx\n",(long unsigned)serdes_common_phy->xfi_ana_pxp_phy_rg_base);	
+ 			return serdes_common_phy->xfi_ana_pxp_phy_rg_base; 			
+ 			break;
+ 			
+ 		case 0x1fa7b000:			
+-			printk("\nserdes_common_phy->xfi_pma_phy_rg_base:0x%lx\n",(long unsigned)serdes_common_phy->xfi_pma_phy_rg_base);	
++			printk("serdes_common_phy->xfi_pma_phy_rg_base:0x%lx\n",(long unsigned)serdes_common_phy->xfi_pma_phy_rg_base);	
+ 			return serdes_common_phy->xfi_pma_phy_rg_base; 			
+ 			break;
+ 
+ 		case 0x1fa8a000:
+-			printk("\nserdes_common_phy->pon_ana_pxp_phy_rg_base:0x%lx\n",(long unsigned)serdes_common_phy->pon_ana_pxp_phy_rg_base);	
++			printk("serdes_common_phy->pon_ana_pxp_phy_rg_base:0x%lx\n",(long unsigned)serdes_common_phy->pon_ana_pxp_phy_rg_base);	
+ 			return serdes_common_phy->pon_ana_pxp_phy_rg_base; 			
+ 			break;
+ 			
+ 		case 0x1fa8b000:
+-			printk("\nserdes_common_phy->pon_pma_phy_rg_base:0x%lx\n",(long unsigned)serdes_common_phy->pon_pma_phy_rg_base);	
++			printk("serdes_common_phy->pon_pma_phy_rg_base:0x%lx\n",(long unsigned)serdes_common_phy->pon_pma_phy_rg_base);	
+ 			return serdes_common_phy->pon_pma_phy_rg_base; 			
+ 			break;
+ 			

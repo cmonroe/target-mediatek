@@ -1,0 +1,148 @@
+From: Chad Monroe <chad@monroe.io>
+Date: Tue, 30 Jun 2026 21:41:40 -0700
+Subject: [PATCH] airoha: fix stale global state after failed probe or remove
+
+The driver exports glb_eth and registers a global netdev notifier, but
+both outlive the devm-managed struct airoha_eth: glb_eth was never
+cleared and the notifier was never unregistered. When the probe fails,
+or the device is removed, devm frees eth/ppe and unmaps fe_regs, leaving
+glb_eth and the notifier referencing freed memory.
+
+On 6.18 the eth probe aborts (a gdm port without a phy-mode), which
+turned this latent bug into two oopses: the OOT xpon driver calling the
+exported airoha_pon_set_macaddr() wrote to the iounmapped fe_regs, and
+the netdev notifier dereferenced the freed ppe on interface teardown.
+
+Clear glb_eth via a devm action, unregister the notifier from
+airoha_hw_cleanup(), publish eth->ppe only after ppe init fully succeeds
+and clear it on deinit, and make the exported setter bail when the
+device is not initialized.
+
+Fixes: OWRT-5260
+
+Signed-off-by: Chad Monroe <chad@monroe.io>
+---
+ drivers/net/ethernet/airoha/airoha_eth.c       |    4 +++
+ drivers/net/ethernet/airoha/airoha_eth_extra.c |   13 ++++++++++
+ drivers/net/ethernet/airoha/airoha_ppe.c       |    7 ++++-
+ drivers/net/ethernet/airoha/arht_ppe.c         |   19 +++++++++++++--
+ 4 files changed, 40 insertions(+), 3 deletions(-)
+
+--- a/drivers/net/ethernet/airoha/airoha_eth.c
++++ b/drivers/net/ethernet/airoha/airoha_eth.c
+@@ -1869,6 +1869,10 @@ static void airoha_hw_cleanup(struct air
+ {
+ 	int i;
+ 
++	/* Unregister the arht netdev notifier before tearing down ppe so it
++	 * cannot fire against freed state (runs on probe failure and remove).
++	 */
++	arht_ppe_deinit();
+ 	for (i = 0; i < ARRAY_SIZE(eth->qdma); i++)
+ 		airoha_qdma_cleanup(&eth->qdma[i]);
+ 	airoha_ppe_deinit(eth);
+--- a/drivers/net/ethernet/airoha/airoha_eth_extra.c
++++ b/drivers/net/ethernet/airoha/airoha_eth_extra.c
+@@ -14,6 +14,16 @@
+ unchar ethmac_addr[6] = {0x00, 0xAA, 0xBB, 0x01, 0x23, 0x40};
+ struct airoha_eth *glb_eth;
+ EXPORT_SYMBOL(glb_eth);
++
++/* Cleared on probe failure or device remove so stale references from the
++ * exported glb_eth (used by the OOT xpon driver and the netdev notifier)
++ * cannot outlive the devm-freed struct airoha_eth.
++ */
++static void arht_glb_eth_clear(void *data)
++{
++	glb_eth = NULL;
++}
++
+ int g_pon_serdes_eth = 0;
+ 
+ static const struct ring_dscp_map ring_dscp_table[] = {
+@@ -262,6 +272,9 @@ int arht_extra_probe(struct airoha_eth *
+ 	arht_read_dscp_num_from_dts(eth);
+ 	airoha_eth_qdma_fastpath_default_cfg(eth);
+ 	glb_eth = eth;
++	err = devm_add_action_or_reset(eth->dev, arht_glb_eth_clear, NULL);
++	if (err)
++		return err;
+ 	airoha_hsgmii_init();
+ 	return 0;
+ }
+--- a/drivers/net/ethernet/airoha/airoha_ppe.c
++++ b/drivers/net/ethernet/airoha/airoha_ppe.c
+@@ -1662,7 +1662,6 @@ int airoha_ppe_init(struct airoha_eth *e
+ 	ppe->dev.ops.check_skb = airoha_ppe_check_skb;
+ 	ppe->dev.priv = ppe;
+ 	ppe->eth = eth;
+-	eth->ppe = ppe;
+ 
+ 	ppe_num_entries = airoha_ppe_get_total_num_entries(ppe);
+ 	foe_size = ppe_num_entries * sizeof(struct airoha_foe_entry);
+@@ -1709,6 +1708,11 @@ int airoha_ppe_init(struct airoha_eth *e
+ 	if (err)
+ 		goto error_l2_flow_table_destroy;
+ 
++	/* Publish only after full init so a failed probe leaves eth->ppe NULL
++	 * rather than pointing at a devm-freed, partially-initialized ppe.
++	 */
++	eth->ppe = ppe;
++
+ 	return 0;
+ 
+ error_l2_flow_table_destroy:
+@@ -1737,4 +1741,5 @@ void airoha_ppe_deinit(struct airoha_eth
+ 	rhashtable_destroy(&eth->ppe->l2_flows);
+ 	rhashtable_destroy(&eth->flow_table);
+ 	debugfs_remove(eth->ppe->debugfs_dir);
++	eth->ppe = NULL;
+ }
+--- a/drivers/net/ethernet/airoha/arht_ppe.c
++++ b/drivers/net/ethernet/airoha/arht_ppe.c
+@@ -3709,6 +3709,13 @@ void airoha_pon_set_macaddr(const u8 *ad
+ 	u32 val, reg;
+ 	struct airoha_eth *eth = glb_eth;
+ 
++	/* glb_eth is cleared when the airoha_eth probe fails or the device is
++	 * removed; the OOT xpon driver may still call this. Bail rather than
++	 * dereferencing a freed struct / iounmapped fe_regs.
++	 */
++	if (!eth || !test_bit(DEV_STATE_INITIALIZED, &eth->state))
++		return;
++
+ 	reg = REG_FE_WAN_MAC_H;
+ 	val = (addr[0] << 16) | (addr[1] << 8) | addr[2];
+ 	airoha_fe_wr(eth, reg, val);
+@@ -4297,6 +4304,8 @@ static struct notifier_block airoha_ppe_
+ 	.notifier_call = airoha_ppe_netdev_event,
+ };
+ 
++static bool airoha_ppe_nb_registered;
++
+ void arht_ppe_init(struct airoha_ppe *ppe)
+ {
+ 	/*clear all sram ppe table*/
+@@ -4312,7 +4321,10 @@ void arht_ppe_init(struct airoha_ppe *pp
+ 	arht_ppe_general_init(ppe);
+ 	airoha_hwnat_loopback_init();
+ 
+-	register_netdevice_notifier(&airoha_ppe_netdev_nb);
++	if (!airoha_ppe_nb_registered) {
++		register_netdevice_notifier(&airoha_ppe_netdev_nb);
++		airoha_ppe_nb_registered = true;
++	}
+ }
+ 
+ void arht_ppe_deinit(void)
+@@ -4327,5 +4339,8 @@ void arht_ppe_deinit(void)
+ 	arht_ppe_general_exit();
+ 	airoha_hwnat_loopback_exit();
+ 
+-	unregister_netdevice_notifier(&airoha_ppe_netdev_nb);
++	if (airoha_ppe_nb_registered) {
++		unregister_netdevice_notifier(&airoha_ppe_netdev_nb);
++		airoha_ppe_nb_registered = false;
++	}
+ }
+\ No newline at end of file

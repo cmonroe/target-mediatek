@@ -1,0 +1,72 @@
+--- a/drivers/net/ethernet/airoha/airoha_ppe_debugfs.c
++++ b/drivers/net/ethernet/airoha/airoha_ppe_debugfs.c
+@@ -67,6 +67,7 @@ static int airoha_ppe_debugfs_foe_show(s
+ 		struct airoha_foe_entry *hwe;
+ 		u32 type, state, ib2, data;
+ 		bool ipv6 = false;
++		u32 meter = 0x3F;
+ 
+ 		hwe = airoha_ppe_foe_get_entry(ppe, i);
+ 		if (!hwe)
+@@ -136,24 +137,36 @@ static int airoha_ppe_debugfs_foe_show(s
+ 			data = hwe->ipv6.data;
+ 			ib2 = hwe->ipv6.ib2;
+ 			l2 = &hwe->ipv6.l2;
++			meter = hwe->ipv6.meter;
++		} else if (type == PPE_PKT_TYPE_BRIDGE) {
++			data = hwe->bridge32.data;
++			ib2 = hwe->bridge32.ib2;
++			l2 = &hwe->bridge32.l2;
++			meter = hwe->bridge32.meter;
+ 		} else {
+ 			data = hwe->ipv4.data;
+ 			ib2 = hwe->ipv4.ib2;
+ 			l2 = &hwe->ipv4.l2.common;
++			meter = hwe->ipv4.l2.meter;
+ 			*((__be16 *)&h_source[4]) =
+ 				cpu_to_be16(hwe->ipv4.l2.src_mac_lo);
+ 		}
+ 
+ 		airoha_ppe_foe_entry_get_stats(ppe, i, &stats);
+-
+-		*((__be32 *)h_dest) = cpu_to_be32(l2->dest_mac_hi);
+-		*((__be16 *)&h_dest[4]) = cpu_to_be16(l2->dest_mac_lo);
+-		*((__be32 *)h_source) = cpu_to_be32(l2->src_mac_hi);
+-
+-		seq_printf(m, " eth=%pM->%pM etype=%04x data=%08x"
+-			      " vlan=%d,%d ib1=%08x ib2=%08x"
++		if (type == PPE_PKT_TYPE_BRIDGE) {
++			*((__be32 *)h_dest) = cpu_to_be32(hwe->bridge32.dest_mac_hi);
++			*((__be16 *)&h_dest[4]) = cpu_to_be16(hwe->bridge32.dest_mac_lo);
++			*((__be32 *)h_source) = cpu_to_be32(hwe->bridge32.src_mac_hi);
++			*((__be16 *)&h_source[4]) = cpu_to_be16(hwe->bridge32.src_mac_lo);
++		} else {
++			*((__be32 *)h_dest) = cpu_to_be32(l2->dest_mac_hi);
++			*((__be16 *)&h_dest[4]) = cpu_to_be16(l2->dest_mac_lo);
++			*((__be32 *)h_source) = cpu_to_be32(l2->src_mac_hi);
++		}
++		seq_printf(m, " eth=%pM->%pM etype=%04x data=%08x meter=%04x"
++			      " vlan=%04x,%04x ib1=%08x ib2=%08x"
+ 			      " packets=%llu bytes=%llu\n",
+-			   h_source, h_dest, l2->etype, data,
++			   h_source, h_dest, l2->etype, data, meter,
+ 			   l2->vlan1, l2->vlan2, hwe->ib1, ib2,
+ 			   stats.packets, stats.bytes);
+ 	}
+@@ -175,10 +188,13 @@ DEFINE_SHOW_ATTRIBUTE(airoha_ppe_debugfs
+ 
+ int airoha_ppe_debugfs_init(struct airoha_ppe *ppe)
+ {
+-	ppe->debugfs_dir = debugfs_create_dir("ppe", NULL);
+-	debugfs_create_file("entries", 0444, ppe->debugfs_dir, ppe,
++	struct airoha_eth *eth = ppe->eth;
++	struct dentry *root;
++
++	root = debugfs_create_dir("ppe", eth->debugfs_dir);
++	debugfs_create_file("entries", 0444, root, ppe,
+ 			    &airoha_ppe_debugfs_foe_all_fops);
+-	debugfs_create_file("bind", 0444, ppe->debugfs_dir, ppe,
++	debugfs_create_file("bind", 0444, root, ppe,
+ 			    &airoha_ppe_debugfs_foe_bind_fops);
+ 
+ 	return 0;

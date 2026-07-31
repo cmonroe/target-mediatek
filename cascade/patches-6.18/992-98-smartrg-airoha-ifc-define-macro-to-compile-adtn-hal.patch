@@ -1,0 +1,26 @@
+From: Hoang Viet Pham <hoang.pham@adtran.com>
+Date: Tue, 07 Jul 2026 15:01:40 -0500
+Subject: [PATCH] Define macro to compile adtn-hal
+
+The adtn-hal from SFU team need the macro IFC_IOC_CALL.
+We might need something more from the patch later
+
+https://github.adtran.com/SSandE/6xx_air/blob/main/boards/sdx6xx/patches/openwrt-p1/040_ifc_mac_corr.patch
+
+Signed-off-by: Hoang Viet Pham <hoang.pham@adtran.com>
+---
+ include/linux/soc/airoha/arht_hook/ecnt_hook_ifc_type.h |    3 +++
+ 1 file changed, 3 insertions(+)
+
+--- a/include/linux/soc/airoha/arht_hook/ecnt_hook_ifc_type.h
++++ b/include/linux/soc/airoha/arht_hook/ecnt_hook_ifc_type.h
+@@ -280,6 +280,9 @@ typedef enum
+ *************************************************************************
+ */
+ 
++#define IFC_IOC_MAGIC 'I'
++#define IFC_IOC_CALL _IOWR(IFC_IOC_MAGIC, 0, struct ecnt_ifc_data)
++
+ /************************************************************************
+ *                  F U N C T I O N    D E C L A R A T I O N S
+ #                  I N L I N E    F U N C T I O N   D E F I N I T I O N S

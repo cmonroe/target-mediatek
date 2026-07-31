@@ -1,0 +1,15 @@
+---
+ drivers/net/ethernet/airoha/airoha_eth.h |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/drivers/net/ethernet/airoha/airoha_eth.h
++++ b/drivers/net/ethernet/airoha/airoha_eth.h
+@@ -794,6 +794,8 @@ struct arht_extra_ops {
+ 	int (*rx_dscp_num_init)(struct airoha_eth *eth, int qdma_id, int ring);
+ 	int (*is_lro_ring)(struct airoha_eth *eth, int qdma_id, int qid);
+ 	int (*get_lro_dscp)(struct airoha_eth *eth, int qdma_id, int qid);
++	void (*conntrack_get_cnt)(u32 hash, struct airoha_foe_stats64 *stats);
++	void (*conntrack_free_cnt)(u32 hash);
+ 	void (*ppe_exit)(void);
+ };
+ 

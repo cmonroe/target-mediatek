@@ -1,0 +1,29 @@
+From: Chad Monroe <chad@monroe.io>
+Date: Fri, 05 Jun 2026 12:00:00 -0700
+Subject: net: airoha: ppe: guard NULL FOE entry in multicast handler
+
+airoha_ppe_foe_get_entry_locked() returns NULL when the PPE SRAM read times
+out. arht_ppe_multicast_handler() passed that pointer straight to
+arht_multicast_hwnat_data_handler_hook(), which dereferences it via
+ppe_is_multicast_entry(), so a timed-out lookup faults. Bail out when the
+entry could not be read.
+
+Signed-off-by: Chad Monroe <chad@monroe.io>
+---
+ drivers/net/ethernet/airoha/arht_ppe.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+--- a/drivers/net/ethernet/airoha/arht_ppe.c
++++ b/drivers/net/ethernet/airoha/arht_ppe.c
+@@ -540,6 +540,11 @@ int arht_ppe_multicast_handler(struct ai
+ 		hwe = airoha_ppe_foe_get_entry_locked(ppe, foe_index);
+ 		spin_unlock_bh(&ppe_lock);
+ 
++		/* SRAM read can time out and return NULL; the hook dereferences
++		 * hwe (ppe_is_multicast_entry) without checking.
++		 */
++		if (!hwe)
++			return 0;
+ 		arht_multicast_hwnat_data_handler_hook(hwe, skb);
+ 	}
+ 	return 0;

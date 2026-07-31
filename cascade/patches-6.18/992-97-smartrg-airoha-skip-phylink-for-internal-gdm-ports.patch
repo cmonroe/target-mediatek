@@ -1,0 +1,79 @@
+From: Chad Monroe <chad@monroe.io>
+Date: Tue, 30 Jun 2026 22:03:02 -0700
+Subject: [PATCH] airoha: don't drive phylink for internal GDM MACs
+
+The 6.18 mainline refactor made airoha_dev_open()/airoha_dev_stop()
+connect and start phylink unconditionally. The internal GDM MACs (the
+embedded switch on GDM1 and the PON MAC on GDM2) have no attachable PHY,
+so bringing them up fails with "could not attach PHY: -19". This broke
+GDM2/eth0, the netdev the PON stack uses for hardware offload resources,
+which came up fine on 6.12.
+
+Restore the vendor guard so only external-PHY ports drive phylink at
+open/stop. setup_phylink() still runs at probe (phylink objects are
+created), so no other phylink paths regress.
+
+Fixes: OWRT-5260
+
+Signed-off-by: Chad Monroe <chad@monroe.io>
+---
+ drivers/net/ethernet/airoha/airoha_eth.c |   33 +++++++++++++++------
+ 1 file changed, 25 insertions(+), 8 deletions(-)
+
+--- a/drivers/net/ethernet/airoha/airoha_eth.c
++++ b/drivers/net/ethernet/airoha/airoha_eth.c
+@@ -2150,6 +2150,19 @@ static void airoha_dev_set_mtu(struct ne
+ 			      FIELD_PREP(WAN_MTU0_MASK, netdev->mtu + VLAN_ETH_HLEN));
+ }
+ 
++/* Internal GDM MACs (embedded switch on GDM1, PON on GDM2) have no
++ * attachable PHY; only external-PHY ports drive phylink at open/stop.
++ * The 6.18 mainline refactor connects phylink unconditionally, which
++ * fails these ports with -ENODEV; restore the vendor guard.
++ */
++static bool airoha_is_phy_external(struct airoha_gdm_port *port)
++{
++	if (port->eth->extra_ops.sel_phy_external)
++		return port->eth->extra_ops.sel_phy_external(port);
++
++	return port->id != AIROHA_GDM1_IDX;
++}
++
+ static int airoha_dev_open(struct net_device *netdev)
+ {
+ 	struct airoha_gdm_dev *dev = netdev_priv(netdev);
+@@ -2172,13 +2185,15 @@ static int airoha_dev_open(struct net_de
+ 		return -EBUSY;
+ 	}
+ 
+-	err = phylink_of_phy_connect(dev->phylink, netdev->dev.of_node, 0);
+-	if (err) {
+-		netdev_err(netdev, "could not attach PHY: %d\n", err);
+-		return err;
+-	}
++	if (airoha_is_phy_external(port)) {
++		err = phylink_of_phy_connect(dev->phylink, netdev->dev.of_node, 0);
++		if (err) {
++			netdev_err(netdev, "could not attach PHY: %d\n", err);
++			return err;
++		}
+ 
+-	phylink_start(dev->phylink);
++		phylink_start(dev->phylink);
++	}
+ 
+ 	netif_tx_start_all_queues(netdev);
+ 	err = airoha_set_vip_for_gdm_port(dev, true);
+@@ -2234,8 +2249,10 @@ static int airoha_dev_stop(struct net_de
+ 	airoha_qdma_stop(qdma);
+ 	airoha_update_netdev_features(dev);
+ 
+-	phylink_stop(dev->phylink);
+-	phylink_disconnect_phy(dev->phylink);
++	if (airoha_is_phy_external(port)) {
++		phylink_stop(dev->phylink);
++		phylink_disconnect_phy(dev->phylink);
++	}
+ 
+ 	return 0;
+ }

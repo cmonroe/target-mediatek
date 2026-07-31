@@ -1,0 +1,65 @@
+--- a/drivers/net/ethernet/airoha/airoha_eth.c
++++ b/drivers/net/ethernet/airoha/airoha_eth.c
+@@ -1148,7 +1148,7 @@ static int airoha_qdma_init_rx(struct ai
+ 			continue;
+ 		}
+ 		if (qdma->eth->extra_ops.rx_dscp_num_init)
+-			rx_dscp = qdma->eth->extra_ops.rx_dscp_num_init(i);
++			rx_dscp = qdma->eth->extra_ops.rx_dscp_num_init(qdma->eth, qdma - qdma->eth->qdma, i);
+ 		else
+ 			rx_dscp = RX_DSCP_NUM(i);
+ 		err = airoha_qdma_init_rx_queue(&qdma->q_rx[i], qdma,
+--- a/drivers/net/ethernet/airoha/airoha_eth.h
++++ b/drivers/net/ethernet/airoha/airoha_eth.h
+@@ -761,6 +761,14 @@ struct qdma_init {
+ 	unsigned char speedtest_fastpath;
+ };
+ 
++struct airoha_dscp_cfg {
++	u32 rx_dscp_lan[AIROHA_NUM_RX_RING];
++	u32 rx_dscp_wan[AIROHA_NUM_RX_RING];
++	u8 lro_mask_lan;	/* bit mask for LRO rings (ring 12-19), bit0=ring12, bit7=ring19 */
++	u8 lro_mask_wan;	/* bit mask for LRO rings (ring 12-19), bit0=ring12, bit7=ring19 */
++	bool dscp_set_from_dts[AIROHA_MAX_NUM_QDMA];	/* true if dscp/lro config is from DTS, [0]=qdma_lan, [1]=qdma_wan */
++};
++
+ struct arht_extra_ops {
+ 	void (*set_ppe_dft_cport)(struct airoha_eth *eth, int portid, int qdmaid);
+ 	int (*support_eth_monitor)(int p);
+@@ -783,7 +791,9 @@ struct arht_extra_ops {
+ 	struct airoha_gdm_dev* (*get_gdm_dev)(struct airoha_eth *eth, struct net_device *dev);
+ 	int (*tx_modified)(struct airoha_flow_table_entry *e, u32 hash);
+ 	void (*ethtool_stats)(struct airoha_gdm_dev *dev, u64 *data);
+-	int (*rx_dscp_num_init)(int i);
++	int (*rx_dscp_num_init)(struct airoha_eth *eth, int qdma_id, int ring);
++	int (*is_lro_ring)(struct airoha_eth *eth, int qdma_id, int qid);
++	int (*get_lro_dscp)(struct airoha_eth *eth, int qdma_id, int qid);
+ 	void (*ppe_exit)(void);
+ };
+ 
+@@ -814,6 +824,7 @@ struct airoha_eth {
+ 	bool meter_enable;
+ 	bool reduce_memory;
+ 	struct arht_extra_ops extra_ops;
++	struct airoha_dscp_cfg dscp_cfg;
+ };
+ 
+ u32 airoha_rr(void __iomem *base, u32 offset);
+@@ -869,7 +880,17 @@ static inline bool airoha_is_7583(struct
+ static inline bool airoha_qdma_is_lro_queue(struct airoha_queue *q)
+ {
+ 	struct airoha_qdma *qdma = q->qdma;
++	struct airoha_eth *eth = qdma->eth;
+ 	int qid = q - &qdma->q_rx[0];
++	int qdma_id = qdma - &eth->qdma[0];
++
++	/* a DTS-configured lro-mask, when present, overrides the default */
++	if (eth->extra_ops.is_lro_ring) {
++		int ret = eth->extra_ops.is_lro_ring(eth, qdma_id, qid);
++
++		if (ret >= 0)
++			return !!ret;
++	}
+ 
+ 	/* EN7581 SoC supports at most 8 LRO rx queues */
+ 	BUILD_BUG_ON(hweight32(AIROHA_RXQ_LRO_EN_MASK) >

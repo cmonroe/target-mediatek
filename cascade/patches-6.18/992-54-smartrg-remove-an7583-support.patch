@@ -1,0 +1,92 @@
+From: Chad Monroe <chad@monroe.io>
+Date: Wed, 03 Jun 2026 07:25:58 -0700
+Subject: net: airoha: remove AN7583 SoC support
+
+Scope the SmartRG Airoha BSP to AN7581/EN7581 PON with hardware offload.
+Drop the AN7583 ethernet datapath SoC object from the build and its
+references in the overlay-owned glue:
+
+  - remove an7583/soc_an7583.o from airoha-eth-y in the Makefile
+  - drop the soc_an7583.h include from airoha_function.h
+  - remove the an7583_extra_ops table and its selection branch in
+    arht_config_extra_ops()
+
+The pristine an7583/soc_an7583.{c,h} sources stay in the files/ overlay
+but are no longer compiled or referenced. The dormant AN7583 entries in
+airoha_eth.c (an7583_soc_data) and airoha_npu.c (an7583_npu_soc_data)
+are self-contained and left untouched.
+
+Signed-off-by: Chad Monroe <chad@monroe.io>
+---
+ drivers/net/ethernet/airoha/Makefile           |    2 
+ drivers/net/ethernet/airoha/airoha_eth_extra.c |   31 ---------------
+ drivers/net/ethernet/airoha/airoha_function.h  |    1 
+ 3 files changed, 1 insertion(+), 33 deletions(-)
+
+--- a/drivers/net/ethernet/airoha/Makefile
++++ b/drivers/net/ethernet/airoha/Makefile
+@@ -11,6 +11,6 @@ obj-$(CONFIG_NET_AIROHA) += arht_ppe.o
+ obj-$(CONFIG_NET_AIROHA) += arht_fe.o
+ obj-$(CONFIG_NET_AIROHA) += arht_multicast.o
+ obj-$(CONFIG_NET_AIROHA) += arht_hsgmii.o arht_config.o arht_loopback.o
+-airoha-eth-y := airoha_eth.o airoha_eth_extra.o  airoha_ppe.o  en7581/soc_en7581.o an7583/soc_an7583.o
++airoha-eth-y := airoha_eth.o airoha_eth_extra.o  airoha_ppe.o  en7581/soc_en7581.o
+ airoha-eth-$(CONFIG_DEBUG_FS) += airoha_ppe_debugfs.o airoha_ppe_debugfs_extra.o
+ obj-$(CONFIG_NET_AIROHA_NPU) += airoha_npu.o airoha_npu_extra.o
+--- a/drivers/net/ethernet/airoha/airoha_eth_extra.c
++++ b/drivers/net/ethernet/airoha/airoha_eth_extra.c
+@@ -167,34 +167,6 @@ static int arht_get_lro_dscp(struct airo
+ 	return dscp > 0 ? dscp : LRO_RX_DSCP_NUM;
+ }
+ 
+-static const struct arht_extra_ops an7583_extra_ops = {
+-	/* common ops */
+-	.set_mac_addr = arht_set_mac_addr,
+-	.arht_hw_init = arht_extra_hw_init,
+-	.set_bucket_size = arht_set_bucket_size,
+-	.arht_rx_handler = airoha_receive_hook,
+-	.arht_tx_handler = airoha_qdma_lan_tx,
+-	.sel_phy_external = arht_sel_phy_external,
+-	.modify_ppe_entry = arht_modified_ppe_entry,
+-	.update_shrink_table = UpdateShrinkTable,
+-	.set_flow_dst = airoha_set_flow_destination,
+-	.tx_modified = arht_tx_modified,
+-	.get_gdm_dev = airoha_ppe_get_gdm_dev,
+-	.rx_dscp_num_init = arht_rx_dscp_num,
+-	.is_lro_ring = arht_is_lro_ring,
+-	.get_lro_dscp = arht_get_lro_dscp,
+-	.ppe_exit = arht_ppe_exit,
+-	/* chip ops */
+-	.support_eth_monitor = an7583_support_eth_monitor,
+-	.set_channel_retire = an7583_channel_retire,
+-	.set_qdma_regs = an7583_qdma_regs_setting,
+-	.set_fe_regs = an7583_fe_regs_setting,
+-	.get_qdma_channel = an7583_get_qdma_channel,
+-	.get_qdma_buf_size = an7583_get_qdma_buf_size,
+-	.conntrack_get_cnt = arht_conntrack_get_cnt,
+-	.conntrack_free_cnt = arht_conntrack_free_cnt,
+-
+-};
+ static const  struct arht_extra_ops an7581_extra_ops = {
+ 	/* common ops */
+ 	.set_mac_addr = arht_set_mac_addr,
+@@ -229,9 +201,6 @@ static void arht_config_extra_ops(struct
+ 	if (airoha_is_7581(eth)) {
+ 		eth->extra_ops = an7581_extra_ops;
+ 		eth->qdma_init.speedtest_fastpath = 1;
+-	} else if (airoha_is_7583(eth)) {
+-		eth->extra_ops = an7583_extra_ops;
+-		eth->qdma_init.speedtest_fastpath = 1;
+ 	}
+ }
+ 
+--- a/drivers/net/ethernet/airoha/airoha_function.h
++++ b/drivers/net/ethernet/airoha/airoha_function.h
+@@ -8,7 +8,6 @@
+ 
+ #include "arht_dp_api.h"
+ #include "en7581/soc_en7581.h"
+-#include "an7583/soc_an7583.h"
+ #include "arht_fe.h"
+ #include "arht_qdma.h"
+ #include "arht_ppe.h"

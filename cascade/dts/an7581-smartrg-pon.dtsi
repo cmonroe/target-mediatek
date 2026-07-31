@@ -1,0 +1,41 @@
+// SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+
+/ {
+	xpon_mac: xpon@1fb64000 {
+		compatible = "airoha,airoha-xpon";
+		reg = <0x0 0x1fb64000 0x0 0x3e8>,
+		      <0x0 0x1fb66000 0x0 0x23c>,
+		      <0x0 0x1fb65000 0x0 0xFF8>;
+		interrupts = <GIC_SPI 42 IRQ_TYPE_LEVEL_HIGH>, // XPON MAC INT 26+16
+		             <GIC_SPI 34 IRQ_TYPE_LEVEL_HIGH>; // DYINGGASP INT 18+16
+	};
+
+	pon_phy: pon_phy@1faf0000 {
+		compatible = "econet,ecnt-pon_phy";
+		reg = <0x0 0x1faf0000 0x0 0x1fff>,			// PON_PHY_ASIC_RG range
+		      <0x0 0x1fa2ff24 0x0 0x4>,             // PON_PHY_FPGA_RG_TX_OFF
+			  <0x0 0x1faf3000 0x0 0xfff>,           // PON_PHY_ASIC_RG range2
+			  <0x0 0x1faf4000 0x0 0xfff>;           // PON_PHY_ASIC_RG range3
+			  //<0x0 0x1fa84024 0x0 0x4>,           // PON_PHY_ASIC_RG range4,only for xilinx_fpga
+			  //<0x0 0x1fa84030 0x0 0x4>;           // PON_PHY_ASIC_RG range5,only for xilinx_fpga
+			  //<0x0 0x1fa7A000 0x0 0xfff>,     	// xfi_ana_pxp
+			  //<0x0 0x1fa7B000 0x0 0xfff>,     	// xfi_pma
+			  //<0x0 0x1fa8A000 0x0 0xfff>,     	// pon_ana_pxp
+			  //<0x0 0x1fa8B000 0x0 0xfff>;  	    // pon_pma
+		interrupts = <GIC_SPI 43 IRQ_TYPE_LEVEL_HIGH>;      // XPON_PHY_INTR 27+16 move to common
+		txDis-gpios = <&en7581_pinctrl 38 GPIO_ACTIVE_LOW>; // tx disable
+		txBen-gpios = <&en7581_pinctrl 41 GPIO_ACTIVE_LOW>; // for 7581 xepon&gepon BEN
+		rxDis-gpios = <&en7581_pinctrl 39 GPIO_ACTIVE_LOW>; // LED_PHY_VCC_DISABLE
+		common_phy = <&pon_pcs>;
+	};
+	
+	pon_led: xpon_led {
+		compatible = "airoha,airoha-xpon_led";
+		pon-gpios = <&en7581_pinctrl 28 GPIO_ACTIVE_LOW>;   // xpon_status
+		los-gpios = <&en7581_pinctrl 25 GPIO_ACTIVE_LOW>;   // xpon_los
+	};
+
+	pon_bob: bob_nvm {
+		compatible = "airoha,airoha-bob";
+	};
+};

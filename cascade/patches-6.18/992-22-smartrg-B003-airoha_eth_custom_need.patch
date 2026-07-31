@@ -1,0 +1,21 @@
+--- a/drivers/net/ethernet/airoha/airoha_eth.c
++++ b/drivers/net/ethernet/airoha/airoha_eth.c
+@@ -23,6 +23,8 @@
+ 
+ #include "airoha_regs.h"
+ #include "airoha_eth.h"
++#include "airoha_function.h"
++
+ 
+ u32 airoha_rr(void __iomem *base, u32 offset)
+ {
+@@ -4159,6 +4161,9 @@ static int airoha_probe(struct platform_
+ 	platform_set_drvdata(pdev, eth);
+ 
+ 	memset(&eth->extra_ops, 0, sizeof(eth->extra_ops));
++	err = arht_extra_probe(eth);
++	if (err)
++		return err;
+ 	eth->debugfs_dir = debugfs_create_dir("airoha-eth", NULL);
+ 
+ 	err = airoha_hw_init(pdev, eth);
