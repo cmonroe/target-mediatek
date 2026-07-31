@@ -256,7 +256,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	u32 classid;
 --- a/net/netfilter/nf_flow_table_offload.c
 +++ b/net/netfilter/nf_flow_table_offload.c
-@@ -884,11 +884,13 @@ static int nf_flow_offload_alloc(const s
+@@ -889,11 +889,13 @@ static int nf_flow_offload_alloc(const s
  }
  
  static void nf_flow_offload_init(struct flow_cls_offload *cls_flow,
@@ -270,7 +270,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	cls_flow->common.protocol = proto;
  	cls_flow->common.prio = priority;
  	cls_flow->common.extack = extack;
-@@ -910,7 +912,7 @@ static int nf_flow_offload_tuple(struct
+@@ -915,7 +917,7 @@ static int nf_flow_offload_tuple(struct
  	__be16 proto = ETH_P_ALL;
  	int err, i = 0;
  

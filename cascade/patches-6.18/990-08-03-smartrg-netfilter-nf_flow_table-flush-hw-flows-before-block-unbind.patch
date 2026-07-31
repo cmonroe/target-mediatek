@@ -25,7 +25,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 
 --- a/include/net/netfilter/nf_flow_table.h
 +++ b/include/net/netfilter/nf_flow_table.h
-@@ -304,6 +304,7 @@ void nf_flow_table_gc_cleanup(struct nf_
+@@ -306,6 +306,7 @@ void nf_flow_table_gc_cleanup(struct nf_
  void nf_flow_table_cleanup(struct net_device *dev);
  
  int nf_flow_table_init(struct nf_flowtable *flow_table);
@@ -62,7 +62,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	mutex_lock(&flowtable_lock);
 --- a/net/netfilter/nf_flow_table_offload.c
 +++ b/net/netfilter/nf_flow_table_offload.c
-@@ -1266,6 +1266,12 @@ int nf_flow_table_offload_setup(struct n
+@@ -1271,6 +1271,12 @@ int nf_flow_table_offload_setup(struct n
  	if (!nf_flowtable_hw_offload(flowtable))
  		return nf_flow_offload_xdp_setup(flowtable, dev, cmd);
  

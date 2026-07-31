@@ -10,7 +10,7 @@ Subject: [PATCH] sound add mt7986 si3218x driver
 
 --- a/sound/soc/mediatek/Kconfig
 +++ b/sound/soc/mediatek/Kconfig
-@@ -76,6 +76,16 @@ config SND_SOC_MT7986_WM8960
+@@ -96,6 +96,16 @@ config SND_SOC_MT7986_WM8960
  	  Select Y if you have such device.
  	  If unsure select "N".
  

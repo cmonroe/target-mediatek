@@ -27,7 +27,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 
 --- a/include/net/netfilter/nf_flow_table.h
 +++ b/include/net/netfilter/nf_flow_table.h
-@@ -202,6 +202,9 @@ struct flow_offload {
+@@ -204,6 +204,9 @@ struct flow_offload {
  
  unsigned long flow_offload_get_timeout(struct flow_offload *flow);
  
@@ -106,7 +106,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	int err;
 --- a/net/netfilter/nft_flow_offload.c
 +++ b/net/netfilter/nft_flow_offload.c
-@@ -360,10 +360,13 @@ static void nft_flow_offload_eval(const
+@@ -382,10 +382,13 @@ static void nft_flow_offload_eval(const
  	if (!nf_ct_is_confirmed(ct))
  		goto out;
  

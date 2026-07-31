@@ -247,7 +247,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	unregister_pernet_subsys(&nf_flow_table_net_ops);
 --- a/include/net/netfilter/nf_flow_table.h
 +++ b/include/net/netfilter/nf_flow_table.h
-@@ -84,6 +84,9 @@ struct nf_flowtable {
+@@ -85,6 +85,9 @@ struct nf_flowtable {
  	struct flow_block		flow_block;
  	struct rw_semaphore		flow_block_lock; /* Guards flow_block */
  	possible_net_t			net;
@@ -257,7 +257,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  };
  
  static inline bool nf_flowtable_hw_offload(struct nf_flowtable *flowtable)
-@@ -91,6 +94,13 @@ static inline bool nf_flowtable_hw_offlo
+@@ -92,6 +95,13 @@ static inline bool nf_flowtable_hw_offlo
  	return flowtable->flags & NF_FLOWTABLE_HW_OFFLOAD;
  }
  

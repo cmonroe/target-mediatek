@@ -19,10 +19,10 @@ PHY reset) that does not re-download the ~131KB blob.
 
 --- a/drivers/net/phy/mediatek/mtk-2p5ge.c
 +++ b/drivers/net/phy/mediatek/mtk-2p5ge.c
-@@ -418,12 +418,50 @@
+@@ -418,12 +418,50 @@ free_pmb:
  	return ret;
  }
-
+ 
 +static int mt7988_2p5ge_phy_reinit(struct phy_device *phydev)
 +{
 +	void __iomem *mcu_csr_base;
@@ -59,7 +59,7 @@ PHY reset) that does not re-download the ~131KB blob.
  	/* Check if PHY interface type is compatible */
  	if (phydev->interface != PHY_INTERFACE_MODE_INTERNAL)
  		return -ENODEV;
-
+ 
 +	if (phydev->drv->phy_id == MTK_2P5GPHY_ID_MT7988) {
 +		int ret = mt7988_2p5ge_phy_reinit(phydev);
 +
@@ -69,4 +69,4 @@ PHY reset) that does not re-download the ~131KB blob.
 +
  	phy_modify_mmd(phydev, MDIO_MMD_VEND1, MTK_PHY_LPI_PCS_DSP_CTRL,
  		       MTK_PHY_LPI_SIG_EN_LO_THRESH100_MASK, 0);
-
+ 

@@ -31,7 +31,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	nf_flow_offload_add(flow_table, flow);
 --- a/net/netfilter/nf_flow_table_offload.c
 +++ b/net/netfilter/nf_flow_table_offload.c
-@@ -973,6 +973,14 @@ static void flow_offload_work_add(struct
+@@ -978,6 +978,14 @@ static void flow_offload_work_add(struct
  	struct nf_flow_rule *flow_rule[FLOW_OFFLOAD_DIR_MAX];
  	int err;
  

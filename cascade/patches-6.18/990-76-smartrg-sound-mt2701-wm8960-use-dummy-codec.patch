@@ -1,6 +1,6 @@
 --- a/sound/soc/mediatek/Kconfig
 +++ b/sound/soc/mediatek/Kconfig
-@@ -29,7 +29,7 @@ config SND_SOC_MT2701_CS42448
+@@ -49,7 +49,7 @@ config SND_SOC_MT2701_CS42448
  config SND_SOC_MT2701_WM8960
  	tristate "ASoc Audio driver for MT2701 with WM8960 codec"
  	depends on SND_SOC_MT2701 && I2C
