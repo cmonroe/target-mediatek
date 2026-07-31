@@ -1,0 +1,18 @@
+#!/bin/sh /etc/rc.common
+# The shared kernel keeps CPU_FREQ_DEFAULT_GOV_USERSPACE for parity with
+# the deployed MediaTek fleet; AN7581 boards ran the performance governor
+# on dragontail, so pin it here.
+
+START=11
+
+boot() {
+	case $(board_name) in
+	airoha,an7581-evb|\
+	smartrg,sdg-8716v|\
+	smartrg,sdg-8736v)
+		for gov in /sys/devices/system/cpu/cpufreq/policy*/scaling_governor; do
+			[ -f "$gov" ] && echo performance > "$gov"
+		done
+		;;
+	esac
+}

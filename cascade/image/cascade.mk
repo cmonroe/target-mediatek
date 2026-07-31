@@ -4,6 +4,10 @@ SRGRUN:= TARGET_DIR=$(TARGET_DIR) KDIR=$(KDIR) STAGING_DIR=$(STAGING_DIR_HOST) B
 BINNAME:=$(IMG_PREFIX)-polecat-root.squashfs
 VERNAME:=$(VERSION_NUMBER)-$(subst DEVICE_,,$(PROFILE))
 
+# AN7581 DRAM starts at 0x80000000; those boards boot the same kernel
+# binary from the k2 FIT node at this address
+AIROHA_KERNEL_LOADADDR:=0x80200000
+
 define Device/polecat
   KERNEL_LOADADDR = 0x43200000
   KERNEL_SUFFIX := -fit-multi.itb
@@ -44,10 +48,17 @@ define Device/polecat
   DEVICE_DTS += mt7988a-smartrg-SDG-9000
   DEVICE_DTS += mt7988d-smartrg-SDG-9732i
   DEVICE_DTS += mt7988d-smartrg-SDG-9712o
+  DEVICE_DTS += an7581-smartrg-SDG-8716v
+  DEVICE_DTS += an7581-smartrg-SDG-8736v
   DEVICE_DTS_DIR := ../dts
-  ARTIFACTS := emmc-preloader.bin emmc-bl31-uboot.fip
+  DEVICE_PACKAGES += kmod-i2c-an7581
+  ARTIFACTS := emmc-preloader.bin emmc-bl31-uboot.fip \
+	an7581-preloader.bin an7581-bl31-uboot.fip an7581-bl2-bl31-uboot.bin
   ARTIFACT/emmc-preloader.bin := mt7986-bl2 emmc-ddr4
   ARTIFACT/emmc-bl31-uboot.fip := mt7986-bl31-uboot smartrg_bonanza
+  ARTIFACT/an7581-preloader.bin := an7581-preloader smartrg_dragontail
+  ARTIFACT/an7581-bl31-uboot.fip := an7581-bl31-uboot smartrg_dragontail
+  ARTIFACT/an7581-bl2-bl31-uboot.bin := an7581-emmc-bl2-bl31-uboot smartrg_dragontail
   DTC_FLAGS += -@
   IMAGES := root.squashfs img img.run
   IMAGE/root.squashfs := SrgDisk
@@ -55,9 +66,12 @@ define Device/polecat
   export DEVICE_DTS
 endef
 TARGET_DEVICES := polecat
-#TARGET_DEVICES += elecom_wrc-2533gent
-#TARGET_DEVICES += smartrg_sr402ac
-#TARGET_DEVICES += mediatek_mt7622-rfb1
+
+# Dev-only AN7581 evb (not in production images): add to Device/polecat
+#   DEVICE_DTS += an7581-smartrg-evb-emmc
+# and to Build/SrgFit
+#   -i "SDG-an7581-rfb" -d $(KDIR)/image-an7581-smartrg-evb-emmc.dtb.lzma -C lzma -h "crc32" -h "sha1" \
+#   -c "303" -K k2 -R rdisk -D "SDG-an7581-rfb" \
 
 define Build/SrgFit
 
@@ -66,6 +80,7 @@ define Build/SrgFit
 
 	srg-mkits.sh -o $@.its -A $(LINUX_KARCH)  -v $(LINUX_VERSION) \
 	   	-i "k1" -k $@ -a $(KERNEL_LOADADDR) -e $(if $(KERNEL_ENTRY),$(KERNEL_ENTRY),$(KERNEL_LOADADDR)) -C lzma -h "crc32" -h "sha1" \
+		-i "k2" -k $@ -a $(AIROHA_KERNEL_LOADADDR) -e $(AIROHA_KERNEL_LOADADDR) -C lzma -h "crc32" -h "sha1" \
 		-i "rdisk" -r $(STAGING_DIR_IMAGE)/$(IMG_PREFIX)-initramfs.cpio.gz -h "crc32" -h "sha1" \
 		-i "srbpi" -d $(KDIR)/image-mt7622-smartrg-srbpi.dtb -h "crc32" -h "sha1" \
 		-i "834-5" -d $(KDIR)/image-mt7622-smartrg-834-5.dtb -h "crc32" -h "sha1" \
@@ -96,6 +111,8 @@ define Build/SrgFit
 		-i "SDG-9000" -d $(KDIR)/image-mt7988a-smartrg-SDG-9000.dtb.lzma -C lzma -h "crc32" -h "sha1" \
 		-i "SDG-9732i" -d $(KDIR)/image-mt7988d-smartrg-SDG-9732i.dtb.lzma -C lzma -h "crc32" -h "sha1" \
 		-i "SDG-9712o" -d $(KDIR)/image-mt7988d-smartrg-SDG-9712o.dtb.lzma -C lzma -h "crc32" -h "sha1" \
+		-i "SDG-8716v" -d $(KDIR)/image-an7581-smartrg-SDG-8716v.dtb.lzma -C lzma -h "crc32" -h "sha1" \
+		-i "SDG-8736v" -d $(KDIR)/image-an7581-smartrg-SDG-8736v.dtb.lzma -C lzma -h "crc32" -h "sha1" \
 		-c "300" -K k1 -R rdisk -D "srbpi" \
 		-c "402" -K k1 -R rdisk -D "834-5" \
 		-c "403" -K k1 -R rdisk -D "834-5" \
@@ -129,9 +146,12 @@ define Build/SrgFit
 		-c "443" -K k1 -R rdisk -D "SDG-8732v" -T "smartrg,sdg-8732v" \
 		-c "500" -K k1 -R rdisk -D "SDG-9000" -T "smartrg,sdg-9000" \
 		-c "510" -K k1 -R rdisk -D "SDG-9732i" -T "smartrg,sdg-9732i" \
-		-c "511" -K k1 -R rdisk -D "SDG-9712o" -T "smartrg,sdg-9712o"
+		-c "511" -K k1 -R rdisk -D "SDG-9712o" -T "smartrg,sdg-9712o" \
+		-c "600" -K k2 -R rdisk -D "SDG-8716v" \
+		-c "601" -K k2 -R rdisk -D "SDG-8736v"
 
 	PATH=$(LINUX_DIR)/scripts/dtc:$(PATH) mkimage -f $@.its $@.new
+	python3 $(TOPDIR)/target/linux/$(BOARD)/image/srg-fit-dedup.py $@.new kernel@k2 kernel@k1
 	@mv -f $@.new $@
 
 endef
