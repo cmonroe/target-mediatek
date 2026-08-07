@@ -151,7 +151,7 @@ Subject: [PATCH] OWRT-7643 Adtran quirks added
  
  	// Hisense LXT-010S-H is a GPON ONT SFP (sold as LEOX LXT-010S-H) that
  	// can operate at 2500base-X, but reports 1000BASE-LX / 1300MBd in its
-@@ -688,6 +765,28 @@ static const struct sfp_quirk sfp_quirks
+@@ -688,6 +765,31 @@ static const struct sfp_quirk sfp_quirks
  	SFP_QUIRK_F("Turris", "RTSFP-10", sfp_fixup_rollball),
  	SFP_QUIRK_F("Turris", "RTSFP-10G", sfp_fixup_rollball),
  
@@ -176,6 +176,9 @@ Subject: [PATCH] OWRT-7643 Adtran quirks added
 +	// Adtran RTXL185-500-ADT, 10GBase-T Copper 30M, 64B/65B ENC
 +	SFP_QUIRK("WTD", "RTXL185-500-ADT", sfp_quirk_phy_mode,
 +		  sfp_fixup_copper_xxx),
++	// Adtran-qualified Linktel LX2101IDL-ADT, 1000BASE-BX10 (1G BiDi) WAN optic.
++	SFP_QUIRK("LINKTEL", "LX2101IDL-ADT", sfp_quirk_disable_autoneg,
++		  sfp_fixup_ignore_tx_fault),
 +
  	SFP_QUIRK_S("ZOERAX", "SFP-2.5G-T", sfp_quirk_oem_2_5g),
  	SFP_QUIRK_S("TP-LINK", "TL-SM410U", sfp_quirk_oem_2_5g),
