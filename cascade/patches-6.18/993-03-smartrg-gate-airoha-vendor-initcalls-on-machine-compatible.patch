@@ -1,0 +1,68 @@
+From: Chad Monroe <chad@monroe.io>
+Date: Mon, 10 Aug 2026 06:25:50 -0700
+Subject: [PATCH] airoha: gate vendor initcalls on airoha,en7581 machine
+ compatible
+
+The cascade target boots MediaTek and Airoha boards from one kernel,
+so these built-in initcalls also run on MediaTek hardware where the
+Airoha ethernet driver never probes and glb_eth stays NULL.
+
+Ungated, wifi_lo_init registers four netfilter LOCAL_IN/LOCAL_OUT
+hooks in init_net, creates /proc/wifi_local_fastpath, installs the
+force-to-CPU GRO and pingpong RCU hooks, and registers a kprobe on
+tcp_recvmsg at boot on every board. arht_dynamic_ifc_init creates
+/proc/dynamic_ifc and installs its pingpong and sock-in-use hooks,
+reachable from the wifi_lo timeout path. None of that belongs on a
+MediaTek board.
+
+Decline to initialize unless the machine is airoha,en7581, returning
+0 since these are built-in initcalls. arht_kprobe.o has no initcall
+of its own; its boot-time exposure is only via wifi_lo_init, which is
+gated here.
+
+Signed-off-by: Chad Monroe <chad@monroe.io>
+---
+ drivers/net/ethernet/airoha/arht_dynamic_ifc.c |    4 ++++
+ drivers/net/ethernet/airoha/arht_wifi_lo.c     |    4 ++++
+ 2 files changed, 8 insertions(+)
+
+--- a/drivers/net/ethernet/airoha/arht_dynamic_ifc.c
++++ b/drivers/net/ethernet/airoha/arht_dynamic_ifc.c
+@@ -7,6 +7,7 @@
+ #include <linux/module.h>
+ #include <linux/kernel.h>
+ #include <linux/init.h>
++#include <linux/of.h>
+ 
+ #if __has_include("airoha_function.h") && __has_include("arht_dynamic_ifc.h") && __has_include("arht_kprobe.h")
+ #define ARHT_DIFC_FULL_SUPPORT 1
+@@ -1095,6 +1096,9 @@ static int __init arht_dynamic_ifc_init(
+ {
+ 	int i;
+ 
++	if (!of_machine_is_compatible("airoha,en7581"))
++		return 0;
++
+ 	df_proc_entry = proc_create("dynamic_ifc", 0644, NULL, &dynamic_ifc_fops);
+ 	if (!df_proc_entry) {
+ 		pr_err("arht_dynamic_ifc: failed to create proc entry\n");
+--- a/drivers/net/ethernet/airoha/arht_wifi_lo.c
++++ b/drivers/net/ethernet/airoha/arht_wifi_lo.c
+@@ -17,6 +17,7 @@
+ 
+ #include <linux/module.h>
+ #include <linux/kernel.h>
++#include <linux/of.h>
+ #include <linux/netdevice.h>
+ #include <linux/etherdevice.h>
+ #include <linux/ip.h>
+@@ -1209,6 +1210,9 @@ static int __init wifi_lo_init(void)
+ {
+ 	int ret;
+ 
++	if (!of_machine_is_compatible("airoha,en7581"))
++		return 0;
++
+ 	hash_init(wifi_lo_port_ht);
+ 	hash_init(wifi_lo_hash_ht);
+ 

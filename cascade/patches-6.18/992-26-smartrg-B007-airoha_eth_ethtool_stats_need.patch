@@ -1,0 +1,96 @@
+--- a/drivers/net/ethernet/airoha/airoha_eth.c
++++ b/drivers/net/ethernet/airoha/airoha_eth.c
+@@ -2737,6 +2737,23 @@ error:
+ 	return NETDEV_TX_OK;
+ }
+ 
++static const char *airoha_ethtool_stats_strings[] = {
++    "TxOkPackets",
++    "TxOkBytes",
++    "TxDrop",
++    "TxBroadcast",
++    "TxMulticast",
++    "TxUnicast",
++    "RxOkPackets",
++    "RxOkBytes",
++    "RxDrop",
++    "RxBroadcast",
++    "RxMulticast",
++    "RxUnicast",
++    "RxErr",
++};
++#define AIROHA_STATS_STR_LEN	ARRAY_SIZE(airoha_ethtool_stats_strings)
++
+ static void airoha_ethtool_get_drvinfo(struct net_device *netdev,
+ 				       struct ethtool_drvinfo *info)
+ {
+@@ -2825,6 +2842,59 @@ airoha_ethtool_set_link_ksettings(struct
+ 	return phylink_ethtool_ksettings_set(dev->phylink, cmd);
+ }
+ 
++static int airoha_ethtool_get_sset_count(struct net_device *netdev, int sset)
++{
++	switch (sset) {
++	case ETH_SS_STATS:
++		return AIROHA_STATS_STR_LEN;
++	default:
++		return -EOPNOTSUPP;
++	}
++}
++
++static void airoha_ethtool_get_strings(struct net_device *netdev,
++				       u32 stringset, u8 *data)
++{
++	int i;
++
++	switch (stringset) {
++	case ETH_SS_STATS:
++		for (i = 0; i < AIROHA_STATS_STR_LEN; i++)
++			strncpy(data + i * ETH_GSTRING_LEN, airoha_ethtool_stats_strings[i], ETH_GSTRING_LEN);
++		break;
++	default:
++		break;
++	}
++}
++
++static void airoha_ethtool_get_ethtool_stats(struct net_device *netdev, struct ethtool_stats *stats, u64 *data)
++{
++	struct airoha_gdm_dev *dev = netdev_priv(netdev);
++	unsigned int start, idx = 0;
++
++	airoha_update_hw_stats(dev);
++
++	do {
++		start = u64_stats_fetch_begin(&dev->stats.syncp);
++		data[idx++] = dev->stats.tx_ok_pkts;
++		data[idx++] = dev->stats.tx_ok_bytes;
++		data[idx++] = dev->stats.tx_drops;
++		data[idx++] = dev->stats.tx_broadcast;
++		data[idx++] = dev->stats.tx_multicast;
++		data[idx++] = dev->stats.tx_ok_pkts - dev->stats.tx_broadcast - dev->stats.tx_multicast; //tx_uc
++		data[idx++] = dev->stats.rx_ok_pkts;
++		data[idx++] = dev->stats.rx_ok_bytes;
++		data[idx++] = dev->stats.rx_drops;
++		data[idx++] = dev->stats.rx_broadcast;
++		data[idx++] = dev->stats.rx_multicast;
++		data[idx++] = dev->stats.rx_ok_pkts - dev->stats.rx_broadcast - dev->stats.rx_multicast; //rx_uc
++		data[idx++] = dev->stats.rx_errors;
++		if (dev->eth->extra_ops.ethtool_stats)
++			dev->eth->extra_ops.ethtool_stats(dev, data);
++
++	} while (u64_stats_fetch_retry(&dev->stats.syncp, start));
++}
++
+ static int airoha_qdma_set_chan_tx_sched(struct net_device *netdev,
+ 					 int channel, enum tx_sched_mode mode,
+ 					 const u16 *weights, u8 n_weights)
+@@ -3683,6 +3753,9 @@ static const struct ethtool_ops airoha_e
+ 	.get_link_ksettings	= airoha_ethtool_get_link_ksettings,
+ 	.set_link_ksettings	= airoha_ethtool_set_link_ksettings,
+ 	.get_link		= ethtool_op_get_link,
++	.get_sset_count		= airoha_ethtool_get_sset_count,
++	.get_strings		= airoha_ethtool_get_strings,
++	.get_ethtool_stats	= airoha_ethtool_get_ethtool_stats,
+ };
+ 
+ static int airoha_metadata_dst_alloc(struct airoha_gdm_port *port)

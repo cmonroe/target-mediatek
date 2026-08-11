@@ -26,6 +26,9 @@
 
 #include "arht_hook/arht_hook.h"
 #include "arht_hook/ecnt_hook_fe_type.h"
+#include <arht_hook/ecnt_hook_ifc.h>
+#include <arht_hook/ecnt_hook_ifc_type.h>
+
 
 #define TX_WRED_THR_NUM                         (5)
 #define TX_WRED_PROBABILITY_NUM                 (4)
@@ -296,6 +299,7 @@ enum {
 
 #define	FOE_MAGIC_GRE_HWDOWN_2	0x7298
 #define FOE_MAGIC_XSI_GDM4		0x729a
+#define PPE_MAGIC_DYNAMIC_IFC 	0x72b2
 
 struct airoha_gdm_dev;
 struct airoha_queue;
@@ -616,12 +620,7 @@ int arht_multicast_hwnat_list_update(MULTICAST_HWNATENTRY_t* entry, unsigned int
 int arht_multicast_hwnat_list_update_lan(MULTICAST_HWNATENTRY_t* entry, unsigned int update_mode,unsigned int port_mask,unsigned int local);
 int32_t FillSpeedtestEntryInfo(struct sk_buff * skb, struct airoha_foe_entry *foe_entry);
 int isValidPpeEntry(struct sk_buff *skb, struct airoha_foe_entry *foe_entry);
-#if defined(CONFIG_SUPPORT_QDMALAN_TR471)
-void SetSpeedtestPortInfo(struct airoha_foe_entry *foe_entry, struct port_info *pinfo, u32 fport);
-int speedtest_lan_tx_offload(struct sk_buff *skb, struct airoha_foe_entry *foe_entry, struct airoha_ppe *ppe, struct port_info *pinfo, u32 fport);
-#else
 void SetSpeedtestPortInfo(struct airoha_foe_entry * foe_entry, struct airoha_ppe *ppe,struct port_info *pinfo);
-#endif
 void SetTR471PortInfo(struct airoha_foe_entry * foe_entry);
 int32_t FillTR471EntryInfo(struct sk_buff * skb, struct airoha_foe_entry *foe_entry);
 int tr471_downstream_offload(struct sk_buff * skb,struct airoha_eth *eth);
@@ -639,7 +638,5 @@ int airoha_qdma_lan_tx(struct sk_buff *skb,u32 tag,u8 fport,int channel,int qid,
 unsigned int airoha_qdma_get_buf_size(struct airoha_qdma *qdma);
 void airoha_set_default_acnt_meter_idx(struct airoha_foe_entry *hwe, int type);
 void get_serdes_info_from_dev(struct airoha_gdm_dev *dev, int *serdes_idx, int *channel);
-int arht_skip_copy_kprobe_enable(void);
-void arht_skip_copy_kprobe_disable(void);
 
 #endif /* AIROHA_DP_API_H */

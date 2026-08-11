@@ -22,13 +22,6 @@
 #include "arht_loopback.h"
 
 
-/*
- * To prevent excessive CPU load caused by continuously deleting a large
- * number of nf_conntrack rules, limit the maximum number of conntrack
- * deletions per clean operation to 50.
- */
-#define PPE_MAX_CT_DELETE_PER_CLEAN 50
-
 extern int (*fe_resource_mark_if_meter_hook)( struct sk_buff *skb, int dir);
 /************************************************************************
 *                  P U B L I C   D A T A
@@ -1035,9 +1028,26 @@ void airoha_ppe_foe_get_vlan_vpm(struct sk_buff *skb, u16 *vpm)
 
 static int airoha_ppe_is_wifi_dev(struct net_device *dev)
 {
-    return ((dev != NULL) && \
-			((strncmp(dev->name,"phy0", 4) == 0) || (strncmp(dev->name,"ap-mld", 6) == 0)
-			|| (strncmp(dev->name,"ra", 2) == 0) || (strncmp(dev->name,"apcli", 5) == 0)));
+	struct net_device *real_dev = dev;
+
+	if (!real_dev)
+		return 0;
+
+	if (is_vlan_dev(real_dev))
+		real_dev = vlan_dev_real_dev(real_dev);
+	if (!real_dev)
+		return 0;
+
+#if IS_ENABLED(CONFIG_CFG80211_HEADERS)
+	if (real_dev->ieee80211_ptr)
+		return 1;
+#endif
+#ifdef CONFIG_WIRELESS_EXT
+	if (real_dev->wireless_handlers)
+		return 1;
+#endif
+
+	return 0;
 }
 
 static void arht_set_ppe_lanif(struct sk_buff *skb,u32 hash)
@@ -1225,7 +1235,7 @@ static void airoha_ppe_general_bind(struct airoha_ppe *ppe, struct airoha_foe_en
 		case PPE_PKT_TYPE_IPV4_ROUTE:
 			hwe->ipv4.data = data;
 			l2 = &hwe->ipv4.l2.common;
-			hwe->ipv4.ib2 = FIELD_PREP(AIROHA_FOE_IB2_PORT_AG, 0x7ff);
+			hwe->ipv4.ib2 = 0;
 			hwe->ipv4.ib2 |= FIELD_PREP(AIROHA_FOE_IB2_NBQ, pinfo->nbq);	
 			hwe->ipv4.ib2 |= FIELD_PREP(AIROHA_FOE_IB2_DSCP, dscp);	
 			hwe->ipv4.ib2 |= FIELD_PREP(AIROHA_FOE_IB2_PSE_PORT, fport) |
@@ -1238,7 +1248,7 @@ static void airoha_ppe_general_bind(struct airoha_ppe *ppe, struct airoha_foe_en
 		case PPE_PKT_TYPE_BRIDGE:
 			hwe->bridge32.data = data;
 			l2 = &hwe->bridge32.l2;
-			hwe->bridge32.ib2 = FIELD_PREP(AIROHA_FOE_IB2_PORT_AG, 0x7ff);
+			hwe->bridge32.ib2 = 0;
 			hwe->bridge32.ib2 |= FIELD_PREP(AIROHA_FOE_IB2_NBQ, pinfo->nbq);	
 			hwe->bridge32.ib2 |= FIELD_PREP(AIROHA_FOE_IB2_PSE_PORT, fport) |
 		       fqos | fast;		
@@ -1249,7 +1259,7 @@ static void airoha_ppe_general_bind(struct airoha_ppe *ppe, struct airoha_foe_en
 		case PPE_PKT_TYPE_IPV6_ROUTE_5T:
 			hwe->ipv6.data = data;
 			l2 = &hwe->ipv6.l2;
-			hwe->ipv6.ib2 = FIELD_PREP(AIROHA_FOE_IB2_PORT_AG, 0x7ff);
+			hwe->ipv6.ib2 = 0;
 			hwe->ipv6.ib2 |= FIELD_PREP(AIROHA_FOE_IB2_NBQ, pinfo->nbq);	
 			hwe->ipv6.ib2 |= FIELD_PREP(AIROHA_FOE_IB2_DSCP, dscp);
 			hwe->ipv6.ib2 |= FIELD_PREP(AIROHA_FOE_IB2_PSE_PORT, fport) |
@@ -1306,6 +1316,7 @@ static int arht_general_offload_bind_ring(unsigned short type, u32 foe_entry_idx
 	
 	switch (type){
 		case PPE_UDF_LOCAL_IN:
+		case PPE_UDF_LOCAL_IN_NS:
 			ring = airoha_get_free_lro_ring(foe_entry_idx);
 			break;
 
@@ -1396,7 +1407,7 @@ EXPORT_SYMBOL(arht_general_offload_bind);
 
 inline static int airoha_is_local_out(struct sk_buff *skb)
 {
-	return skb->inner_protocol == PPE_MAGIC_LOCAL_OUT;
+	return (skb->inner_protocol == PPE_MAGIC_LOCAL_OUT || skb->inner_protocol == PPE_MAGIC_DYNAMIC_IFC);
 }
 
 static unsigned int airoha_get_magic_from_fport(u8 fport)
@@ -1467,6 +1478,7 @@ int airoha_ppe_tx_handler
 	struct airoha_foe_entry *hwe;
 	unsigned int temp_magic = 0;
 	int pkt_type = 0;
+	unsigned short udf; 
 	
 	if(pinfo == NULL)
 	{
@@ -1474,7 +1486,7 @@ int airoha_ppe_tx_handler
 		return 0;
 	}
 
-	if (pinfo->magic == PPE_MAGIC_LOCAL_IN) 
+	if (pinfo->magic == PPE_MAGIC_LOCAL_IN || pinfo->magic == PPE_MAGIC_LOCAL_IN_NS)
 	{
 		if ( hash >= glb_eth->soc->ppe_sram_etry_num || !skb->l4_hash || skb->sw_hash != false )
 			return 0;
@@ -1482,7 +1494,13 @@ int airoha_ppe_tx_handler
 		if (((skb->hash & AIROHA_PPE_CPU_MASK) >> AIROHA_PPE_CPU_REASON_BIT) != PPE_CPU_REASON_HIT_UNBIND_RATE_REACHED)
 			return 0;
 
-		arht_general_offload_bind(skb, PPE_UDF_LOCAL_IN);
+		if(pinfo->magic == PPE_MAGIC_LOCAL_IN){
+			udf = PPE_UDF_LOCAL_IN;
+		}else {
+			udf = PPE_UDF_LOCAL_IN_NS;
+		}
+
+		arht_general_offload_bind(skb, udf);
 
 		return 1;
 	}
@@ -1787,81 +1805,6 @@ static int airoha_ppe_drop_packet_handler(struct sk_buff *skb)
 
 }
 
-static void delete_conntrack_by_tuple(__be32 src_ip, __be32 dst_ip, __be16 src_port, __be16 dst_port, u8 l4proto)
-{
-	struct nf_conntrack_tuple tuple;
-	struct nf_conn *ct;
-	struct nf_conntrack_tuple_hash *thash;
-	
-	memset(&tuple, 0, sizeof(tuple));
-	tuple.src.l3num = AF_INET;
-	tuple.src.u3.ip = src_ip;
-	tuple.dst.u3.ip = dst_ip;
-	tuple.src.u.all = src_port;
-	tuple.dst.u.all = dst_port;
-	tuple.dst.protonum = l4proto;
-
-	thash = nf_conntrack_find_get(&init_net, &nf_ct_zone_dflt, &tuple);
-	if (thash) {
-		ct = nf_ct_tuplehash_to_ctrack(thash);
-		nf_ct_delete(ct, 0, 0);
-		nf_ct_put(ct);
-	}
-}
-
-static void delete_conntrack_by_tuple6(const u32 *src_ip, const u32 *dst_ip,
-                                       __be16 src_port, __be16 dst_port, u8 l4proto)
-{
-    struct nf_conntrack_tuple tuple;
-    struct nf_conntrack_tuple_hash *thash;
-    struct nf_conn *ct;
-
-    memset(&tuple, 0, sizeof(tuple));
-    tuple.src.l3num = AF_INET6;
-
-    tuple.src.u3.ip6[0] = htonl(src_ip[0]);
-    tuple.src.u3.ip6[1] = htonl(src_ip[1]);
-    tuple.src.u3.ip6[2] = htonl(src_ip[2]);
-    tuple.src.u3.ip6[3] = htonl(src_ip[3]);
-
-    tuple.dst.u3.ip6[0] = htonl(dst_ip[0]);
-    tuple.dst.u3.ip6[1] = htonl(dst_ip[1]);
-    tuple.dst.u3.ip6[2] = htonl(dst_ip[2]);
-    tuple.dst.u3.ip6[3] = htonl(dst_ip[3]);
-
-    tuple.src.u.all = src_port;
-    tuple.dst.u.all = dst_port;
-    tuple.dst.protonum = l4proto;
-
-    thash = nf_conntrack_find_get(&init_net, &nf_ct_zone_dflt, &tuple);
-    if (thash) {
-        ct = nf_ct_tuplehash_to_ctrack(thash);
-        nf_ct_delete(ct, 0, 0);
-        nf_ct_put(ct);
-    }
-}
-
-static void airoha_ppe_delete_conntrack(struct airoha_foe_entry *hwe)
-{
-	int type = FIELD_GET(AIROHA_FOE_IB1_BIND_PACKET_TYPE, hwe->ib1);
-	u8 is_udp = FIELD_GET(AIROHA_FOE_IB1_BIND_UDP, hwe->ib1);
-	u8 l4proto = is_udp ? IPPROTO_UDP : IPPROTO_TCP;
-
-	if (type == PPE_PKT_TYPE_IPV4_HNAPT || type == PPE_PKT_TYPE_IPV4_ROUTE) {
-		delete_conntrack_by_tuple(htonl(hwe->ipv4.orig_tuple.src_ip),
-					  htonl(hwe->ipv4.orig_tuple.dest_ip),
-					  htons(hwe->ipv4.orig_tuple.src_port),
-					  htons(hwe->ipv4.orig_tuple.dest_port),
-					  l4proto);
-	} else if (type == PPE_PKT_TYPE_IPV6_ROUTE_5T) {
-		delete_conntrack_by_tuple6(hwe->ipv6.src_ip,
-					   hwe->ipv6.dest_ip,
-					   htons(hwe->ipv6.src_port),
-					   htons(hwe->ipv6.dest_port),
-					   l4proto);
-	}
-}
-
 int airoha_ppe_clean_entry_by_gemport(unsigned int gemport_id)
 {
 	struct airoha_foe_entry *foe_entry;
@@ -1869,7 +1812,6 @@ int airoha_ppe_clean_entry_by_gemport(unsigned int gemport_id)
 	unsigned int idx = 0, ptype = 0, ib2 = 0;
 	struct airoha_foe_mac_info_common *l2;
 	int fpidx = 0;
-	int delete_count = 0;
 
 	for (idx = 0; idx < ppe_num_entries;idx++)
 	{
@@ -1911,11 +1853,6 @@ int airoha_ppe_clean_entry_by_gemport(unsigned int gemport_id)
 
         AIROHA_LOG(AIROHA_DEBUG_LEVEL_WARN, "%s: gemport_id(%d): %u\n", __func__, idx, l2->etype);
 
-		if (delete_count < PPE_MAX_CT_DELETE_PER_CLEAN) {
-			airoha_ppe_delete_conntrack(foe_entry);
-			delete_count++;
-		}
-
         spin_lock_bh(&ppe_lock);
 		airoha_ppe_delete_entry(glb_eth->ppe, foe_entry, idx);
 	    spin_unlock_bh(&ppe_lock);
@@ -1930,7 +1867,6 @@ static int airoha_ppe_clean_entry_by_channel(int channelIdx)   /* clean entry by
 	u32 ppe_num_entries = airoha_ppe_get_total_num_entries(glb_eth->ppe);
 	unsigned int idx = 0, ptype = 0, ib2 = 0, data = 0;
 	int cur_channel = 0, fpidx = 0;
-	int delete_count = 0;
 
 	for (idx = 0; idx < ppe_num_entries;idx++)
 	{
@@ -1972,11 +1908,6 @@ static int airoha_ppe_clean_entry_by_channel(int channelIdx)   /* clean entry by
 		}
 
         AIROHA_LOG(AIROHA_DEBUG_LEVEL_WARN, "%s: channel(%d): %d \n", __func__, idx, cur_channel);
-
-		if (delete_count < PPE_MAX_CT_DELETE_PER_CLEAN) {
-			airoha_ppe_delete_conntrack(foe_entry);
-			delete_count++;
-		}
 
         spin_lock_bh(&ppe_lock);
 		airoha_ppe_delete_entry(glb_eth->ppe, foe_entry, idx);
@@ -2188,7 +2119,6 @@ static int airoha_ppe_clean_entry_by_type(unsigned char type)
 	unsigned int idx, ptype;
 	struct airoha_foe_mac_info_common *l2;
     unsigned char h_dest[ETH_ALEN];
-	int delete_count = 0;
 	
 	for (idx = 0; idx < ppe_num_entries; idx++)
 	{
@@ -2236,11 +2166,6 @@ static int airoha_ppe_clean_entry_by_type(unsigned char type)
 			continue;
 		}
 
-		if (delete_count < PPE_MAX_CT_DELETE_PER_CLEAN) {
-			airoha_ppe_delete_conntrack(foe_entry);
-			delete_count++;
-		}
-
 		spin_lock_bh(&ppe_lock);
 		airoha_ppe_delete_entry(glb_eth->ppe, foe_entry, idx);
         spin_unlock_bh(&ppe_lock);
@@ -2256,7 +2181,6 @@ static int airoha_ppe_clean_entry_by_ip(unsigned int ip_addr)
 	int index = 0;
 	unsigned int idx = 0, ptype = 0;
 	unsigned int ip1 = 0, ip2 = 0, ip3 = 0, ip4 = 0;
-	int delete_count = 0;
 
 	for (idx = 0; idx < ppe_num_entries; idx++)
 	{
@@ -2320,11 +2244,6 @@ static int airoha_ppe_clean_entry_by_ip(unsigned int ip_addr)
 			printk("current entry(%d): %pI4->%pI4 => %pI4->%pI4 \n", idx, &ip1, &ip2, &ip3, &ip4);
 		}
 
-		if (delete_count < PPE_MAX_CT_DELETE_PER_CLEAN) {
-			airoha_ppe_delete_conntrack(foe_entry);
-			delete_count++;
-		}
-
 		spin_lock_bh(&ppe_lock);
 		airoha_ppe_delete_entry(glb_eth->ppe, foe_entry, idx);
         spin_unlock_bh(&ppe_lock);
@@ -2340,7 +2259,6 @@ static int airoha_ppe_clean_entry_by_port(u16 src_port, u16 dest_port)
     unsigned int idx = 0, ptype = 0;
     u16 sp1 = 0, dp1 = 0, sp2 = 0, dp2 = 0;
     bool matched = false;
-	int delete_count = 0;
 
     if (src_port == 0 && dest_port == 0){
         return -EINVAL;
@@ -2396,13 +2314,27 @@ static int airoha_ppe_clean_entry_by_port(u16 src_port, u16 dest_port)
 
         /* Check if any extracted port matches the target port(s) */
         matched = false;
-        if (dest_port != 0) {
-            if (dp1 == dest_port || dp2 == dest_port)
+        if (src_port != 0 && dest_port != 0)
+        {
+            bool src_matched = (sp1 == src_port || sp2 == src_port);
+            bool dst_matched = (dp1 == dest_port || dp2 == dest_port);
+            if (src_matched && dst_matched){
                 matched = true;
-        }
-        if (src_port != 0) {
-            if (sp1 == src_port || sp2 == src_port)
+            }
+
+            src_matched = (sp1 == dest_port || sp2 == dest_port);
+            dst_matched = (dp1 == src_port || dp2 == src_port);
+            if (src_matched && dst_matched){
                 matched = true;
+            }
+        } else if (src_port != 0) {
+            if (sp1 == src_port || sp2 == src_port){
+                matched = true;
+            }
+        } else if (dest_port != 0) {
+            if (dp1 == dest_port || dp2 == dest_port){
+                matched = true;
+            }
         }
 
         if (!matched) {
@@ -2414,11 +2346,6 @@ static int airoha_ppe_clean_entry_by_port(u16 src_port, u16 dest_port)
 			printk("clean_entry_by_port: entry(%u), ptype=%u, orig[sp=%u, dp=%u], new[sp=%u, dp=%u]\n",
                    idx, ptype, sp1, dp1, sp2, dp2);
         }
-
-		if (delete_count < PPE_MAX_CT_DELETE_PER_CLEAN) {
-			airoha_ppe_delete_conntrack(foe_entry);
-			delete_count++;
-		}
 
         spin_lock_bh(&ppe_lock);
         airoha_ppe_delete_entry(glb_eth->ppe, foe_entry, idx);
@@ -2439,10 +2366,8 @@ static int airoha_ppe_clean_multicast_entry(void)
 static int airoha_ppe_clean_entry_by_landev(struct net_device *dev)
 {
 	struct airoha_foe_entry *foe_entry;
-	struct airoha_foe_entry foe_entry_copy;
 	unsigned int idx = 0;
 	u32 ppe_num_entries = 0;
-	int delete_count = 0;
   
 	if(!dev || !glb_eth || !glb_eth->ppe)
 		return -EINVAL;
@@ -2466,25 +2391,8 @@ static int airoha_ppe_clean_entry_by_landev(struct net_device *dev)
 			spin_unlock_bh(&ppe_lock);
 			continue;
 		}
-
-		/*
-		 * Copy the entry while holding the lock to avoid TOCTOU race
-		 * condition. The foe_entry content may be modified by other
-		 * threads after we release the lock, but airoha_ppe_delete_conntrack
-		 * needs to read tuple data (src/dst ip/port) outside the lock
-		 * since nf_conntrack_find_get may sleep or acquire other locks.
-		 */
-		foe_entry_copy = *foe_entry;
-		spin_unlock_bh(&ppe_lock);
-
 		AIROHA_LOG(AIROHA_DEBUG_LEVEL_WARN, "[%s] lan_dev(%d): %s \n", __func__, idx, dev->name);
 
-		if (delete_count < PPE_MAX_CT_DELETE_PER_CLEAN) {
-			airoha_ppe_delete_conntrack(&foe_entry_copy);
-			delete_count++;
-		}
-
-		spin_lock_bh(&ppe_lock);
 		airoha_ppe_delete_entry(glb_eth->ppe, foe_entry, idx);
 		spin_unlock_bh(&ppe_lock);
 	}
@@ -3321,12 +3229,6 @@ void npu_get_entry_bind(struct sk_buff *skb, u32 hash, u32 reason)
 	}
 }
 
-static int airoha_ppe_is_wifi2G_dev(struct net_device *dev)
-{
-    return ((dev != NULL) && \
-			(strncmp(dev->name,"phy0.0", 6) == 0));
-}
-
 void airoha_ppe_foe_flow_update_wifi_npu_offload(struct airoha_ppe *ppe, struct sk_buff *skb, struct port_info *pinfo)
 {
 	u32 hash = FOE_ENTRY_NUM(skb);
@@ -3359,12 +3261,6 @@ void airoha_ppe_foe_flow_update_wifi_npu_offload(struct airoha_ppe *ppe, struct 
 	AIROHA_LOG(AIROHA_DEBUG_LEVEL_INFO, "Packet type:%d\n", type);
 	index = airoha_ppe_foe_get_entry_hash(ppe, hwe);
 
-	if(airoha_ppe_is_wifi2G_dev(skb->dev)){		
-		pinfo->nbq = 0;
-	}
-	else{		
-		pinfo->nbq = 1;
-	}
 	if(pinfo->magic == FOE_MAGIC_WLAN){
 		switch (skb->protocol){
 		case htons(ETH_P_IP):
@@ -3605,10 +3501,6 @@ void airoha_ppe_clear_sram_table_all(struct airoha_ppe *ppe)
 
 	for (i = 0; i < sram_num_entries; i++){
 		memset(&hwe[i], 0, sizeof(*hwe));
-		
-		if (foe_ext)
-			foe_ext[i].fe_resource_mark = 0;
-		
 		__airoha_ppe_foe_commit_entry(ppe, i);
 	}
 

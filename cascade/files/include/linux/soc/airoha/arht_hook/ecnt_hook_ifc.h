@@ -474,5 +474,70 @@ static inline int IFC_API_GET_HIT_IDX_ACTION(unsigned short hit_idx, unsigned ch
     return ECNT_HOOK_ERROR;
 }
 
+/************************************************************************
+*   Indirect IFC APIs for built-in callers (avoid direct __ECNT_HOOK link)
+*   These accept a function pointer to decouple from module symbol.
+*************************************************************************
+*/
+typedef ecnt_ret_val (*ecnt_hook_fn_t)(unsigned int, unsigned int, struct ecnt_data *);
+
+static inline int DIFC_API_SET_LUT_RULE_AUTO(ecnt_hook_fn_t hook_fn, struct ecnt_ifc_param *ifc_param_ptr)
+{
+	struct ecnt_ifc_data in_data = {0};
+	int ret = 0;
+
+	if (unlikely(!hook_fn || !ifc_param_ptr))
+		return ECNT_HOOK_ERROR;
+
+	in_data.function_id = IFC_SET_LUT_RULE_AUTO;
+	memcpy(&in_data.ifc_param, ifc_param_ptr, sizeof(struct ecnt_ifc_param));
+	ret = hook_fn(ECNT_IFC, ECNT_IFC_API, (struct ecnt_data *)&in_data);
+	if (ret != ECNT_HOOK_ERROR)
+		return in_data.retValue;
+	else
+		return ECNT_HOOK_ERROR;
+}
+
+static inline int DIFC_API_DEL_LUT_RULE_AUTO(ecnt_hook_fn_t hook_fn, struct ecnt_ifc_param *ifc_param_ptr)
+{
+	struct ecnt_ifc_data in_data = {0};
+	int ret = 0;
+
+	if (unlikely(!hook_fn || !ifc_param_ptr))
+		return ECNT_HOOK_ERROR;
+
+	in_data.function_id = IFC_DEL_LUT_RULE_AUTO;
+	memcpy(&in_data.ifc_param, ifc_param_ptr, sizeof(struct ecnt_ifc_param));
+	ret = hook_fn(ECNT_IFC, ECNT_IFC_API, (struct ecnt_data *)&in_data);
+	if (ret != ECNT_HOOK_ERROR)
+		return in_data.retValue;
+	else
+		return ECNT_HOOK_ERROR;
+}
+
+static inline int DIFC_API_SET_ACTION(ecnt_hook_fn_t hook_fn, uint ifcIndex, uint actIdx,
+	IFC_Mode_t enMode, uint value0, uint value1, uint value2, uint value3)
+{
+	struct ecnt_ifc_data in_data = {0};
+	int ret = 0;
+
+	if (unlikely(!hook_fn))
+		return ECNT_HOOK_ERROR;
+
+	in_data.function_id = IFC_SET_ACTION;
+	in_data.ifcIndex = ifcIndex;
+	in_data.actIdx = actIdx;
+	in_data.enMode = enMode;
+	in_data.value0 = value0;
+	in_data.value1 = value1;
+	in_data.value2 = value2;
+	in_data.value3 = value3;
+	ret = hook_fn(ECNT_IFC, ECNT_IFC_API, (struct ecnt_data *)&in_data);
+	if (ret != ECNT_HOOK_ERROR)
+		return in_data.retValue;
+	else
+		return ECNT_HOOK_ERROR;
+}
+
 #endif /* _ECNT_HOOK_IFC_H_ */
 

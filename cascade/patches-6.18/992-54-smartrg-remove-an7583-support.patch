@@ -28,7 +28,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 @@ -11,6 +11,6 @@ obj-$(CONFIG_NET_AIROHA) += arht_ppe.o
  obj-$(CONFIG_NET_AIROHA) += arht_fe.o
  obj-$(CONFIG_NET_AIROHA) += arht_multicast.o
- obj-$(CONFIG_NET_AIROHA) += arht_hsgmii.o arht_config.o arht_loopback.o
+ obj-$(CONFIG_NET_AIROHA) += arht_hsgmii.o arht_config.o arht_loopback.o arht_kprobe.o  arht_dynamic_ifc.o arht_wifi_lo.o
 -airoha-eth-y := airoha_eth.o airoha_eth_extra.o  airoha_ppe.o  en7581/soc_en7581.o an7583/soc_an7583.o
 +airoha-eth-y := airoha_eth.o airoha_eth_extra.o  airoha_ppe.o  en7581/soc_en7581.o
  airoha-eth-$(CONFIG_DEBUG_FS) += airoha_ppe_debugfs.o airoha_ppe_debugfs_extra.o
