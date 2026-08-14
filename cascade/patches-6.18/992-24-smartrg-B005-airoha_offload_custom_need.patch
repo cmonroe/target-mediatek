@@ -1,6 +1,6 @@
 --- a/include/linux/soc/airoha/airoha_offload.h
 +++ b/include/linux/soc/airoha/airoha_offload.h
-@@ -204,6 +204,17 @@ struct airoha_npu {
+@@ -207,6 +207,17 @@ struct airoha_npu {
  		u32 (*wlan_get_irq_status)(struct airoha_npu *npu, int q);
  		void (*wlan_enable_irq)(struct airoha_npu *npu, int q);
  		void (*wlan_disable_irq)(struct airoha_npu *npu, int q);
@@ -18,7 +18,7 @@
  	} ops;
  #endif
  };
-@@ -211,6 +222,7 @@ struct airoha_npu {
+@@ -214,6 +225,7 @@ struct airoha_npu {
  #if (IS_BUILTIN(CONFIG_NET_AIROHA_NPU) || IS_MODULE(CONFIG_NET_AIROHA_NPU))
  struct airoha_npu *airoha_npu_get(struct device *dev);
  void airoha_npu_put(struct airoha_npu *npu);
@@ -26,7 +26,7 @@
  
  static inline int airoha_npu_wlan_init_reserved_memory(struct airoha_npu *npu)
  {
-@@ -232,12 +244,30 @@ static inline int airoha_npu_wlan_get_ms
+@@ -235,12 +247,30 @@ static inline int airoha_npu_wlan_get_ms
  	return npu->ops.wlan_get_msg(npu, ifindex, cmd, data, data_len, gfp);
  }
  

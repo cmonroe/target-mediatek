@@ -46,7 +46,7 @@ functions.
  	ret = airoha_pcs_init_named_regmap(pdev, "pcs_mac", &maps->pcs_mac);
  	if (ret)
  		return ret;
-@@ -1232,6 +1231,7 @@ static int airoha_pcs_probe(struct platf
+@@ -1236,6 +1235,7 @@ static int airoha_pcs_probe(struct platf
  	const struct airoha_pcs_match_data *data;
  	struct device *dev = &pdev->dev;
  	struct airoha_pcs_priv *priv;
@@ -54,7 +54,7 @@ functions.
  	int index, ret;
  
  	data = of_device_get_match_data(dev);
-@@ -1288,6 +1288,18 @@ static int airoha_pcs_probe(struct platf
+@@ -1292,6 +1292,18 @@ static int airoha_pcs_probe(struct platf
  		break;
  	}
  

@@ -9,7 +9,7 @@
  static void airoha_pcs_setup_scu_eth(struct airoha_pcs_priv *priv,
  				     phy_interface_t interface)
  {
-@@ -1226,6 +1228,8 @@ static int an7583_pcs_pcie_alloc_maps(st
+@@ -1230,6 +1232,8 @@ static int an7583_pcs_pcie_alloc_maps(st
  	return 0;
  }
  
@@ -18,7 +18,7 @@
  static int airoha_pcs_probe(struct platform_device *pdev)
  {
  	const struct airoha_pcs_match_data *data;
-@@ -1234,6 +1238,12 @@ static int airoha_pcs_probe(struct platf
+@@ -1238,6 +1242,12 @@ static int airoha_pcs_probe(struct platf
  	struct airoha_pcs_shared_data *shared;
  	int index, ret;
  
@@ -31,7 +31,7 @@
  	data = of_device_get_match_data(dev);
  
  	priv = devm_kzalloc(dev, sizeof(*priv), GFP_KERNEL);
-@@ -1265,12 +1275,38 @@ static int airoha_pcs_probe(struct platf
+@@ -1269,12 +1279,38 @@ static int airoha_pcs_probe(struct platf
  
  	switch (data->port_type) {
  	case AIROHA_PCS_ETH:
@@ -71,7 +71,7 @@
  	case AIROHA_PCS_PCIE:
  		if (device_is_compatible(dev, "airoha,an7581-pcs-pcie"))
  			ret = an7581_pcs_pcie_alloc_maps(pdev, priv);
-@@ -1391,6 +1427,38 @@ static void airoha_pcs_remove(struct pla
+@@ -1395,6 +1431,38 @@ static void airoha_pcs_remove(struct pla
  
  	rtnl_unlock();
  }

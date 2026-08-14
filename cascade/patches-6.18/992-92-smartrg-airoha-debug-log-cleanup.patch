@@ -1,6 +1,6 @@
 --- a/drivers/net/pcs/airoha/pcs-airoha-common.c
 +++ b/drivers/net/pcs/airoha/pcs-airoha-common.c
-@@ -1433,26 +1433,26 @@ static void airoha_pcs_remove(struct pla
+@@ -1437,26 +1437,26 @@ static void airoha_pcs_remove(struct pla
  }
  void __iomem* Get_Base(u32 base)
  {

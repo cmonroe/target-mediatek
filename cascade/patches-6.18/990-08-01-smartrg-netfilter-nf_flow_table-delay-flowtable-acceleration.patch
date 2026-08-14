@@ -106,7 +106,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	int err;
 --- a/net/netfilter/nft_flow_offload.c
 +++ b/net/netfilter/nft_flow_offload.c
-@@ -382,10 +382,13 @@ static void nft_flow_offload_eval(const
+@@ -123,10 +123,13 @@ static void nft_flow_offload_eval(const
  	if (!nf_ct_is_confirmed(ct))
  		goto out;
  

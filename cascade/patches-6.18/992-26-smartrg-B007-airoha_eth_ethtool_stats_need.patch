@@ -84,7 +84,7 @@
  static int airoha_qdma_set_chan_tx_sched(struct net_device *netdev,
  					 int channel, enum tx_sched_mode mode,
  					 const u16 *weights, u8 n_weights)
-@@ -3683,6 +3753,9 @@ static const struct ethtool_ops airoha_e
+@@ -3682,6 +3752,9 @@ static const struct ethtool_ops airoha_e
  	.get_link_ksettings	= airoha_ethtool_get_link_ksettings,
  	.set_link_ksettings	= airoha_ethtool_set_link_ksettings,
  	.get_link		= ethtool_op_get_link,

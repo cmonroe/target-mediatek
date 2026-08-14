@@ -61,9 +61,9 @@ registration either.
  	pl->config = config;
  	if (config->type == PHYLINK_NETDEV) {
  		pl->netdev = to_net_dev(config->dev);
-@@ -2170,6 +2165,15 @@ struct phylink *phylink_create(struct ph
- 		return ERR_PTR(ret);
- 	}
+@@ -2164,6 +2159,15 @@ struct phylink *phylink_create(struct ph
+ 	if (ret < 0)
+ 		goto release_link_gpio;
  
 +	/* Register for PCS provider notifications only after the last
 +	 * point of failure, so that no error path can leak the notifier
@@ -75,9 +75,9 @@ registration either.
 +	}
 +
  	return pl;
- }
- EXPORT_SYMBOL_GPL(phylink_create);
-@@ -2187,6 +2191,10 @@ void phylink_destroy(struct phylink *pl)
+ 
+ release_link_gpio:
+@@ -2188,6 +2192,10 @@ void phylink_destroy(struct phylink *pl)
  {
  	struct phylink_pcs *pcs, *tmp;
  

@@ -92,7 +92,7 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	return 0;
  
  error_l2_flow_table_destroy:
-@@ -1737,4 +1741,5 @@ void airoha_ppe_deinit(struct airoha_eth
+@@ -1738,4 +1742,5 @@ void airoha_ppe_deinit(struct airoha_eth
  	rhashtable_destroy(&eth->ppe->l2_flows);
  	rhashtable_destroy(&eth->flow_table);
  	debugfs_remove(eth->ppe->debugfs_dir);

@@ -1,58 +1,63 @@
 --- a/drivers/net/ethernet/airoha/airoha_npu.c
 +++ b/drivers/net/ethernet/airoha/airoha_npu.c
-@@ -16,7 +16,7 @@
- #include "airoha_npu.h"
- #include "airoha_function.h"
+@@ -25,7 +25,7 @@
  
--int airoha_npu_send_msg(struct airoha_npu *npu, int func_id,
-+int airoha_npu_send_msg_need_retry(struct airoha_npu *npu, int func_id,
- 			       void *p, int size)
+ static int __airoha_npu_send_msg(struct airoha_npu *npu, int func_id,
+ 				 const void *data, int len, void *reply,
+-				 u16 reply_len)
++				 u16 reply_len, bool need_retry)
  {
- 	u16 core = 0; /* FIXME */
-@@ -74,6 +74,42 @@ npu_send_msg_retry:
- 	return ret;
- }
+ 	struct airoha_npu_core *core = &npu->cores[0]; /* FIXME: core */
+ 	u32 val, offset = 0;
+@@ -47,9 +47,9 @@ static int __airoha_npu_send_msg(struct
+ 	 */
+ 	spin_lock_bh(&core->lock);
  
-+int airoha_npu_send_msg(struct airoha_npu *npu, int func_id,
-+			       void *p, int size)
-+{
-+	u16 core = 0; /* FIXME */
-+	u32 val, offset = core << 4;
-+	dma_addr_t dma_addr;
-+	int ret;
-+
-+	dma_addr = dma_map_single(npu->dev, p, size, DMA_TO_DEVICE);
-+	ret = dma_mapping_error(npu->dev, dma_addr);
-+	if (ret)
-+		return ret;
-+
-+	spin_lock_bh(&npu->cores[core].lock);
-+
-+	regmap_write(npu->regmap, REG_CR_MBQ0_CTRL(0) + offset, dma_addr);
-+	regmap_write(npu->regmap, REG_CR_MBQ0_CTRL(1) + offset, size);
-+	regmap_read(npu->regmap, REG_CR_MBQ0_CTRL(2) + offset, &val);
-+	regmap_write(npu->regmap, REG_CR_MBQ0_CTRL(2) + offset, val + 1);
-+	val = FIELD_PREP(MBOX_MSG_FUNC_ID, func_id) | MBOX_MSG_WAIT_RSP;
-+	regmap_write(npu->regmap, REG_CR_MBQ0_CTRL(3) + offset, val);
-+
-+	ret = regmap_read_poll_timeout_atomic(npu->regmap,
-+					      REG_CR_MBQ0_CTRL(3) + offset,
-+					      val, (val & MBOX_MSG_DONE),
-+					      100, 500 * MSEC_PER_SEC);
-+	if (!ret && FIELD_GET(MBOX_MSG_STATUS, val) != NPU_MBOX_SUCCESS)
-+		ret = -EINVAL;
-+
-+	spin_unlock_bh(&npu->cores[core].lock);
-+
-+	dma_unmap_single(npu->dev, dma_addr, size, DMA_TO_DEVICE);
-+
-+	return ret;
++npu_send_msg_retry:
+ 	memcpy(core->buf, data, len);
+ 
+-npu_send_msg_retry:
+ 	regmap_write(npu->regmap, REG_CR_MBQ0_CTRL(0) + offset, core->addr);
+ 	regmap_write(npu->regmap, REG_CR_MBQ0_CTRL(1) + offset, len);
+ 	val = FIELD_PREP(MBOX_MSG_FUNC_ID, func_id) | MBOX_MSG_WAIT_RSP;
+@@ -60,7 +60,12 @@ npu_send_msg_retry:
+ 	ret = regmap_read_poll_timeout_atomic(npu->regmap,
+ 					      REG_CR_MBQ0_CTRL(3) + offset,
+ 					      val, (val & MBOX_MSG_DONE),
+-					      100, (1000 * MSEC_PER_SEC));
++					      100, (need_retry ? 1000 : 500) * MSEC_PER_SEC);
++	if (!need_retry) {
++		if (!ret && FIELD_GET(MBOX_MSG_STATUS, val) != NPU_MBOX_SUCCESS)
++			ret = -EINVAL;
++		goto npu_send_msg_done;
++	}
+     is_err=0;
+ 	if (!ret && FIELD_GET(MBOX_MSG_STATUS, val) != NPU_MBOX_SUCCESS) {
+ 		retry_cnt++;
+@@ -85,6 +90,7 @@ npu_send_msg_retry:
+ 	}
+ 	arht_npu_retry_send_msg(npu, ret, val, core->addr, len, func_id);
+ 
++npu_send_msg_done:
+ 	/* Copy the trailing reply_len bytes of the response. */
+ 	if (!ret && reply)
+ 		memcpy(reply, core->buf + len - reply_len, reply_len);
+@@ -97,7 +103,13 @@ npu_send_msg_retry:
+ int airoha_npu_send_msg(struct airoha_npu *npu, int func_id,
+ 			void *data, int len)
+ {
+-	return __airoha_npu_send_msg(npu, func_id, data, len, data, len);
++	return __airoha_npu_send_msg(npu, func_id, data, len, data, len, false);
 +}
 +
++int airoha_npu_send_msg_need_retry(struct airoha_npu *npu, int func_id,
++				   void *data, int len)
++{
++	return __airoha_npu_send_msg(npu, func_id, data, len, data, len, true);
+ }
+ 
  static int airoha_npu_load_firmware(struct device *dev, void __iomem *addr,
- 				    const char *fw_name, int fw_max_size)
- {
-@@ -353,7 +389,7 @@ int airoha_npu_wlan_msg_send(struct airo
+@@ -379,7 +391,7 @@ int airoha_npu_wlan_msg_send(struct airo
  	wlan_data->func_id = func_id;
  	memcpy(wlan_data->d, data, data_len);
  
@@ -61,12 +66,12 @@
  	kfree(wlan_data);
  
  	return err;
-@@ -375,7 +411,7 @@ int airoha_npu_wlan_msg_get(struct airoh
- 	wlan_data->func_type = NPU_OP_GET;
+@@ -402,7 +414,7 @@ int airoha_npu_wlan_msg_get(struct airoh
  	wlan_data->func_id = func_id;
  
--	err = airoha_npu_send_msg(npu, NPU_FUNC_WIFI, wlan_data, len);
-+	err = airoha_npu_send_msg_need_retry(npu, NPU_FUNC_WIFI, wlan_data, len);
- 	if (!err)
- 		memcpy(data, wlan_data->d, data_len);
+ 	err = __airoha_npu_send_msg(npu, NPU_FUNC_WIFI, wlan_data, len,
+-				    data, data_len);
++				    data, data_len, true);
  	kfree(wlan_data);
+ 
+ 	return err;

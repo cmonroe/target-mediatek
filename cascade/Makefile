@@ -35,8 +35,7 @@ UPSTREAM_AIROHA:=$(TOPDIR)/target/linux/airoha
 AIROHA_SKIP:=901-snand-mtk-bmt-support.patch \
 	886-uart-add-en7523-support.patch \
 	220-10-PCI-mediatek-gen3-set-PHY-mode-for-Airoha-EN7581.patch \
-	912-pcie-mediatek-gen3-Add-x2-link-support-for-Airoha-EN7581.patch \
-	913-pcie-mediatek-gen3-fix-x2-mode-PERST-deassert.patch
+	609-04-PCI-mediatek-gen3-Add-2-lanes-mode-support-for-Airoh.patch
 
 include $(INCLUDE_DIR)/target.mk
 

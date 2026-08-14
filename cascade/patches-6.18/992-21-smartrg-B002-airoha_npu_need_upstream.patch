@@ -1,6 +1,6 @@
 --- a/drivers/net/ethernet/airoha/airoha_npu.c
 +++ b/drivers/net/ethernet/airoha/airoha_npu.c
-@@ -13,154 +13,9 @@
+@@ -13,16 +13,8 @@
  #include <linux/regmap.h>
  
  #include "airoha_eth.h"
@@ -15,7 +15,13 @@
 -#define NPU_EN7581_FIRMWARE_RV32_MAX_SIZE	0x200000
 -#define NPU_EN7581_FIRMWARE_DATA_MAX_SIZE	0x10000
 -#define NPU_DUMP_SIZE				512
--
+ /*
+  * Mailbox DMA payload size. Covers sizeof(struct ppe_mbox_data) (28) and
+  * WLAN TLV messages (header + payload); largest in-tree WLAN payload today
+@@ -30,142 +22,6 @@
+  */
+ #define AIROHA_NPU_MBOX_SIZE			256
+ 
 -#define REG_NPU_LOCAL_SRAM		0x0
 -
 -#define NPU_PC_BASE_ADDR		0x305000
@@ -152,12 +158,10 @@
 -	DECLARE_FLEX_ARRAY(u8, d);
 -};
 -
--static int airoha_npu_send_msg(struct airoha_npu *npu, int func_id,
-+int airoha_npu_send_msg(struct airoha_npu *npu, int func_id,
- 			       void *p, int size)
- {
- 	u16 core = 0; /* FIXME */
-@@ -185,9 +40,7 @@ static int airoha_npu_send_msg(struct ai
+ static int __airoha_npu_send_msg(struct airoha_npu *npu, int func_id,
+ 				 const void *data, int len, void *reply,
+ 				 u16 reply_len)
+@@ -202,9 +58,7 @@ static int __airoha_npu_send_msg(struct
  	ret = regmap_read_poll_timeout_atomic(npu->regmap,
  					      REG_CR_MBQ0_CTRL(3) + offset,
  					      val, (val & MBOX_MSG_DONE),
@@ -166,9 +170,20 @@
 -		ret = -EINVAL;
 +					      100, 500 * MSEC_PER_SEC);
  
- 	spin_unlock_bh(&npu->cores[core].lock);
+ 	/* Copy the trailing reply_len bytes of the response. */
+ 	if (!ret && reply)
+@@ -215,8 +69,8 @@ static int __airoha_npu_send_msg(struct
+ 	return ret;
+ }
  
-@@ -458,7 +311,7 @@ out:
+-static int airoha_npu_send_msg(struct airoha_npu *npu, int func_id,
+-			       void *data, int len)
++int airoha_npu_send_msg(struct airoha_npu *npu, int func_id,
++			void *data, int len)
+ {
+ 	return __airoha_npu_send_msg(npu, func_id, data, len, data, len);
+ }
+@@ -483,7 +337,7 @@ out:
  	return err;
  }
  
@@ -177,7 +192,7 @@
  				    enum airoha_npu_wlan_set_cmd func_id,
  				    void *data, int data_len, gfp_t gfp)
  {
-@@ -481,7 +334,7 @@ static int airoha_npu_wlan_msg_send(stru
+@@ -506,7 +360,7 @@ static int airoha_npu_wlan_msg_send(stru
  	return err;
  }
  
@@ -186,7 +201,7 @@
  				   enum airoha_npu_wlan_get_cmd func_id,
  				   void *data, int data_len, gfp_t gfp)
  {
-@@ -525,29 +378,63 @@ airoha_npu_wlan_set_reserved_memory(stru
+@@ -549,29 +403,63 @@ airoha_npu_wlan_set_reserved_memory(stru
  					sizeof(val), GFP_KERNEL);
  }
  
@@ -256,7 +271,7 @@
  	if (err)
  		return err;
  
-@@ -560,8 +447,7 @@ static int airoha_npu_wlan_init_memory(s
+@@ -584,8 +472,7 @@ static int airoha_npu_wlan_init_memory(s
  	}
  
  	cmd = WLAN_FUNC_SET_WAIT_IS_FORCE_TO_CPU;
