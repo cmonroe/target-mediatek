@@ -57,6 +57,19 @@
 		memory-region = <&bootdata_reserved>;
 	};
 
+	/*
+	 * BL31 declares a flat 13 MHz in CNTFRQ_EL0. It does not configure the
+	 * CPUXGPT, so the 20 MHz and 25 MHz compensation stays enabled (control
+	 * register 0x10017000, bit 11 and bit 12). The counter then runs at the
+	 * measured rate below, from three units that agree within 12 ppm. This
+	 * SoC misses by 250 ppm, which ntpd corrects, unlike the 1065 ppm of
+	 * the MT7986A boards. The declared rate keeps the free running drift
+	 * near 0.2 s per day instead of 21 s per day.
+	 */
+	timer {
+		clock-frequency = <12996763>;
+	};
+
 	reg_3p3v: regulator-3p3v {
 		compatible = "regulator-fixed";
 		regulator-name = "fixed-3.3V";

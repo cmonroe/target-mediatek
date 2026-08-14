@@ -60,6 +60,19 @@
 		memory-region = <&bootdata_reserved>;
 	};
 
+	/*
+	 * BL31 declares a flat 13 MHz in CNTFRQ_EL0. It does not configure the
+	 * CPUXGPT, so the 20 MHz and 25 MHz compensation stays enabled (control
+	 * register 0x10017000, bit 11 and bit 12). The counter then runs at the
+	 * measured rate below. Three units of three models agree within 5 ppm,
+	 * and one unit moves about 10 ppm with temperature. With the declared
+	 * 13 MHz the kernel clock loses 1065 ppm, and ntpd can correct only
+	 * 500 ppm.
+	 */
+	timer {
+		clock-frequency = <12986200>;
+	};
+
 	reg_1p8v: regulator-1p8v {
 		compatible = "regulator-fixed";
 		regulator-name = "fixed-1.8V";
