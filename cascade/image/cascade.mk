@@ -148,7 +148,8 @@ define Build/SrgFit
 		-c "510" -K k1 -R rdisk -D "SDG-9732i" -T "smartrg,sdg-9732i" \
 		-c "511" -K k1 -R rdisk -D "SDG-9712o" -T "smartrg,sdg-9712o" \
 		-c "600" -K k2 -R rdisk -D "SDG-8716v" \
-		-c "601" -K k2 -R rdisk -D "SDG-8736v"
+		-c "601" -K k2 -R rdisk -D "SDG-8736v" \
+		-c "799" -K k1 -R rdisk -D "SDG-8712v" -T "smartrg,sdg-8712v"
 
 	PATH=$(LINUX_DIR)/scripts/dtc:$(PATH) mkimage -f $@.its $@.new
 	python3 $(TOPDIR)/target/linux/$(BOARD)/image/srg-fit-dedup.py $@.new kernel@k2 kernel@k1
