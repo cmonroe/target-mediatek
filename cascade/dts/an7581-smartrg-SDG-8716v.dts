@@ -70,6 +70,18 @@
 	leds: gpio-leds {
 		compatible = "gpio-leds";
 
+		pon_red {
+			color = <LED_COLOR_ID_RED>;
+			function = "pon";
+			gpios = <&en7581_pinctrl 29 GPIO_ACTIVE_LOW>;
+		};
+
+		pon_white {
+			color = <LED_COLOR_ID_WHITE>;
+			function = "pon";
+			gpios = <&en7581_pinctrl 30 GPIO_ACTIVE_LOW>;
+		};
+
 		lan2_amber {
 			color = <LED_COLOR_ID_AMBER>;
 			function = "lan2";
