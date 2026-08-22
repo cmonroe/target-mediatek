@@ -91,13 +91,13 @@
 
 		pse0_reset {
 			gpio-export,name = "pse0-reset";
-			gpio-export,output = <1>;
+			gpio-export,output = <0>;
 			gpios = <&pio 24 GPIO_ACTIVE_LOW>;
 		};
 
 		pse1_reset {
 			gpio-export,name = "pse1-reset";
-			gpio-export,output = <1>;
+			gpio-export,output = <0>;
 			gpios = <&pio 61 GPIO_ACTIVE_LOW>;
 		};
 
