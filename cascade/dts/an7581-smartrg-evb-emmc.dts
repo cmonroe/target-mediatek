@@ -129,8 +129,6 @@
 	#size-cells = <0>;
 
 	card@0 {
-		#address-cells = <0>;
-		#size-cells = <0>;
 		compatible = "mmc-card";
 		reg = <0>;
 
@@ -191,7 +189,7 @@
 	pinctrl-0 = <&pcie1_rst_pins>;
 	status = "okay";
 
-	pcie@1,0 {
+	pcie@0,0 {
 		reg = <0x0000 0 0 0 0>;
 		#address-cells = <3>;
 		#size-cells = <2>;
