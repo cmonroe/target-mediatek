@@ -1,0 +1,21 @@
+From: rakesh chanda <rakesh.chanda@adtran.com>
+Date: Tue, 25 Aug 2026 13:19:37 +0000
+Subject: [PATCH] SDG-8679 Disable hardware acceleration for multicast traffic
+
+Commenting multicast handler to avoid invoking multicast hwnat hook so that multicast traffic is processed by CPU.
+
+Signed-off-by: rakesh chanda <rakesh.chanda@adtran.com>
+---
+
+--- a/drivers/net/ethernet/airoha/arht_dp_api.c
++++ b/drivers/net/ethernet/airoha/arht_dp_api.c
+@@ -1356,7 +1356,7 @@ static void airoha_get_entry_bind(u32 msg1, struct airoha_queue *q, struct airoh
+ 								    : LAN_IDX_FROM_SPTAG(sptag);
+ 		}
+ 		airoha_ppe_check_skb(&eth->ppe->dev, q->skb, hash, false);
+-		arht_ppe_multicast_handler(eth->ppe, q->skb);
++		//arht_ppe_multicast_handler(eth->ppe, q->skb);
+ 
+ 	} else {
+ 		if (!eth->npu) {			
+
