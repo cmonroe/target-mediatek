@@ -4,20 +4,28 @@ Subject: [PATCH] net: ethernet: mtk_eth_soc: unify queue speed for DSA and non-D
 
 mtk_device_event() only walked DSA conduit/user pairs and bailed early
 on non-DSA netdev change events, so direct GMACs (e.g. mt7987 GMAC1)
-never had a per-queue rate cap programmed. 
+never had a per-queue rate cap programmed.
 
 Match the DSA path: when the event is for the mac's own netdev, use
 queue = mac->id. Skip bridge upper events to avoid double-processing.
 
+Keep the upstream bottleneck guard (commit e669ce46740a "net: ethernet:
+mtk_eth_soc: fix remaining throughput regression") in place for both
+paths: when the GMAC link itself is the bottleneck, shaping at the MAC
+rate is redundant and lossy, so leave the queue uncapped. Direct GMACs
+behind interface-switching PHYs (GPY211, MXL86211C) run the MAC at
+line speed and thus stay uncapped; rate-matching USXGMII PHYs keep the
+MAC above line speed and retain the cap.
+
 Signed-off-by: Piotr Kubik <piotr.kubik@adtran.com>
 Signed-off-by: Chad Monroe <chad@monroe.io>
 ---
- drivers/net/ethernet/mediatek/mtk_eth_soc.c |   37 +++++++++++-------
- 1 file changed, 24 insertions(+), 13 deletions(-)
+ drivers/net/ethernet/mediatek/mtk_eth_soc.c |   27 +++++++++++++-----------
+ 1 file changed, 17 insertions(+), 10 deletions(-)
 
 --- a/drivers/net/ethernet/mediatek/mtk_eth_soc.c
 +++ b/drivers/net/ethernet/mediatek/mtk_eth_soc.c
-@@ -3878,39 +3878,50 @@ static int mtk_device_event(struct notif
+@@ -3878,39 +3878,46 @@ static int mtk_device_event(struct notif
  	struct dsa_port *dp;
  	unsigned int queue;
  
@@ -60,13 +68,6 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
 +			return NOTIFY_DONE;
 +
 +		queue = mac->dsa_queue_base + mac->dsa_port_rank[dp->index];
-+
-+		/* When the conduit GMAC link is the bottleneck the per-port
-+		 * PPPQ cap is redundant; skip it so the queue stays
-+		 * unshaped on the QDMA side.
-+		 */
-+		if (mac->speed > 0 && mac->speed <= s.base.speed)
-+			s.base.speed = 0;
 +	} else {
 +		queue = mac->id;
 +	}
@@ -75,9 +76,9 @@ Signed-off-by: Chad Monroe <chad@monroe.io>
  	if (queue >= eth->soc->num_tx_queues)
  		return NOTIFY_DONE;
  
--	if (mac->speed > 0 && mac->speed <= s.base.speed)
--		s.base.speed = 0;
--
+ 	if (mac->speed > 0 && mac->speed <= s.base.speed)
+ 		s.base.speed = 0;
+ 
  	mtk_set_queue_speed(eth, queue, s.base.speed);
  
  	return NOTIFY_DONE;
